@@ -3,6 +3,7 @@ package com.example.ordermanager.service;
 import com.example.ordermanager.entity.Order;
 import com.example.ordermanager.exception.OrderNotFoundException;
 import com.example.ordermanager.repository.OrderRepository;
+import com.example.ordermanager.utils.Helper;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,8 +14,11 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
 
-    public OrderService(OrderRepository orderRepository) {
+    private Helper helper;
+
+    public OrderService(OrderRepository orderRepository, Helper helper) {
         this.orderRepository = orderRepository;
+        this.helper = helper;
     }
 
     public List<Order> getAllOrders() {
@@ -22,6 +26,8 @@ public class OrderService {
     }
 
     public Order createOrder(Order order) {
+        if (order.getProductName() != null)
+            order.setProductName(helper.toTitleCase(order.getProductName()));
         return orderRepository.save(order);
     }
 
@@ -32,7 +38,7 @@ public class OrderService {
                         existingOrder.setCustomerName(partialOrder.getCustomerName());
 
                     if (partialOrder.getProductName() != null)
-                        existingOrder.setProductName(partialOrder.getProductName());
+                        existingOrder.setProductName(helper.toTitleCase(partialOrder.getProductName()));
 
                     if (partialOrder.getQuantity() != null)
                         existingOrder.setQuantity(partialOrder.getQuantity());
