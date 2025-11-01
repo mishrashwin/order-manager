@@ -23,8 +23,11 @@ public class ClientService {
         return clientRepository.findById(id).orElse(null);
     }
 
-    public Client saveClient(Client client) {
-        return clientRepository.save(client);
+    public void saveClient(Client client) {
+        if (client.getName() != null) {
+            client.setName(client.getName().toUpperCase());
+        }
+        clientRepository.save(client);
     }
 
     public void deleteClient(Long id) {
