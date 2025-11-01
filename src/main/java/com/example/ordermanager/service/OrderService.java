@@ -62,4 +62,7 @@ public class OrderService {
         orderRepository.deleteById(id);
     }
 
+    public Order getOrderById(Long id) {
+        return orderRepository.findById(id).orElse(null);
+    }
 }

@@ -1,0 +1,56 @@
+# ==============================
+# Java & Maven Build Artifacts
+# ==============================
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Maven Wrapper
+.mvn/wrapper/maven-wrapper.jar
+!/.mvn/wrapper/maven-wrapper.properties
+
+# ==============================
+# IntelliJ IDEA
+# ==============================
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+*.sw?
+*.orig
+
+# ==============================
+# Logs & Temp Files
+# ==============================
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+hs_err_pid*
+replay_pid*
+
+# ==============================
+# OS Files
+# ==============================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+__MACOSX/
+
+# ==============================
+# Node / Frontend Builds (if added later)
+# ==============================
+node_modules/
+dist/
+build/
+
+# ==============================
+# Environment Config (optional)
+# ==============================
+#.env
+#*.env

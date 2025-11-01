@@ -1,0 +1,75 @@
+<!-- templates/fragments/table-utils.html -->
+<script th:fragment="tableUtils" xmlns:th="http://www.w3.org/1999/xhtml">
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll("table").forEach(table => {
+            const tbody = table.querySelector("tbody");
+            if (!tbody) return;
+
+            const originalRows = Array.from(tbody.querySelectorAll("tr"));
+            const searchInput = document.getElementById("searchInput");
+            const resetBtn = document.getElementById("resetSortBtn");
+
+            // 🔍 Universal Search Filter
+            function applySearchFilter() {
+                if (!searchInput) return;
+                const filter = searchInput.value.toLowerCase();
+                tbody.querySelectorAll("tr").forEach(row => {
+                    const text = row.innerText.toLowerCase();
+                    row.style.display = text.includes(filter) ? "" : "none";
+                });
+            }
+
+            if (searchInput) {
+                searchInput.addEventListener("keyup", applySearchFilter);
+            }
+
+            // ↕ Column Sorting
+            table.querySelectorAll("thead th").forEach((th, index) => {
+                if (th.classList.contains("no-sort") || th.innerText.toLowerCase().includes("action")) return;
+
+                th.addEventListener("click", () => {
+                    const rows = Array.from(tbody.querySelectorAll("tr"));
+                    const isAsc = !th.classList.contains("sort-asc");
+
+                    // Clear all indicators
+                    table.querySelectorAll("th").forEach(t => t.classList.remove("sort-asc", "sort-desc"));
+                    th.classList.toggle("sort-asc", isAsc);
+                    th.classList.toggle("sort-desc", !isAsc);
+
+                    // Sort visible rows only
+                    const visibleRows = rows.filter(r => r.style.display !== "none");
+
+                    visibleRows.sort((a, b) => {
+                        const valA = a.children[index].innerText.trim().toLowerCase();
+                        const valB = b.children[index].innerText.trim().toLowerCase();
+                        return isAsc
+                            ? valA.localeCompare(valB, undefined, { numeric: true })
+                            : valB.localeCompare(valA, undefined, { numeric: true });
+                    });
+
+                    // Rebuild the table keeping hidden ones below
+                    tbody.innerHTML = "";
+                    visibleRows.forEach(row => tbody.appendChild(row));
+                    rows.filter(r => r.style.display === "none").forEach(row => tbody.appendChild(row));
+                });
+            });
+
+            // 🔁 Reset Sorting (but keep search filter)
+            if (resetBtn) {
+                resetBtn.addEventListener("click", () => {
+                    // Clear sort indicators
+                    table.querySelectorAll("th").forEach(t => t.classList.remove("sort-asc", "sort-desc"));
+
+                    // Restore original row order
+                    tbody.innerHTML = "";
+                    originalRows.forEach(row => {
+                        tbody.appendChild(row);
+                    });
+
+                    // Reapply current search (if any)
+                    applySearchFilter();
+                });
+            }
+        });
+    });
+</script>

@@ -1,10 +1,18 @@
 package com.example.ordermanager.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import org.springframework.format.annotation.DateTimeFormat;
+
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "orders")
+@Getter
+@Setter
+@ToString
 public class Order {
 
     @Id
@@ -16,8 +24,9 @@ public class Order {
     private Integer quantity;
     private Double totalAmount;
     private String status;
-
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
     private LocalDate orderDate;
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
     private LocalDate deliveryDate;
 
     // Constructors
@@ -33,28 +42,4 @@ public class Order {
         this.deliveryDate = deliveryDate;
     }
 
-    // Getters and setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getCustomerName() { return customerName; }
-    public void setCustomerName(String customerName) { this.customerName = customerName; }
-
-    public String getProductName() { return productName; }
-    public void setProductName(String productName) { this.productName = productName; }
-
-    public Integer getQuantity() { return quantity; }
-    public void setQuantity(Integer quantity) { this.quantity = quantity; }
-
-    public Double getTotalAmount() { return totalAmount; }
-    public void setTotalAmount(Double totalAmount) { this.totalAmount = totalAmount; }
-
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-
-    public LocalDate getOrderDate() { return orderDate; }
-    public void setOrderDate(LocalDate orderDate) { this.orderDate = orderDate; }
-
-    public LocalDate getDeliveryDate() { return deliveryDate; }
-    public void setDeliveryDate(LocalDate deliveryDate) { this.deliveryDate = deliveryDate; }
 }

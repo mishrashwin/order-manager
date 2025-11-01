@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+
+<!-- 🌐 Footer Fragment -->
+<div th:fragment="footer">
+    <footer class="text-center text-muted mt-5 mb-3 small">
+        <hr class="mt-4">
+        <div>
+            <p class="mb-1">
+                © <span th:text="${#temporals.format(#temporals.createNow(), 'yyyy')}"></span>
+                <strong>Order Manager</strong> | All Rights Reserved
+            </p>
+            <p class="mb-0">
+                Built with <span class="text-danger">❤</span> by <strong>AshLabs</strong></p>
+        </div>
+    </footer>
+</div>
+
+</body>
+</html>

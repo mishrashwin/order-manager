@@ -1,79 +1,72 @@
 package com.example.ordermanager.controller;
 
 import com.example.ordermanager.entity.Order;
+import com.example.ordermanager.service.ClientService;
 import com.example.ordermanager.service.OrderService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.Parameter;
-import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
-@RestController
-@RequestMapping("/api/orders")
-@Tag(name = "Order Management", description = "Endpoints for managing customer orders")
+@Controller
+@RequestMapping("/orders")
 public class OrderController {
 
     private final OrderService orderService;
+    private final ClientService clientService;
 
-    public OrderController(OrderService orderService) {
+    public OrderController(OrderService orderService, ClientService clientService) {
         this.orderService = orderService;
+        this.clientService = clientService;
     }
 
-    @Operation(summary = "Get all Orders", description = "Retrieve a list of all customer orders in the system")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully retrieved list of orders")
-    })
+    // ✅ 1. List all orders
     @GetMapping
-    public List<Order> getAllOrders() {
-        return orderService.getAllOrders();
+    public String listOrders(Model model) {
+        model.addAttribute("orders", orderService.getAllOrders());
+        return "orders/list";
     }
 
-    @Operation(summary = "Create a new order", description = "Add a new order to the system")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Order created successfully")
-    })
+    // ✅ 2. Show form to create new order
+    @GetMapping("/new")
+    public String showCreateForm(Model model) {
+        model.addAttribute("order", new Order());
+        model.addAttribute("clients", clientService.getAllClients());
+        return "orders/form";
+    }
+
+    // ✅ 3. Handle new order submission
     @PostMapping
-    public Order createOrder(
-            @Parameter(description = "Order details to be created", required = true)
-            @RequestBody Order order) {
-        return orderService.createOrder(order);
+    public String saveOrder(@ModelAttribute("order") Order order) {
+        if (order.getStatus() == null || order.getStatus().isEmpty()) {
+            order.setStatus("PENDING");
+        }
+        orderService.createOrder(order);
+        return "redirect:/orders";
     }
 
-    @Operation(summary = "Partially update an order", description = "Update only specific fields of an existing order")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Order updated successfully"),
-            @ApiResponse(responseCode = "404", description = "Order not found")
-    })
-    @PatchMapping("/{id}")
-    public Order patchOrder(
-            @Parameter(description = "ID of the order to be updated", required = true)
-            @PathVariable Long id,
-            @Parameter(description = "Partial order fields to update", required = true)
-            @RequestBody Order partialOrder) {
-        return orderService.patchOrder(id, partialOrder);
+    // ✅ 4. Show edit form
+    @GetMapping("/edit/{id}")
+    public String showEditForm(@PathVariable Long id, Model model) {
+        Order order = orderService.getOrderById(id);
+        if (order == null) {
+            return "redirect:/orders";
+        }
+        model.addAttribute("order", order);
+        model.addAttribute("clients", clientService.getAllClients());
+        return "orders/form";
     }
 
+    // ✅ 5. Handle partial update via patchOrder()
+    @PostMapping("/update/{id}")
+    public String updateOrder(@PathVariable Long id, @ModelAttribute("order") Order updatedOrder) {
+        orderService.patchOrder(id, updatedOrder);
+        return "redirect:/orders";
+    }
 
-    @Operation(summary = "Delete an order", description = "Remove an order by its ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Order deleted successfully"),
-            @ApiResponse(responseCode = "404", description = "Order not found")
-    })
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteOrder(
-            @Parameter(description = "ID of the order to delete", required = true)
-            @PathVariable Long id) {
+    // ✅ 6. Delete order
+    @GetMapping("/delete/{id}")
+    public String deleteOrder(@PathVariable Long id) {
         orderService.deleteOrder(id);
-        return ResponseEntity.noContent().build(); // HTTP 204
-    }
-
-
-    @GetMapping("/ping")
-    public String ping() {
-        return "Order Manager running!";
+        return "redirect:/orders";
     }
 }

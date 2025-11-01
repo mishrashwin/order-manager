@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:with="page='orders'">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${order.id == null ? 'Add Order' : 'Edit Order'}">Order Form</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f9f9f9; margin: 0; padding: 0; }
+        h2 { font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 class="text-center mt-3" th:text="${order.id == null ? '➕ Add New Order' : '✏️ Edit Order'}"></h2>
+
+    <!-- Navbar -->
+    <div th:replace="fragments/navbar :: navbar"></div>
+
+    <!-- Order Form -->
+    <div class="card mt-4 shadow-sm">
+        <div class="card-body">
+            <form th:action="@{/orders}" th:object="${order}" method="post">
+                <input type="hidden" th:field="*{id}">
+
+                <!-- Customer Dropdown + Add Button -->
+                <div class="mb-3">
+                    <label class="form-label">Customer Name</label>
+                    <div class="input-group">
+                        <select class="form-select" th:field="*{customerName}" required>
+                            <option value="">-- Select Client --</option>
+                            <option th:each="client : ${clients}" th:value="${client.name}" th:text="${client.name}"></option>
+                        </select>
+                        <a class="btn btn-outline-success" th:href="@{/clients/new}" target="_blank">+ Add Client</a>
+                    </div>
+                    <div class="form-text">If the desired client is missing, click “Add Client”.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Product Name</label>
+                    <input type="text" class="form-control" th:field="*{productName}" required>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" class="form-control" th:field="*{quantity}" min="1" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Total Amount (₹)</label>
+                        <input type="number" class="form-control" th:field="*{totalAmount}" step="0.01" min="0" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" th:field="*{status}" required>
+                            <option value="">-- Select Status --</option>
+                            <option value="PENDING">Pending</option>
+                            <option value="PROCESSING">Processing</option>
+                            <option value="SHIPPED">Shipped</option>
+                            <option value="DELIVERED">Delivered</option>
+                            <option value="CANCELLED">Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Order Date</label>
+                    <input type="date" class="form-control"
+                           th:field="*{orderDate}"
+                           th:value="${#temporals.format(order.orderDate, 'yyyy-MM-dd')}" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Delivery Date</label>
+                    <input type="date" class="form-control"
+                           th:field="*{deliveryDate}"
+                           th:value="${#temporals.format(order.deliveryDate, 'yyyy-MM-dd')}" />
+                </div>
+
+
+                <div class="d-flex justify-content-between">
+                    <a class="btn btn-secondary" th:href="@{/orders}">Cancel</a>
+                    <button type="submit" class="btn btn-success">Save Order</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div th:replace="fragments/footer :: footer"></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

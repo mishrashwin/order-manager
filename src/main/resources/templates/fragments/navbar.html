@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+
+<!-- 🌐 Navbar Fragment -->
+<div th:fragment="navbar">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mt-3">
+        <div class="container-fluid">
+            <a class="navbar-brand" th:href="@{/dashboard}">Order Manager</a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+
+                    <!-- Dashboard -->
+                    <li class="nav-item">
+                        <a class="nav-link" th:classappend="${page=='dashboard'} ? 'active'" th:href="@{/dashboard}">
+                            Dashboard
+                        </a>
+                    </li>
+
+                    <!-- Orders -->
+                    <li class="nav-item">
+                        <a class="nav-link" th:classappend="${page=='orders'} ? 'active'" th:href="@{/orders}">
+                            Orders
+                        </a>
+                    </li>
+
+                    <!-- Clients -->
+                    <li class="nav-item">
+                        <a class="nav-link" th:classappend="${page=='clients'} ? 'active'" th:href="@{/clients}">
+                            Clients
+                        </a>
+                    </li>
+
+                    <!-- Vendors -->
+                    <li class="nav-item">
+                        <a class="nav-link" th:classappend="${page=='vendors'} ? 'active'" th:href="@{/vendors}">
+                            Vendors
+                        </a>
+                    </li>
+
+                </ul>
+            </div>
+        </div>
+    </nav>
+</div>
+
+</body>
+</html>
