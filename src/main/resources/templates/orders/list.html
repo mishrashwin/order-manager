@@ -65,18 +65,15 @@
                     <td class="text-end"
                         th:text="${'₹' + #numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 2, 'POINT')}"></td>
 
+                    <!-- ✅ Dynamic Status -->
                     <td>
-                        <span th:switch="${order.status}">
-                            <span th:case="'PENDING'" class="badge bg-secondary">Pending</span>
-                            <span th:case="'PROCESSING'" class="badge bg-info text-dark">Processing</span>
-                            <span th:case="'SHIPPED'" class="badge bg-primary">Shipped</span>
-                            <span th:case="'DELIVERED'" class="badge bg-success">Delivered</span>
-                            <span th:case="'CANCELLED'" class="badge bg-danger">Cancelled</span>
-                            <span th:case="*" class="badge bg-secondary" th:text="${order.status}"></span>
-                        </span>
+        <span th:class="'badge bg-' + ${order.status.badgeColor}"
+              th:text="${order.status.displayName}">
+        </span>
                     </td>
-                    <td th:text="${order.orderDate}"></td>
-                    <td th:text="${order.deliveryDate != null ? order.deliveryDate : '-'}"></td>
+
+                    <td th:text="${#temporals.format(order.orderDate, 'dd MMM yyyy')}"></td>
+                    <td th:text="${order.deliveryDate != null ? #temporals.format(order.deliveryDate, 'dd MMM yyyy') : '-'}"></td>
                     <td class="text-end">
                         <a th:href="@{|/orders/edit/${order.id}|}" class="btn btn-sm btn-outline-primary me-1">Edit</a>
                         <a th:href="@{|/orders/delete/${order.id}|}"

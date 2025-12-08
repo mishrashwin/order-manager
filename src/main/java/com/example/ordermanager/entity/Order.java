@@ -23,7 +23,9 @@ public class Order {
     private String productName;
     private Integer quantity;
     private Double totalAmount;
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private OrderStatus status = OrderStatus.CREATED;
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private LocalDate orderDate;
     @DateTimeFormat(pattern = "yyyy-MM-dd")
@@ -32,7 +34,7 @@ public class Order {
     // Constructors
     public Order() {}
 
-    public Order(String customerName, String productName, Integer quantity, Double totalAmount, String status, LocalDate orderDate, LocalDate deliveryDate) {
+    public Order(String customerName, String productName, Integer quantity, Double totalAmount, OrderStatus status, LocalDate orderDate, LocalDate deliveryDate) {
         this.customerName = customerName;
         this.productName = productName;
         this.quantity = quantity;

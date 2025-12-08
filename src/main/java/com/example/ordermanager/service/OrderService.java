@@ -1,12 +1,15 @@
 package com.example.ordermanager.service;
 
 import com.example.ordermanager.entity.Order;
+import com.example.ordermanager.entity.OrderStatus;
 import com.example.ordermanager.exception.OrderNotFoundException;
 import com.example.ordermanager.repository.OrderRepository;
 import com.example.ordermanager.utils.Helper;
 import org.springframework.stereotype.Service;
 
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -71,4 +74,18 @@ public class OrderService {
     public Order getOrderById(Long id) {
         return orderRepository.findById(id).orElse(null);
     }
+
+    public Map<OrderStatus, Long> getOrdersGroupedByStatus() {
+        Map<OrderStatus, Long> map = new EnumMap<>(OrderStatus.class);
+        List<Order> allOrders = orderRepository.findAll();
+
+        for (OrderStatus status : OrderStatus.values()) {
+            long count = allOrders.stream()
+                    .filter(order -> order.getStatus() == status)
+                    .count();
+            map.put(status, count);
+        }
+        return map;
+    }
+
 }

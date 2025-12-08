@@ -1,0 +1,6 @@
+body.authenticated {
+    background: url('../images/dashboard-bg.jpg') no-repeat center center fixed;
+    background-size: cover;
+    background-attachment: fixed;
+    font-family: "Poppins", sans-serif;
+}

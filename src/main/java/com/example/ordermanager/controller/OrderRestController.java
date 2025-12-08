@@ -1,6 +1,7 @@
 package com.example.ordermanager.controller;
 
 import com.example.ordermanager.entity.Order;
+import com.example.ordermanager.entity.OrderStatus;
 import com.example.ordermanager.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -10,7 +11,11 @@ import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -71,9 +76,17 @@ public class OrderRestController {
         return ResponseEntity.noContent().build(); // HTTP 204
     }
 
-
-    @GetMapping("/ping")
-    public String ping() {
-        return "Order Manager running!";
+    @GetMapping("/api/order-statuses")
+    @ResponseBody
+    public List<Map<String, String>> getOrderStatuses() {
+        return Arrays.stream(OrderStatus.values())
+                .map(status -> {
+                    Map<String, String> map = new HashMap<>();
+                    map.put("name", status.name());
+                    map.put("displayName", status.getDisplayName());
+                    map.put("isFinal", String.valueOf(status.isFinal()));
+                    return map;
+                })
+                .collect(Collectors.toList());
     }
 }
