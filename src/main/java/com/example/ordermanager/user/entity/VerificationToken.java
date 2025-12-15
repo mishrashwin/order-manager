@@ -10,15 +10,15 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class VerificationToken {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    private String token;
+  private String token;
 
-    @OneToOne
-    @JoinColumn(nullable = false, name = "user_id")
-    private User user;
+  @OneToOne
+  @JoinColumn(nullable = false, name = "user_id")
+  private User user;
 
-    private LocalDateTime expiryDate;
+  private LocalDateTime expiryDate;
 }

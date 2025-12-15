@@ -19,63 +19,54 @@ import java.io.IOException;
 @Configuration
 public class SecurityConfig {
 
-    private final CustomUserDetailsService customUserDetailsService;
+  private final CustomUserDetailsService customUserDetailsService;
 
-    public SecurityConfig(CustomUserDetailsService customUserDetailsService) {
-        this.customUserDetailsService = customUserDetailsService;
-    }
+  public SecurityConfig(CustomUserDetailsService customUserDetailsService) {
+    this.customUserDetailsService = customUserDetailsService;
+  }
 
-    @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+  @Bean
+  public BCryptPasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder();
+  }
 
-    @Bean
-    public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(customUserDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
-        return authProvider;
-    }
+  @Bean
+  public DaoAuthenticationProvider authenticationProvider() {
+    DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+    authProvider.setUserDetailsService(customUserDetailsService);
+    authProvider.setPasswordEncoder(passwordEncoder());
+    return authProvider;
+  }
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())
-                .authenticationProvider(authenticationProvider())
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login", "/signup", "/verify", "/resend-verification", "/css/**", "/js/**", "/images/**").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .formLogin(form -> form
-                        .loginPage("/login")
-                        .failureHandler(authenticationFailureHandler())
-                        .defaultSuccessUrl("/dashboard", true)
-                        .permitAll()
-                )
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessUrl("/login?logout")
-                        .permitAll()
-                );
+  @Bean
+  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    http.csrf(csrf -> csrf.disable()).authenticationProvider(authenticationProvider())
+        .authorizeHttpRequests(
+            auth -> auth.requestMatchers("/login", "/signup", "/verify", "/resend-verification",
+                "/css/**", "/js/**", "/images/**").permitAll().anyRequest().authenticated())
+        .formLogin(form -> form.loginPage("/login").failureHandler(authenticationFailureHandler())
+            .defaultSuccessUrl("/dashboard", true).permitAll())
+        .logout(
+            logout -> logout.logoutUrl("/logout").logoutSuccessUrl("/login?logout").permitAll());
 
-        return http.build();
-    }
+    return http.build();
+  }
 
 
-    @Bean
-    public AuthenticationFailureHandler authenticationFailureHandler() {
-        return new SimpleUrlAuthenticationFailureHandler() {
-            @Override
-            public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
-                                                AuthenticationException exception) throws IOException {
-                String username = request.getParameter("username");
-                String redirectUrl = "/login?error";
-                if (username != null && !username.isEmpty()) {
-                    redirectUrl += "&username=" + java.net.URLEncoder.encode(username, java.nio.charset.StandardCharsets.UTF_8);
-                }
-                getRedirectStrategy().sendRedirect(request, response, redirectUrl);
-            }
-        };
-    }
+  @Bean
+  public AuthenticationFailureHandler authenticationFailureHandler() {
+    return new SimpleUrlAuthenticationFailureHandler() {
+      @Override
+      public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
+          AuthenticationException exception) throws IOException {
+        String username = request.getParameter("username");
+        String redirectUrl = "/login?error";
+        if (username != null && !username.isEmpty()) {
+          redirectUrl += "&username="
+              + java.net.URLEncoder.encode(username, java.nio.charset.StandardCharsets.UTF_8);
+        }
+        getRedirectStrategy().sendRedirect(request, response, redirectUrl);
+      }
+    };
+  }
 }

@@ -13,18 +13,18 @@ import java.util.Map;
 @Controller
 public class DashboardController {
 
-    private final OrderService orderService;
+  private final OrderService orderService;
 
-    public DashboardController(OrderService orderService) {
-        this.orderService = orderService;
-    }
+  public DashboardController(OrderService orderService) {
+    this.orderService = orderService;
+  }
 
-    @GetMapping("/dashboard")
-    public String dashboard(Model model) {
-        List<OrderStatus> statuses = Arrays.asList(OrderStatus.values());
-        model.addAttribute("statuses", statuses);
-        model.addAttribute("orders", orderService.getAllOrders());
-        return "dashboard";
-    }
+  @GetMapping("/dashboard")
+  public String dashboard(Model model) {
+    List<OrderStatus> statuses = Arrays.asList(OrderStatus.values());
+    model.addAttribute("statuses", statuses);
+    model.addAttribute("orders", orderService.getAllOrders());
+    return "dashboard";
+  }
 
 }

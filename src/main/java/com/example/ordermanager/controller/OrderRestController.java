@@ -22,71 +22,66 @@ import java.util.stream.Collectors;
 @Tag(name = "Order Management", description = "Endpoints for managing customer orders")
 public class OrderRestController {
 
-    private final OrderService orderService;
+  private final OrderService orderService;
 
-    public OrderRestController(OrderService orderService) {
-        this.orderService = orderService;
-    }
+  public OrderRestController(OrderService orderService) {
+    this.orderService = orderService;
+  }
 
-    @Operation(summary = "Get all Orders", description = "Retrieve a list of all customer orders in the system")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully retrieved list of orders")
-    })
-    @GetMapping
-    public List<Order> getAllOrders() {
-        return orderService.getAllOrders();
-    }
+  @Operation(summary = "Get all Orders",
+      description = "Retrieve a list of all customer orders in the system")
+  @ApiResponses(value = {
+      @ApiResponse(responseCode = "200", description = "Successfully retrieved list of orders")})
+  @GetMapping
+  public List<Order> getAllOrders() {
+    return orderService.getAllOrders();
+  }
 
-    @Operation(summary = "Create a new order", description = "Add a new order to the system")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Order created successfully")
-    })
-    @PostMapping
-    public Order createOrder(
-            @Parameter(description = "Order details to be created", required = true)
-            @RequestBody Order order) {
-        return orderService.createOrder(order);
-    }
+  @Operation(summary = "Create a new order", description = "Add a new order to the system")
+  @ApiResponses(
+      value = {@ApiResponse(responseCode = "201", description = "Order created successfully")})
+  @PostMapping
+  public Order createOrder(@Parameter(description = "Order details to be created", required = true)
+  @RequestBody Order order) {
+    return orderService.createOrder(order);
+  }
 
-    @Operation(summary = "Partially update an order", description = "Update only specific fields of an existing order")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Order updated successfully"),
-            @ApiResponse(responseCode = "404", description = "Order not found")
-    })
-    @PatchMapping("/{id}")
-    public Order patchOrder(
-            @Parameter(description = "ID of the order to be updated", required = true)
-            @PathVariable Long id,
-            @Parameter(description = "Partial order fields to update", required = true)
-            @RequestBody Order partialOrder) {
-        return orderService.patchOrder(id, partialOrder);
-    }
+  @Operation(summary = "Partially update an order",
+      description = "Update only specific fields of an existing order")
+  @ApiResponses(
+      value = {@ApiResponse(responseCode = "200", description = "Order updated successfully"),
+          @ApiResponse(responseCode = "404", description = "Order not found")})
+  @PatchMapping("/{id}")
+  public Order patchOrder(
+      @Parameter(description = "ID of the order to be updated", required = true)
+      @PathVariable Long id,
+      @Parameter(description = "Partial order fields to update", required = true)
+      @RequestBody Order partialOrder) {
+    return orderService.patchOrder(id, partialOrder);
+  }
 
 
-    @Operation(summary = "Delete an order", description = "Remove an order by its ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Order deleted successfully"),
-            @ApiResponse(responseCode = "404", description = "Order not found")
-    })
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteOrder(
-            @Parameter(description = "ID of the order to delete", required = true)
-            @PathVariable Long id) {
-        orderService.deleteOrder(id);
-        return ResponseEntity.noContent().build(); // HTTP 204
-    }
+  @Operation(summary = "Delete an order", description = "Remove an order by its ID")
+  @ApiResponses(
+      value = {@ApiResponse(responseCode = "204", description = "Order deleted successfully"),
+          @ApiResponse(responseCode = "404", description = "Order not found")})
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> deleteOrder(
+      @Parameter(description = "ID of the order to delete", required = true)
+      @PathVariable Long id) {
+    orderService.deleteOrder(id);
+    return ResponseEntity.noContent().build(); // HTTP 204
+  }
 
-    @GetMapping("/api/order-statuses")
-    @ResponseBody
-    public List<Map<String, String>> getOrderStatuses() {
-        return Arrays.stream(OrderStatus.values())
-                .map(status -> {
-                    Map<String, String> map = new HashMap<>();
-                    map.put("name", status.name());
-                    map.put("displayName", status.getDisplayName());
-                    map.put("isFinal", String.valueOf(status.isFinal()));
-                    return map;
-                })
-                .collect(Collectors.toList());
-    }
+  @GetMapping("/api/order-statuses")
+  @ResponseBody
+  public List<Map<String, String>> getOrderStatuses() {
+    return Arrays.stream(OrderStatus.values()).map(status -> {
+      Map<String, String> map = new HashMap<>();
+      map.put("name", status.name());
+      map.put("displayName", status.getDisplayName());
+      map.put("isFinal", String.valueOf(status.isFinal()));
+      return map;
+    }).collect(Collectors.toList());
+  }
 }

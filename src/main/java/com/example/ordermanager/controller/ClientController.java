@@ -10,39 +10,39 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/clients")
 public class ClientController {
 
-    private final ClientService clientService;
+  private final ClientService clientService;
 
-    public ClientController(ClientService clientService) {
-        this.clientService = clientService;
-    }
+  public ClientController(ClientService clientService) {
+    this.clientService = clientService;
+  }
 
-    @GetMapping
-    public String listClients(Model model) {
-        model.addAttribute("clients", clientService.getAllClients());
-        return "clients/list";
-    }
+  @GetMapping
+  public String listClients(Model model) {
+    model.addAttribute("clients", clientService.getAllClients());
+    return "clients/list";
+  }
 
-    @GetMapping("/new")
-    public String newClientForm(Model model) {
-        model.addAttribute("client", new Client());
-        return "clients/form";
-    }
+  @GetMapping("/new")
+  public String newClientForm(Model model) {
+    model.addAttribute("client", new Client());
+    return "clients/form";
+  }
 
-    @PostMapping
-    public String saveClient(@ModelAttribute Client client) {
-        clientService.saveClient(client);
-        return "redirect:/clients";
-    }
+  @PostMapping
+  public String saveClient(@ModelAttribute Client client) {
+    clientService.saveClient(client);
+    return "redirect:/clients";
+  }
 
-    @GetMapping("/edit/{id}")
-    public String editClient(@PathVariable Long id, Model model) {
-        model.addAttribute("client", clientService.getClientById(id));
-        return "clients/form";
-    }
+  @GetMapping("/edit/{id}")
+  public String editClient(@PathVariable Long id, Model model) {
+    model.addAttribute("client", clientService.getClientById(id));
+    return "clients/form";
+  }
 
-    @GetMapping("/delete/{id}")
-    public String deleteClient(@PathVariable Long id) {
-        clientService.deleteClient(id);
-        return "redirect:/clients";
-    }
+  @GetMapping("/delete/{id}")
+  public String deleteClient(@PathVariable Long id) {
+    clientService.deleteClient(id);
+    return "redirect:/clients";
+  }
 }
