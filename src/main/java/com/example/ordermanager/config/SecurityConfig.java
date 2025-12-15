@@ -1,12 +1,19 @@
 package com.example.ordermanager.config;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
+
+import java.io.IOException;
 
 
 @Configuration
@@ -37,11 +44,12 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authenticationProvider(authenticationProvider())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login", "/signup", "/css/**", "/js/**", "/images/**").permitAll()
+                        .requestMatchers("/login", "/signup", "/verify", "/resend-verification", "/css/**", "/js/**", "/images/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
                         .loginPage("/login")
+                        .failureHandler(authenticationFailureHandler())
                         .defaultSuccessUrl("/dashboard", true)
                         .permitAll()
                 )
@@ -52,5 +60,22 @@ public class SecurityConfig {
                 );
 
         return http.build();
+    }
+
+
+    @Bean
+    public AuthenticationFailureHandler authenticationFailureHandler() {
+        return new SimpleUrlAuthenticationFailureHandler() {
+            @Override
+            public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
+                                                AuthenticationException exception) throws IOException {
+                String username = request.getParameter("username");
+                String redirectUrl = "/login?error";
+                if (username != null && !username.isEmpty()) {
+                    redirectUrl += "&username=" + java.net.URLEncoder.encode(username, java.nio.charset.StandardCharsets.UTF_8);
+                }
+                getRedirectStrategy().sendRedirect(request, response, redirectUrl);
+            }
+        };
     }
 }

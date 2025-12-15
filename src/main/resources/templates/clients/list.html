@@ -19,7 +19,7 @@
     <h2 class="text-center mt-3">👥 Client Management</h2>
 
     <!-- Navbar -->
-    <div th:replace="fragments/navbar :: navbar"></div>
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
 
     <!-- Content -->
     <div class="mt-4">
@@ -73,7 +73,7 @@
     </div>
 </div>
 
-<div th:replace="fragments/footer :: footer"></div>
-<div th:replace="fragments/table-utils :: tableUtils"></div>
+<div th:replace="~{fragments/footer :: footer}"></div>
+<div th:replace=""~{fragments/table-utils :: table-utils}""></div>
 </body>
 </html>
