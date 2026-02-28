@@ -31,6 +31,10 @@ public class Order {
   @DateTimeFormat(pattern = "yyyy-MM-dd")
   private LocalDate deliveryDate;
 
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "company_id", nullable = false)
+  private Company company;
+
   // Constructors
   public Order() {}
 

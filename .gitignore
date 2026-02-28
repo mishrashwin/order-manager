@@ -50,7 +50,8 @@ dist/
 build/
 
 # ==============================
-# Environment Config (optional)
+# Environment Config
 # ==============================
-#.env
-#*.env
+.env
+.env.local
+application-local.properties

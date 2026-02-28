@@ -1,5 +1,6 @@
 package com.example.ordermanager.user.entity;
 
+import com.example.ordermanager.entity.Company;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -46,4 +47,8 @@ public class User {
 
   @Column(nullable = false)
   private boolean enabled = false;
+
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "company_id", nullable = false)
+  private Company company;
 }

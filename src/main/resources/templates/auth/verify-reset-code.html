@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Verify Reset Code | Order Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: url('/images/login.jpg') no-repeat center center fixed;
+            background-size: cover;
+            height: 100vh;
+            margin: 0;
+            font-family: "Poppins", sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 6%;
+        }
+
+        .verify-container {
+            width: 100%;
+            max-width: 380px;
+            background-color: rgba(255, 255, 255, 0.92);
+            border-radius: 16px;
+            padding: 2rem 2.2rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+            backdrop-filter: blur(8px);
+        }
+
+        .brand-section {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .brand-section h1 {
+            font-size: 2rem;
+            color: #007bff;
+            font-weight: 700;
+        }
+
+        .brand-section p {
+            color: #444;
+            font-size: 1rem;
+            margin-bottom: 0;
+        }
+
+        h3 {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.8rem;
+            text-align: center;
+            font-size: 1.3rem;
+        }
+
+        .form-text-muted {
+            color: #6c757d;
+            font-size: 0.9rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            line-height: 1.4;
+        }
+
+        .form-control {
+            border-radius: 10px;
+            padding: 0.75rem;
+            font-size: 1rem;
+            letter-spacing: 0.2em;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .btn-primary-custom {
+            width: 100%;
+            background-color: #28a745;
+            border: none;
+            color: white;
+            font-weight: 600;
+            border-radius: 10px;
+            padding: 0.75rem;
+            font-size: 1.1rem;
+            transition: 0.3s;
+        }
+
+        .btn-primary-custom:hover {
+            background-color: #218838;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 1.2rem;
+            font-size: 0.95rem;
+            color: #1877f2;
+            text-decoration: none;
+            transition: 0.2s;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .timer {
+            text-align: center;
+            color: #ff6b6b;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                justify-content: center;
+                padding: 0;
+            }
+
+            .verify-container {
+                max-width: 90%;
+                margin: auto;
+                padding: 1.8rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="verify-container">
+    <div class="brand-section">
+        <h1>Order Manager</h1>
+        <p>Manage your orders, clients, and vendors — all in one place.</p>
+    </div>
+
+    <h3>Verify Your Code</h3>
+
+    <!-- 🟢 Flash success message -->
+    <div th:if="${message}" class="alert alert-success text-center py-2" role="alert"
+         style="font-size: 0.95rem; border-radius: 8px;" th:text="${message}"></div>
+
+    <!-- 🔴 Flash error message -->
+    <div th:if="${error}" class="alert alert-danger text-center py-2" role="alert"
+         style="font-size: 0.95rem; border-radius: 8px;" th:text="${error}"></div>
+
+    <p class="form-text-muted">
+        Enter the 6-digit verification code sent to your registered email. The code will expire in 15 minutes.
+    </p>
+
+    <!-- Timer -->
+    <div class="timer">
+        ⏱️ Code expires in: <span id="timer">15:00</span>
+    </div>
+
+    <!-- Form -->
+    <form th:action="@{/verify-reset-code}" method="post">
+        <div class="mb-3">
+            <input type="text"
+                   class="form-control"
+                   name="code"
+                   placeholder="000000"
+                   maxlength="6"
+                   pattern="[0-9]{6}"
+                   required
+                   autofocus>
+            <small class="form-text text-muted d-block mt-2">Enter 6 digits only</small>
+        </div>
+
+        <button type="submit" class="btn-primary-custom">Verify Code</button>
+    </form>
+
+    <a th:href="@{/forgot-password}" class="back-link">Didn't receive code? Request again</a>
+    <a th:href="@{/login}" class="back-link">Back to Login</a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Auto-hide alerts after 4 seconds -->
+<script>
+    setTimeout(() => {
+        document.querySelectorAll('.alert').forEach(alert => {
+            alert.style.transition = "opacity 0.5s ease";
+            alert.style.opacity = "0";
+            setTimeout(() => alert.style.display = "none", 500);
+        });
+    }, 4000);
+
+    // Timer countdown
+    function startTimer() {
+        let timeLeft = 15 * 60; // 15 minutes in seconds
+        const timerElement = document.getElementById('timer');
+
+        const interval = setInterval(() => {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerElement.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+            if (timeLeft <= 0) {
+                clearInterval(interval);
+                timerElement.parentElement.style.color = '#dc3545';
+                document.querySelector('button[type="submit"]').disabled = true;
+                document.querySelector('.form-control').disabled = true;
+            }
+
+            timeLeft--;
+        }, 1000);
+    }
+
+    document.addEventListener('DOMContentLoaded', startTimer);
+</script>
+</body>
+</html>
+

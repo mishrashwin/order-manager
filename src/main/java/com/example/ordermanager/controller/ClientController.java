@@ -2,6 +2,8 @@ package com.example.ordermanager.controller;
 
 import com.example.ordermanager.entity.Client;
 import com.example.ordermanager.service.ClientService;
+import com.example.ordermanager.service.CompanyService;
+import com.example.ordermanager.utils.SecurityContextHelper;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -11,14 +13,20 @@ import org.springframework.web.bind.annotation.*;
 public class ClientController {
 
   private final ClientService clientService;
+  private final CompanyService companyService;
+  private final SecurityContextHelper securityContextHelper;
 
-  public ClientController(ClientService clientService) {
+  public ClientController(ClientService clientService, CompanyService companyService,
+      SecurityContextHelper securityContextHelper) {
     this.clientService = clientService;
+    this.companyService = companyService;
+    this.securityContextHelper = securityContextHelper;
   }
 
   @GetMapping
   public String listClients(Model model) {
-    model.addAttribute("clients", clientService.getAllClients());
+    Long companyId = securityContextHelper.getCompanyIdFromContext();
+    model.addAttribute("clients", clientService.getClientsByCompanyId(companyId));
     return "clients/list";
   }
 
@@ -29,9 +37,20 @@ public class ClientController {
   }
 
   @PostMapping
-  public String saveClient(@ModelAttribute Client client) {
-    clientService.saveClient(client);
-    return "redirect:/clients";
+  public String saveClient(@ModelAttribute Client client, Model model) {
+    try {
+      Long companyId = securityContextHelper.getCompanyIdFromContext();
+      clientService.saveClientWithCompany(client, companyId);
+      return "redirect:/clients";
+    } catch (IllegalStateException e) {
+      model.addAttribute("error", "You must be logged in to create a client");
+      model.addAttribute("client", client);
+      return "clients/form";
+    } catch (Exception e) {
+      model.addAttribute("error", "Error saving client: " + e.getMessage());
+      model.addAttribute("client", client);
+      return "clients/form";
+    }
   }
 
   @GetMapping("/edit/{id}")

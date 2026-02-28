@@ -3,7 +3,9 @@ package com.example.ordermanager.controller;
 import com.example.ordermanager.entity.Order;
 import com.example.ordermanager.entity.OrderStatus;
 import com.example.ordermanager.service.ClientService;
+import com.example.ordermanager.service.CompanyService;
 import com.example.ordermanager.service.OrderService;
+import com.example.ordermanager.utils.SecurityContextHelper;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -18,36 +20,60 @@ public class OrderController {
 
   private final OrderService orderService;
   private final ClientService clientService;
+  private final CompanyService companyService;
+  private final SecurityContextHelper securityContextHelper;
 
-  public OrderController(OrderService orderService, ClientService clientService) {
+  public OrderController(OrderService orderService, ClientService clientService,
+      CompanyService companyService, SecurityContextHelper securityContextHelper) {
     this.orderService = orderService;
     this.clientService = clientService;
+    this.companyService = companyService;
+    this.securityContextHelper = securityContextHelper;
   }
 
   // ✅ 1. List all orders
   @GetMapping
   public String listOrders(Model model) {
-    model.addAttribute("orders", orderService.getAllOrders());
+    Long companyId = securityContextHelper.getCompanyIdFromContext();
+    model.addAttribute("orders", orderService.getOrdersByCompanyId(companyId));
     return "orders/list";
   }
 
   // ✅ 2. Show form to create a new order
   @GetMapping("/new")
   public String showCreateForm(Model model) {
+    Long companyId = securityContextHelper.getCompanyIdFromContext();
     model.addAttribute("order", new Order());
-    model.addAttribute("clients", clientService.getAllClients());
+    model.addAttribute("clients", clientService.getClientsByCompanyId(companyId));
     model.addAttribute("statuses", Arrays.asList(OrderStatus.values()));
     return "orders/form";
   }
 
   // ✅ 3. Handle new order submission
   @PostMapping
-  public String saveOrder(@ModelAttribute("order") Order order) {
-    if (order.getStatus() == null) {
-      order.setStatus(OrderStatus.CREATED);
+  public String saveOrder(@ModelAttribute("order") Order order, Model model) {
+    try {
+      if (order.getStatus() == null) {
+        order.setStatus(OrderStatus.CREATED);
+      }
+      Long companyId = securityContextHelper.getCompanyIdFromContext();
+      orderService.createOrderWithCompany(order, companyId);
+      return "redirect:/orders";
+    } catch (IllegalStateException e) {
+      model.addAttribute("error", "You must be logged in to create an order");
+      model.addAttribute("order", order);
+      Long companyId = securityContextHelper.getCompanyIdFromContext();
+      model.addAttribute("clients", clientService.getClientsByCompanyId(companyId));
+      model.addAttribute("statuses", Arrays.asList(OrderStatus.values()));
+      return "orders/form";
+    } catch (Exception e) {
+      model.addAttribute("error", "Error saving order: " + e.getMessage());
+      model.addAttribute("order", order);
+      Long companyId = securityContextHelper.getCompanyIdFromContext();
+      model.addAttribute("clients", clientService.getClientsByCompanyId(companyId));
+      model.addAttribute("statuses", Arrays.asList(OrderStatus.values()));
+      return "orders/form";
     }
-    orderService.createOrder(order);
-    return "redirect:/orders";
   }
 
   // ✅ 4. Show edit form
@@ -57,8 +83,9 @@ public class OrderController {
     if (order == null) {
       return "redirect:/orders";
     }
+    Long companyId = securityContextHelper.getCompanyIdFromContext();
     model.addAttribute("order", order);
-    model.addAttribute("clients", clientService.getAllClients());
+    model.addAttribute("clients", clientService.getClientsByCompanyId(companyId));
     model.addAttribute("statuses", Arrays.asList(OrderStatus.values()));
     return "orders/form";
   }
