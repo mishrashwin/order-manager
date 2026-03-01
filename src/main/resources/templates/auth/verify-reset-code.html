@@ -150,6 +150,7 @@
 
     <!-- Form -->
     <form th:action="@{/verify-reset-code}" method="post">
+        <input type="hidden" name="email" th:value="${email}">
         <div class="mb-3">
             <input type="text"
                    class="form-control"

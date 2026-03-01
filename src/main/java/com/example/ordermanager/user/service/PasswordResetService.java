@@ -1,15 +1,18 @@
 package com.example.ordermanager.user.service;
 
 import com.example.ordermanager.exception.EmailAlreadySentException;
+import com.example.ordermanager.exception.TooManyAttemptsException;
 import com.example.ordermanager.user.entity.PasswordResetToken;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.repository.PasswordResetTokenRepository;
 import com.example.ordermanager.user.repository.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.Random;
 
 @Service
 public class PasswordResetService {
@@ -51,12 +54,13 @@ public class PasswordResetService {
         existingToken.setCode(generateSixDigitCode());
         existingToken.setExpiryDate(LocalDateTime.now().plusMinutes(15));
         existingToken.setVerified(false);
+        existingToken.setFailedAttempts(0);
         tokenRepository.save(existingToken);
       }
     } else {
       // Create new token
       newToken = new PasswordResetToken(null, generateSixDigitCode(), user,
-          LocalDateTime.now().plusMinutes(15), false, LocalDateTime.now());
+          LocalDateTime.now().plusMinutes(15), false, LocalDateTime.now(), 0);
       tokenRepository.save(newToken);
     }
 
@@ -67,47 +71,70 @@ public class PasswordResetService {
   }
 
   /**
-   * Verify the 6-digit code
+   * Verify the 6-digit code against the requesting user's email
    *
+   * @param email The email address of the user requesting the reset
    * @param code The 6-digit code entered by user
    * @return User if code is valid and not expired, null otherwise
    */
-  public User verifyPasswordResetCode(String code) {
-    Optional<PasswordResetToken> optToken = tokenRepository.findByCode(code);
+  public User verifyPasswordResetCode(String email, String code) {
+    Optional<PasswordResetToken> optToken = tokenRepository.findByUserEmail(email);
 
     if (optToken.isEmpty()) {
       return null;
     }
 
     PasswordResetToken token = optToken.get();
+
+    // Check if max attempts exceeded
+    if (token.getFailedAttempts() >= PasswordResetToken.MAX_ATTEMPTS) {
+      throw new TooManyAttemptsException(
+          "Too many failed attempts. Please request a new reset code.");
+    }
 
     // Check if code is expired
     if (token.getExpiryDate().isBefore(LocalDateTime.now())) {
       return null;
     }
 
-    // Mark as verified
+    // Check if code matches (constant-time comparison to prevent timing attacks)
+    if (!MessageDigest.isEqual(token.getCode().getBytes(StandardCharsets.UTF_8),
+        code.getBytes(StandardCharsets.UTF_8))) {
+      token.setFailedAttempts(token.getFailedAttempts() + 1);
+      tokenRepository.save(token);
+      return null;
+    }
+
+    // Mark as verified and reset failed attempts
     token.setVerified(true);
+    token.setFailedAttempts(0);
     tokenRepository.save(token);
 
     return token.getUser();
   }
 
   /**
-   * Reset password with verified code
+   * Reset password with verified code scoped to the requesting user's email
    *
+   * @param email The email address of the user resetting the password
    * @param code The verified 6-digit code
    * @param newPassword New password to set
    * @return true if password reset successfully
    */
-  public boolean resetPasswordWithCode(String code, String newPassword) {
-    Optional<PasswordResetToken> optToken = tokenRepository.findByCode(code);
+  public boolean resetPasswordWithCode(String email, String code, String newPassword) {
+    Optional<PasswordResetToken> optToken = tokenRepository.findByUserEmail(email);
 
     if (optToken.isEmpty()) {
       return false;
     }
 
     PasswordResetToken token = optToken.get();
+
+    // Check if code matches (constant-time comparison to prevent timing attacks)
+    if (!MessageDigest.isEqual(token.getCode().getBytes(StandardCharsets.UTF_8),
+        code.getBytes(StandardCharsets.UTF_8))) {
+      return false;
+    }
 
     // Check if code is expired or not verified
     if (token.getExpiryDate().isBefore(LocalDateTime.now()) || !token.isVerified()) {
@@ -130,7 +157,7 @@ public class PasswordResetService {
    * @return Random 6-digit code as string
    */
   private String generateSixDigitCode() {
-    Random random = new Random();
+    SecureRandom random = new SecureRandom();
     int code = 100000 + random.nextInt(900000);
     return String.valueOf(code);
   }
