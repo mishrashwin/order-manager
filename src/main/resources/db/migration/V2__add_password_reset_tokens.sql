@@ -7,5 +7,6 @@ CREATE TABLE password_reset_tokens (
     verified BOOLEAN DEFAULT FALSE,
     failed_attempts INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE (user_id)
 );
