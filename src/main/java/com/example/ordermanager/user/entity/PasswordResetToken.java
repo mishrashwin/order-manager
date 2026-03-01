@@ -26,5 +26,9 @@ public class PasswordResetToken {
   private boolean verified = false; // Flag to track if code has been verified
 
   private LocalDateTime createdAt = LocalDateTime.now();
+
+  private int failedAttempts = 0;
+
+  public static final int MAX_ATTEMPTS = 5;
 }
 

@@ -83,9 +83,7 @@ public class UserService {
    * @return List of users in company
    */
   public List<User> getUsersByCompany(Long companyId) {
-    return userRepository.findAll().stream()
-        .filter(user -> user.getCompany() != null && user.getCompany().getId().equals(companyId))
-        .toList();
+    return userRepository.findByCompanyId(companyId);
   }
 
   /**
@@ -114,10 +112,7 @@ public class UserService {
 
     // Prevent deleting the last admin in the company
     if ("ADMIN".equals(user.getRole())) {
-      long adminCount =
-          getUsersByCompany(companyId).stream().filter(u -> "ADMIN".equals(u.getRole())).count();
-
-      // Only prevent if this is the LAST and ONLY admin
+      long adminCount = userRepository.countByCompanyIdAndRole(companyId, "ADMIN");
       if (adminCount <= 1) {
         throw new IllegalArgumentException(
             "Cannot delete the last admin in the company. At least one admin must exist.");
@@ -141,8 +136,7 @@ public class UserService {
 
     // If promoting to ADMIN, check max 2 admins rule
     if ("ADMIN".equals(role) && !"ADMIN".equals(currentRole)) {
-      long adminCount =
-          getUsersByCompany(companyId).stream().filter(u -> "ADMIN".equals(u.getRole())).count();
+      long adminCount = userRepository.countByCompanyIdAndRole(companyId, "ADMIN");
 
       if (adminCount >= 2) {
         throw new IllegalArgumentException(
@@ -152,8 +146,7 @@ public class UserService {
 
     // Prevent demoting the last admin to another role
     if ("ADMIN".equals(currentRole) && !role.equals("ADMIN")) {
-      long adminCount =
-          getUsersByCompany(companyId).stream().filter(u -> "ADMIN".equals(u.getRole())).count();
+      long adminCount = userRepository.countByCompanyIdAndRole(companyId, "ADMIN");
 
       if (adminCount <= 1) {
         throw new IllegalArgumentException(
@@ -179,8 +172,7 @@ public class UserService {
       return false;
     }
 
-    long adminCount =
-        getUsersByCompany(companyId).stream().filter(u -> "ADMIN".equals(u.getRole())).count();
+    long adminCount = userRepository.countByCompanyIdAndRole(companyId, "ADMIN");
 
     return adminCount <= 1;
   }
@@ -192,7 +184,7 @@ public class UserService {
    * @return Number of admins
    */
   public long getAdminCountInCompany(Long companyId) {
-    return getUsersByCompany(companyId).stream().filter(u -> "ADMIN".equals(u.getRole())).count();
+    return userRepository.countByCompanyIdAndRole(companyId, "ADMIN");
   }
 
   public boolean isCurrentUser(Long userId, String currentUsername) {

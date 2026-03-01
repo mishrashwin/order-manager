@@ -1,10 +1,13 @@
 package com.example.ordermanager.user.controller;
 
 import com.example.ordermanager.exception.EmailAlreadySentException;
+import com.example.ordermanager.exception.TooManyAttemptsException;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.service.PasswordResetService;
 import com.example.ordermanager.user.service.RegistrationService;
 import com.example.ordermanager.user.service.UserService;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -135,7 +138,7 @@ public class AuthController {
       passwordResetService.sendPasswordResetCode(user);
       redirectAttributes.addFlashAttribute("message",
           "A 6-digit verification code has been sent to your registered email.");
-      return "redirect:/verify-reset-code";
+      return "redirect:/verify-reset-code?email=" + encodeEmail(user.getEmail());
     } catch (EmailAlreadySentException e) {
       redirectAttributes.addFlashAttribute("error", e.getMessage());
       return "redirect:/forgot-password";
@@ -150,57 +153,63 @@ public class AuthController {
    * Forgot Password - Step 2: Verify 6-digit code
    */
   @GetMapping("/verify-reset-code")
-  public String verifyResetCodePage() {
+  public String verifyResetCodePage(@RequestParam(value = "email", required = false) String email,
+      Model model) {
+    model.addAttribute("email", email);
     return "auth/verify-reset-code";
   }
 
   @PostMapping("/verify-reset-code")
   public String verifyResetCode(@RequestParam("code") String code,
-      RedirectAttributes redirectAttributes) {
-    User user = passwordResetService.verifyPasswordResetCode(code);
+      @RequestParam("email") String email, RedirectAttributes redirectAttributes) {
+    User user = passwordResetService.verifyPasswordResetCode(code, email);
 
     if (user == null) {
       redirectAttributes.addFlashAttribute("error",
           "Invalid or expired code. Please request a new password reset.");
-      return "redirect:/verify-reset-code";
+      return "redirect:/verify-reset-code?email=" + encodeEmail(email);
     }
 
     redirectAttributes.addFlashAttribute("message", "Code verified successfully!");
-    return "redirect:/reset-password?code=" + code;
+    return "redirect:/reset-password?code=" + code + "&email=" + encodeEmail(email);
   }
 
   /**
    * Forgot Password - Step 3: Set new password
    */
   @GetMapping("/reset-password")
-  public String resetPasswordPage(@RequestParam("code") String code, Model model) {
+  public String resetPasswordPage(@RequestParam("code") String code,
+      @RequestParam("email") String email, Model model) {
     model.addAttribute("code", code);
+    model.addAttribute("email", email);
     return "auth/reset-password";
   }
 
   @PostMapping("/reset-password")
   public String resetPassword(@RequestParam("code") String code,
-      @RequestParam("password") String password,
+      @RequestParam("email") String email, @RequestParam("password") String password,
       @RequestParam("confirmPassword") String confirmPassword,
       RedirectAttributes redirectAttributes) {
 
+    String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
+
     if (password == null || password.isEmpty()) {
       redirectAttributes.addFlashAttribute("error", "Password cannot be empty.");
-      return "redirect:/reset-password?code=" + code;
+      return "redirect:/reset-password?code=" + code + "&email=" + encodeEmail(email);
     }
 
     if (!password.equals(confirmPassword)) {
       redirectAttributes.addFlashAttribute("error", "Passwords do not match.");
-      return "redirect:/reset-password?code=" + code;
+      return "redirect:/reset-password?code=" + code + "&email=" + encodeEmail(email);
     }
 
     if (password.length() < 6) {
       redirectAttributes.addFlashAttribute("error", "Password must be at least 6 characters long.");
-      return "redirect:/reset-password?code=" + code;
+      return "redirect:/reset-password?code=" + code + "&email=" + encodeEmail(email);
     }
 
     try {
-      if (passwordResetService.resetPasswordWithCode(code, password)) {
+      if (passwordResetService.resetPasswordWithCode(code, email, password)) {
         redirectAttributes.addFlashAttribute("message",
             "Password reset successfully! You can now log in with your new password.");
         return "redirect:/login";
@@ -212,8 +221,12 @@ public class AuthController {
     } catch (Exception e) {
       redirectAttributes.addFlashAttribute("error",
           "Something went wrong while resetting your password. Please try again later.");
-      return "redirect:/reset-password?code=" + code;
+      return "redirect:/reset-password?code=" + code + "&email=" + encodeEmail(email);
     }
+  }
+
+  private String encodeEmail(String email) {
+    return java.net.URLEncoder.encode(email, java.nio.charset.StandardCharsets.UTF_8);
   }
 
 }

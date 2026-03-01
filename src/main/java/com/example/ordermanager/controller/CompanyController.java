@@ -5,6 +5,8 @@ import com.example.ordermanager.entity.Company;
 import com.example.ordermanager.service.CompanyService;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -17,6 +19,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @Controller
 @RequestMapping("/company")
 public class CompanyController {
+
+  private static final Logger logger = LoggerFactory.getLogger(CompanyController.class);
 
   private final CompanyService companyService;
   private final SecurityContextHelper securityContextHelper;
@@ -94,7 +98,7 @@ public class CompanyController {
     } catch (Exception e) {
       model.addAttribute("error", "Error during registration: " + e.getMessage());
       model.addAttribute("registrationData", registrationDTO);
-      e.printStackTrace();
+      logger.error("Error during company registration", e);
       return "company/register";
     }
   }
