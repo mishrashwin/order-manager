@@ -2,96 +2,116 @@
 <html xmlns:th="http://www.thymeleaf.org" th:with="page='orders'">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${order.id == null ? 'Add Order' : 'Edit Order'}">Order Form</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { background-color: #f9f9f9; margin: 0; padding: 0; }
-        h2 { font-weight: 600; }
-    </style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
 
-<div class="container">
-    <h2 class="text-center mt-3" th:text="${order.id == null ? '➕ Add New Order' : '✏️ Edit Order'}"></h2>
+<!-- Unified Navbar -->
+<div th:replace="~{fragments/unified-navbar :: unified-navbar}"></div>
 
-    <!-- Navbar -->
-    <div th:replace="~{fragments/navbar :: navbar}"></div>
+<!-- Main Content (Full Width) -->
+<div class="main-content">
+    <!-- Header -->
+    <div class="content-header">
+        <h1>
+            <i class="bi bi-box-seam"></i>
+            <span th:text="${order.id == null ? 'Create New Order' : 'Edit Order'}"></span>
+        </h1>
+        <a class="btn btn-secondary" th:href="@{/orders}">
+            <i class="bi bi-arrow-left"></i> Back to Orders
+        </a>
+    </div>
 
-    <!-- Order Form -->
-    <div class="card mt-4 shadow-sm">
-        <div class="card-body">
-            <form th:action="@{/orders}" th:object="${order}" method="post">
-                <input type="hidden" th:field="*{id}">
+    <!-- Form Card -->
+    <div class="unified-card">
+        <form th:action="@{/orders}" th:object="${order}" method="post">
+            <input type="hidden" th:field="*{id}">
 
-                <!-- Customer Dropdown + Add Button -->
-                <div class="mb-3">
-                    <label class="form-label">Customer Name</label>
-                    <div class="input-group">
-                        <select class="form-select" th:field="*{customerName}" required>
-                            <option value="">-- Select Client --</option>
-                            <option th:each="client : ${clients}"
-                                    th:value="${client.name}"
-                                    th:text="${client.name}">
-                            </option>
-                        </select>
-                        <a class="btn btn-outline-success" th:href="@{/clients/new}" target="_blank">+ Add Client</a>
-                    </div>
-                    <div class="form-text">If the desired client is missing, click “Add Client”.</div>
+            <!-- Customer Selection -->
+            <div class="mb-4">
+                <label class="form-label"><i class="bi bi-person"></i> Customer Name</label>
+                <div class="input-group">
+                    <select class="form-select form-control-custom" th:field="*{customerName}" required>
+                        <option value="">-- Select Client --</option>
+                        <option th:each="client : ${clients}"
+                                th:value="${client.name}"
+                                th:text="${client.name}">
+                        </option>
+                    </select>
+                    <a class="btn btn-outline-success" th:href="@{/clients/new}" target="_blank">
+                        <i class="bi bi-plus-circle"></i> Add Client
+                    </a>
+                </div>
+                <small class="form-text text-muted">If the desired client is missing, click "Add Client".</small>
+            </div>
+
+            <!-- Product Name -->
+            <div class="mb-4">
+                <label class="form-label"><i class="bi bi-box"></i> Product Name</label>
+                <input type="text" class="form-control form-control-custom" th:field="*{productName}" required>
+            </div>
+
+            <!-- Order Details Row -->
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <label class="form-label"><i class="bi bi-hash"></i> Quantity</label>
+                    <input type="number" class="form-control form-control-custom" th:field="*{quantity}" min="1" required>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Product Name</label>
-                    <input type="text" class="form-control" th:field="*{productName}" required>
+                <div class="col-md-4 mb-4">
+                    <label class="form-label"><i class="bi bi-currency-rupee"></i> Total Amount</label>
+                    <input type="number" class="form-control form-control-custom" th:field="*{totalAmount}" step="0.01" min="0" required>
                 </div>
 
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Quantity</label>
-                        <input type="number" class="form-control" th:field="*{quantity}" min="1" required>
-                    </div>
-
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Total Amount (₹)</label>
-                        <input type="number" class="form-control" th:field="*{totalAmount}" step="0.01" min="0" required>
-                    </div>
-
-                    <!-- ✅ Dynamic Enum Dropdown -->
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Status</label>
-                        <select class="form-select" th:field="*{status}" required>
-                            <option value="">-- Select Status --</option>
-                            <option th:each="status : ${statuses}"
-                                    th:value="${status.name()}"
-                                    th:text="${status.displayName}">
-                            </option>
-                        </select>
-                    </div>
+                <div class="col-md-4 mb-4">
+                    <label class="form-label"><i class="bi bi-tag"></i> Status</label>
+                    <select class="form-select form-control-custom" th:field="*{status}" required>
+                        <option value="">-- Select Status --</option>
+                        <option th:each="status : ${statuses}"
+                                th:value="${status.name()}"
+                                th:text="${status.displayName}">
+                        </option>
+                    </select>
                 </div>
+            </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Order Date</label>
-                    <input type="date" class="form-control"
+            <!-- Dates Row -->
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <label class="form-label"><i class="bi bi-calendar"></i> Order Date</label>
+                    <input type="date" class="form-control form-control-custom"
                            th:field="*{orderDate}"
                            th:value="${#temporals.format(order.orderDate, 'yyyy-MM-dd')}">
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Delivery Date</label>
-                    <input type="date" class="form-control"
+                <div class="col-md-6 mb-4">
+                    <label class="form-label"><i class="bi bi-calendar-check"></i> Delivery Date</label>
+                    <input type="date" class="form-control form-control-custom"
                            th:field="*{deliveryDate}"
                            th:value="${#temporals.format(order.deliveryDate, 'yyyy-MM-dd')}">
                 </div>
+            </div>
 
-                <div class="d-flex justify-content-between">
-                    <a class="btn btn-secondary" th:href="@{/orders}">Cancel</a>
-                    <button type="submit" class="btn btn-success">Save Order</button>
-                </div>
-            </form>
-        </div>
+            <!-- Actions -->
+            <div class="d-flex justify-content-end gap-3 pt-3 border-top">
+                <a class="btn btn-outline-secondary" th:href="@{/orders}">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </a>
+                <button type="submit" class="btn btn-success-custom">
+                    <i class="bi bi-check-circle"></i> <span th:text="${order.id == null ? 'Save Order' : 'Update Order'}"></span>
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
+<!-- Footer -->
 <div th:replace="~{fragments/footer :: footer}"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

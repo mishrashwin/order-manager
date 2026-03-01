@@ -222,4 +222,24 @@ public class UserService {
   public User findByEmail(String email) {
     return userRepository.findByEmail(email).orElse(null);
   }
+
+  /**
+   * Update user by admin Can update role and enabled status Company cannot be changed
+   *
+   * @param userId User ID to update
+   * @param updatedUser User object with updated fields
+   * @param companyId Admin's company ID (for verification)
+   * @return Updated user
+   */
+  public User updateUserByAdmin(Long userId, User updatedUser, Long companyId) {
+    // Verify user belongs to company
+    User user = getUserByIdAndCompany(userId, companyId);
+
+    // Update only allowed fields
+    user.setRole(updatedUser.getRole() != null ? updatedUser.getRole() : user.getRole());
+    user.setEnabled(updatedUser.isEnabled());
+
+    // Save and return
+    return userRepository.save(user);
+  }
 }

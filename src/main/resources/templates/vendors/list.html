@@ -2,77 +2,125 @@
 <html xmlns:th="http://www.thymeleaf.org" th:with="page='vendors'">
 <head>
     <meta charset="UTF-8">
-    <title>Vendors - Order Manager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendors | Order Manager</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
     <style>
-        body { background-color: #f9f9f9; margin: 0; padding: 0; }
-        h2 { font-weight: 600; }
-        .table thead { background-color: #343a40; color: white; cursor: pointer; }
-        .table tbody tr:hover { background-color: #f5f5f5; }
-        .table th.sort-asc::after { content: " ▲"; font-size: 0.8em; }
-        .table th.sort-desc::after { content: " ▼"; font-size: 0.8em; }
+        .table thead th {
+            cursor: pointer;
+            user-select: none;
+        }
+        .table th.sort-asc::after {
+            content: " ▲";
+            font-size: 0.8em;
+            margin-left: 0.5rem;
+        }
+        .table th.sort-desc::after {
+            content: " ▼";
+            font-size: 0.8em;
+            margin-left: 0.5rem;
+        }
+        .search-box {
+            background: white;
+            padding: 1.25rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 1.5rem;
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2 class="text-center mt-3">🏭 Vendor Management</h2>
+<!-- Unified Navbar -->
+<div th:replace="~{fragments/unified-navbar :: unified-navbar}"></div>
 
-    <!-- Navbar -->
-    <div th:replace="~{fragments/navbar :: navbar}"></div>
+<!-- Main Content (Full Width) -->
+<div class="main-content">
+    <!-- Header -->
+    <div class="content-header">
+        <h1><i class="bi bi-building"></i> Vendor Management</h1>
+        <a class="btn btn-success-custom" th:href="@{/vendors/new}">
+            <i class="bi bi-plus-circle"></i> Add New Vendor
+        </a>
+    </div>
 
-    <!-- Content -->
-    <div class="mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4>Vendor List</h4>
-            <a class="btn btn-success" th:href="@{/vendors/new}">+ Add Vendor</a>
+    <!-- Search & Filters -->
+    <div class="search-box">
+        <div class="d-flex justify-content-between align-items-center gap-3">
+            <input type="text" id="searchInput" class="form-control-custom flex-grow-1"
+                   placeholder="🔍 Search vendors by company, contact, email, phone...">
+            <button id="resetSortBtn" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-clockwise"></i> Reset Sort
+            </button>
         </div>
+    </div>
 
-        <!-- Search + Reset -->
-        <div class="d-flex justify-content-between mb-3">
-            <input type="text" id="searchInput" class="form-control w-75" placeholder="🔍 Search vendors...">
-            <button id="resetSortBtn" class="btn btn-outline-secondary ms-2">Reset Sorting</button>
-        </div>
+    <!-- Empty State -->
+    <div th:if="${#lists.isEmpty(vendors)}" class="empty-state">
+        <i class="bi bi-shop"></i>
+        <h4>No vendors found</h4>
+        <p>Get started by adding your first vendor</p>
+        <a th:href="@{/vendors/new}" class="btn btn-success-custom">
+            <i class="bi bi-plus-circle"></i> Add First Vendor
+        </a>
+    </div>
 
-        <div th:if="${#lists.isEmpty(vendors)}" class="alert alert-info">
-            No vendors found. Click <a th:href="@{/vendors/new}" class="alert-link">Add Vendor</a> to create one.
-        </div>
-
-        <div th:if="${!#lists.isEmpty(vendors)}" class="table-responsive">
-            <table class="table table-striped table-hover align-middle">
+    <!-- Vendors Table -->
+    <div th:if="${!#lists.isEmpty(vendors)}" class="unified-card">
+        <div class="table-responsive">
+            <table class="table unified-table table-hover align-middle mb-0">
                 <thead>
                 <tr>
-                    <th>ID</th>
+                    <th>#</th>
                     <th>Company Name</th>
                     <th>Contact Person</th>
                     <th>Email</th>
                     <th>Phone</th>
                     <th>Address</th>
-                    <th class="text-end no-sort">Actions</th>
+                    <th class="text-center no-sort">Actions</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="vendor, iterStat : ${vendors}">
-                    <!-- Display auto-incremented count instead of order.id -->
                     <td th:text="${iterStat.index + 1}"></td>
-                    <td th:text="${vendor.companyName}"></td>
+                    <td><strong th:text="${vendor.companyName}"></strong></td>
                     <td th:text="${vendor.contactPerson}"></td>
-                    <td th:text="${vendor.email}"></td>
-                    <td th:text="${vendor.phone}"></td>
+                    <td><i class="bi bi-envelope"></i> <span th:text="${vendor.email}"></span></td>
+                    <td><i class="bi bi-telephone"></i> <span th:text="${vendor.phone}"></span></td>
                     <td th:text="${vendor.address}"></td>
-                    <td class="text-end">
-                        <a th:href="@{|/vendors/edit/${vendor.id}|}" class="btn btn-sm btn-outline-primary me-1">Edit</a>
-                        <a th:href="@{|/vendors/delete/${vendor.id}|}" class="btn btn-sm btn-outline-danger"
-                           onclick="return confirm('Are you sure you want to delete this vendor?');">Delete</a>
+                    <td class="text-center">
+                        <div class="action-buttons justify-content-center">
+                            <a th:href="@{|/vendors/edit/${vendor.id}|}"
+                               class="btn btn-sm btn-outline-primary"
+                               title="Edit vendor">
+                                <i class="bi bi-pencil"></i> Edit
+                            </a>
+                            <a th:href="@{|/vendors/delete/${vendor.id}|}"
+                               class="btn btn-sm btn-outline-danger"
+                               title="Delete vendor"
+                               onclick="return confirm('Delete this vendor?');">
+                                <i class="bi bi-trash"></i> Delete
+                            </a>
+                        </div>
                     </td>
                 </tr>
                 </tbody>
             </table>
         </div>
+        <div class="unified-card-body">
+            <p class="text-muted-custom mb-0">
+                <i class="bi bi-info-circle"></i> Total Vendors: <strong th:text="${vendors.size()}"></strong>
+            </p>
+        </div>
     </div>
 </div>
 
+<!-- Footer -->
 <div th:replace="~{fragments/footer :: footer}"></div>
+
+<!-- Table Utility JS -->
 <div th:replace="~{fragments/table-utils :: tableUtils}"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

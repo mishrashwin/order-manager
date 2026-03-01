@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<!-- ===== UNIFIED NAVBAR FRAGMENT ===== -->
+<nav th:fragment="unified-navbar" class="unified-navbar navbar navbar-expand-lg navbar-dark">
+    <div class="container-fluid">
+        <!-- Brand -->
+        <a class="navbar-brand" th:href="@{/dashboard}">
+            <i class="bi bi-box-seam"></i>
+            Order Manager
+        </a>
+
+        <!-- Mobile Toggle -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Navigation Links -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <!-- Left: Main Navigation -->
+            <ul class="navbar-nav me-auto" th:if="${#authorization.expression('isAuthenticated()')}">
+                <li class="nav-item">
+                    <a class="nav-link"
+                       th:classappend="${page == 'dashboard'} ? 'active'"
+                       th:href="@{/dashboard}">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link"
+                       th:classappend="${page == 'orders'} ? 'active'"
+                       th:href="@{/orders}">
+                        <i class="bi bi-box-seam"></i> Orders
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link"
+                       th:classappend="${page == 'clients'} ? 'active'"
+                       th:href="@{/clients}">
+                        <i class="bi bi-people"></i> Clients
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link"
+                       th:classappend="${page == 'vendors'} ? 'active'"
+                       th:href="@{/vendors}">
+                        <i class="bi bi-building"></i> Vendors
+                    </a>
+                </li>
+
+                <!-- Admin Panel Link (Only for Admins) -->
+                <li class="nav-item" th:if="${#authorization.expression('hasRole(''ADMIN'')')}">
+                    <a class="nav-link admin-link"
+                       th:classappend="${page == 'admin-dashboard' or page == 'admin-users' or page == 'admin-add-user' or page == 'admin-edit-user'} ? 'active'"
+                       th:href="@{/admin/dashboard}">
+                        <i class="bi bi-shield-check"></i> Admin Panel
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Right: User Info & Logout -->
+            <ul class="navbar-nav ms-auto">
+                <!-- User Welcome -->
+                <li class="nav-item d-flex align-items-center"
+                    th:if="${#authorization.expression('isAuthenticated()')}">
+                    <span class="navbar-user-info">
+                        <i class="bi bi-person-circle"></i>
+                        Welcome, <strong th:text="${#authentication.name}">User</strong>
+                    </span>
+                </li>
+
+                <!-- Logout Button -->
+                <li class="nav-item" th:if="${#authorization.expression('isAuthenticated()')}">
+                    <form th:action="@{/logout}" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-outline-light btn-sm">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </button>
+                    </form>
+                </li>
+
+                <!-- Login Link (When not authenticated) -->
+                <li class="nav-item" th:if="${#authorization.expression('!isAuthenticated()')}">
+                    <a class="nav-link" th:href="@{/login}">
+                        <i class="bi bi-box-arrow-in-right"></i> Login
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+</body>
+</html>
+

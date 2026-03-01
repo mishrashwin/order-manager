@@ -2,57 +2,72 @@
 <html xmlns:th="http://www.thymeleaf.org" th:with="page='admin-dashboard'">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard | Order Manager</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
     <style>
         body {
             background-color: #f5f5f5;
             font-family: "Poppins", sans-serif;
         }
 
-        .navbar {
-            background-color: #2c3e50;
-            padding: 1rem 2rem;
+        .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
         }
 
-        .navbar-brand {
-            color: white !important;
-            font-weight: bold;
-            font-size: 1.5rem;
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 4px solid #3498db;
+            text-align: center;
         }
 
-        .navbar-text {
-            color: #bdc3c7 !important;
-            font-size: 0.9rem;
+        .stat-card i {
+            font-size: 2.5rem;
+            color: #3498db;
+            margin-bottom: 0.5rem;
         }
 
-        .admin-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem 0;
+        .stat-card h5 {
+            color: #7f8c8d;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
         }
 
-        .dashboard-card {
+        .stat-card .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .admin-section {
+            margin-top: 2rem;
+        }
+
+        .admin-section h4 {
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid #e0e0e0;
+            color: #2c3e50;
+        }
+
+        .unified-card {
             background: white;
             border-radius: 8px;
             padding: 2rem;
-            margin: 1rem 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
         }
 
-        .dashboard-card h3 {
-            color: #2c3e50;
-            margin-bottom: 1rem;
-            font-weight: bold;
-        }
-
-        .dashboard-card p {
-            color: #666;
-            margin-bottom: 1.5rem;
-        }
-
-        .btn-admin {
+        .btn-primary-custom {
             background-color: #3498db;
             color: white;
             padding: 0.75rem 1.5rem;
@@ -62,139 +77,81 @@
             transition: 0.3s;
         }
 
-        .btn-admin:hover {
+        .btn-primary-custom:hover {
             background-color: #2980b9;
             text-decoration: none;
         }
 
-        .admin-section {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
+        .btn-outline-secondary {
+            color: #34495e;
+            border-color: #34495e;
         }
 
-        .icon-box {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            color: #3498db;
-        }
-
-        .logout-btn {
-            background-color: #e74c3c;
-        }
-
-        .logout-btn:hover {
-            background-color: #c0392b;
+        .btn-outline-secondary:hover {
+            background-color: #34495e;
+            color: white;
         }
     </style>
 </head>
-
 <body>
-<!-- Navigation -->
-<nav class="navbar">
-    <div class="container-fluid">
-        <span class="navbar-brand">
-            <i class="bi bi-shield-check"></i> Order Manager - Admin Panel
-        </span>
-        <span class="navbar-text ms-auto">
-            Logged in as Administrator
-            <a href="/logout" class="btn btn-sm logout-btn ms-2">Logout</a>
-        </span>
-    </div>
-</nav>
 
-<!-- Main Content -->
-<div class="admin-container">
-    <!-- 🟢 Flash success message -->
-    <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="bi bi-check-circle"></i> <span th:text="${message}"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<!-- Unified Navbar -->
+<div th:replace="~{fragments/unified-navbar :: unified-navbar}"></div>
+
+<!-- Main Content (Full Width) -->
+<div class="main-content">
+    <!-- Header -->
+    <div class="content-header">
+        <h1><i class="bi bi-shield-check"></i> Admin Dashboard</h1>
+        <a class="btn btn-primary-custom" th:href="@{/admin/users}">
+            <i class="bi bi-people"></i> Manage Users
+        </a>
     </div>
 
-    <!-- 🔴 Flash error message -->
-    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
-        <i class="bi bi-exclamation-circle"></i> <span th:text="${error}"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <!-- Admin Stats -->
+    <div class="admin-stats">
+        <div class="stat-card">
+            <i class="bi bi-box-seam"></i>
+            <h5>Total Orders</h5>
+            <div class="stat-value" th:text="${totalOrders}">0</div>
+        </div>
+        <div class="stat-card" style="border-left-color: #27ae60;">
+            <i class="bi bi-people" style="color: #27ae60;"></i>
+            <h5>Total Clients</h5>
+            <div class="stat-value" th:text="${totalClients}">0</div>
+        </div>
+        <div class="stat-card" style="border-left-color: #e74c3c;">
+            <i class="bi bi-building" style="color: #e74c3c;"></i>
+            <h5>Total Vendors</h5>
+            <div class="stat-value" th:text="${totalVendors}">0</div>
+        </div>
+        <div class="stat-card" style="border-left-color: #f39c12;">
+            <i class="bi bi-person-check" style="color: #f39c12;"></i>
+            <h5>Total Users</h5>
+            <div class="stat-value" th:text="${totalUsers}">0</div>
+        </div>
     </div>
 
-    <h1 style="color: #2c3e50; margin-bottom: 2rem;">Admin Dashboard</h1>
-
+    <!-- Admin Sections -->
     <div class="admin-section">
-        <!-- User Management -->
-        <div class="dashboard-card">
-            <div class="icon-box">
-                <i class="bi bi-people-fill"></i>
+        <h4><i class="bi bi-gear"></i> Administration</h4>
+        <div class="unified-card">
+            <p>Welcome to the Admin Panel. From here you can manage users, view system statistics, and control access permissions.</p>
+            <div class="d-flex gap-2">
+                <a class="btn btn-primary-custom" th:href="@{/admin/users}">
+                    <i class="bi bi-people"></i> Manage Users
+                </a>
+                <a class="btn btn-outline-secondary" th:href="@{/dashboard}">
+                    <i class="bi bi-speedometer2"></i> Back to Dashboard
+                </a>
             </div>
-            <h3>User Management</h3>
-            <p>Add, edit, and manage users in your company. Assign roles and permissions.</p>
-            <a href="/admin/users" class="btn-admin">
-                <i class="bi bi-person-plus"></i> Manage Users
-            </a>
-        </div>
-
-        <!-- Orders -->
-        <div class="dashboard-card">
-            <div class="icon-box" style="color: #2ecc71;">
-                <i class="bi bi-bag-check-fill"></i>
-            </div>
-            <h3>Orders</h3>
-            <p>View and manage all orders for your company.</p>
-            <a href="/orders" class="btn-admin" style="background-color: #2ecc71;">
-                <i class="bi bi-list"></i> View Orders
-            </a>
-        </div>
-
-        <!-- Clients -->
-        <div class="dashboard-card">
-            <div class="icon-box" style="color: #e74c3c;">
-                <i class="bi bi-building"></i>
-            </div>
-            <h3>Clients</h3>
-            <p>Manage your company's clients and their details.</p>
-            <a href="/clients" class="btn-admin" style="background-color: #e74c3c;">
-                <i class="bi bi-plus"></i> View Clients
-            </a>
-        </div>
-
-        <!-- Vendors -->
-        <div class="dashboard-card">
-            <div class="icon-box" style="color: #f39c12;">
-                <i class="bi bi-shop"></i>
-            </div>
-            <h3>Vendors</h3>
-            <p>Manage vendors and suppliers for your company.</p>
-            <a href="/vendors" class="btn-admin" style="background-color: #f39c12;">
-                <i class="bi bi-plus"></i> View Vendors
-            </a>
-        </div>
-
-        <!-- Dashboard -->
-        <div class="dashboard-card">
-            <div class="icon-box" style="color: #9b59b6;">
-                <i class="bi bi-graph-up"></i>
-            </div>
-            <h3>Dashboard</h3>
-            <p>View analytics and statistics for your company.</p>
-            <a href="/dashboard" class="btn-admin" style="background-color: #9b59b6;">
-                <i class="bi bi-speedometer2"></i> Go to Dashboard
-            </a>
-        </div>
-
-        <!-- Settings -->
-        <div class="dashboard-card">
-            <div class="icon-box" style="color: #34495e;">
-                <i class="bi bi-gear-fill"></i>
-            </div>
-            <h3>Company Settings</h3>
-            <p>Manage your company information and preferences.</p>
-            <a href="/company" class="btn-admin" style="background-color: #34495e;">
-                <i class="bi bi-arrow-right"></i> Go to Settings
-            </a>
         </div>
     </div>
 </div>
 
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer}"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-
