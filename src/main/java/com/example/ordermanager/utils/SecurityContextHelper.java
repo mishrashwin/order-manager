@@ -2,6 +2,7 @@ package com.example.ordermanager.utils;
 
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.repository.UserRepository;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -28,7 +29,7 @@ public class SecurityContextHelper {
    */
   public Long getCompanyIdFromContext() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (authentication == null || !authentication.isAuthenticated()) {
+    if (!isFullyAuthenticated(authentication)) {
       throw new IllegalStateException("User is not authenticated");
     }
 
@@ -51,7 +52,7 @@ public class SecurityContextHelper {
    */
   public User getUserFromContext() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (authentication == null || !authentication.isAuthenticated()) {
+    if (!isFullyAuthenticated(authentication)) {
       throw new IllegalStateException("User is not authenticated");
     }
 
@@ -68,10 +69,16 @@ public class SecurityContextHelper {
    */
   public String getCurrentUsername() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (authentication == null || !authentication.isAuthenticated()) {
+    if (!isFullyAuthenticated(authentication)) {
       throw new IllegalStateException("User is not authenticated");
     }
     return authentication.getName();
+  }
+
+  private boolean isFullyAuthenticated(Authentication authentication) {
+    return authentication != null
+        && authentication.isAuthenticated()
+        && !(authentication instanceof AnonymousAuthenticationToken);
   }
 }
 
