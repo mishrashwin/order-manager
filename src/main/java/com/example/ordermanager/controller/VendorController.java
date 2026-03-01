@@ -2,6 +2,8 @@ package com.example.ordermanager.controller;
 
 import com.example.ordermanager.entity.Vendor;
 import com.example.ordermanager.service.VendorService;
+import com.example.ordermanager.service.CompanyService;
+import com.example.ordermanager.utils.SecurityContextHelper;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -11,14 +13,20 @@ import org.springframework.web.bind.annotation.*;
 public class VendorController {
 
   private final VendorService vendorService;
+  private final CompanyService companyService;
+  private final SecurityContextHelper securityContextHelper;
 
-  public VendorController(VendorService vendorService) {
+  public VendorController(VendorService vendorService, CompanyService companyService,
+      SecurityContextHelper securityContextHelper) {
     this.vendorService = vendorService;
+    this.companyService = companyService;
+    this.securityContextHelper = securityContextHelper;
   }
 
   @GetMapping
   public String listVendors(Model model) {
-    model.addAttribute("vendors", vendorService.getAllVendors());
+    Long companyId = securityContextHelper.getCompanyIdFromContext();
+    model.addAttribute("vendors", vendorService.getVendorsByCompanyId(companyId));
     return "vendors/list";
   }
 
@@ -29,9 +37,20 @@ public class VendorController {
   }
 
   @PostMapping
-  public String saveVendor(@ModelAttribute Vendor vendor) {
-    vendorService.saveVendor(vendor);
-    return "redirect:/vendors";
+  public String saveVendor(@ModelAttribute Vendor vendor, Model model) {
+    try {
+      Long companyId = securityContextHelper.getCompanyIdFromContext();
+      vendorService.saveVendorWithCompany(vendor, companyId);
+      return "redirect:/vendors";
+    } catch (IllegalStateException e) {
+      model.addAttribute("error", "You must be logged in to create a vendor");
+      model.addAttribute("vendor", vendor);
+      return "vendors/form";
+    } catch (Exception e) {
+      model.addAttribute("error", "Error saving vendor: " + e.getMessage());
+      model.addAttribute("vendor", vendor);
+      return "vendors/form";
+    }
   }
 
   @GetMapping("/edit/{id}")

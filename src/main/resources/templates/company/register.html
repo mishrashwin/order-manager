@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:with="page='register-company'">
+<head>
+    <meta charset="UTF-8">
+    <title>Register Company | Order Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background: url('/images/login.jpg') no-repeat center center fixed;
+            background-size: cover;
+            height: 100vh;
+            margin: 0;
+            font-family: "Poppins", sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 6%;
+        }
+
+        .register-card {
+            width: 100%;
+            max-width: 420px;
+            background-color: rgba(255, 255, 255, 0.92);
+            border-radius: 16px;
+            padding: 2rem 2.2rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+            backdrop-filter: blur(8px);
+        }
+
+        .register-card h2 {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .register-card p {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            font-weight: 500;
+            font-size: 13px;
+            margin-bottom: 0.4rem;
+            color: #333;
+        }
+
+        .form-group input {
+            border-radius: 8px;
+            padding: 0.6rem 1rem;
+            border: 1px solid #ddd;
+            font-size: 14px;
+        }
+
+        .form-group input:focus {
+            border-color: #4CAF50;
+            outline: none;
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.2);
+        }
+
+        .btn-register {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        .btn-register:hover {
+            background-color: #45a049;
+        }
+
+        .footer-text {
+            text-align: center;
+            font-size: 13px;
+            color: #999;
+            margin-top: 1.5rem;
+        }
+
+        .footer-text a {
+            color: #4CAF50;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .footer-text a:hover {
+            text-decoration: underline;
+        }
+
+        .alert {
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+<div class="register-card">
+    <h2>Register Your Company</h2>
+    <p>Create a new company account and set up your organization</p>
+
+    <!-- Error Alert -->
+    <div th:if="${error}" class="alert alert-danger" role="alert">
+        <strong>Error:</strong> <span th:text="${error}"></span>
+    </div>
+
+    <!-- Success Alert -->
+    <div th:if="${message}" class="alert alert-success" role="alert">
+        <strong>Success:</strong> <span th:text="${message}"></span>
+    </div>
+
+    <form th:action="@{/company/register}" method="POST" th:object="${registrationData}">
+        <!-- Validation Errors Alert -->
+        <div th:if="${errors != null and errors.size() > 0}" class="alert alert-danger" role="alert">
+            <strong>Validation Errors:</strong>
+            <ul class="mb-0" style="padding-left: 1.5rem; margin-top: 0.5rem;">
+                <li th:each="error : ${errors}" th:text="${error.getDefaultMessage()}"></li>
+            </ul>
+        </div>
+
+        <!-- COMPANY DETAILS - Lines 111-120 -->
+        <div style="font-size: 12px; font-weight: 700; color: #2c3e50; text-transform: uppercase; margin-top: 1rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #4CAF50;">Company Information</div>
+        <div class="form-group">
+            <label for="companyName">Company Name <span style="color: #e74c3c;">*</span></label>
+            <input type="text" id="companyName" th:field="*{companyName}" class="form-control"
+                   placeholder="e.g., Acme Corporation" required>
+            <small th:if="${#fields.hasErrors('companyName')}" th:errors="*{companyName}" style="color: #e74c3c; font-size: 12px;"></small>
+        </div>
+
+        <!-- OWNER DETAILS SECTION - Lines 121-165 -->
+        <div style="font-size: 12px; font-weight: 700; color: #2c3e50; text-transform: uppercase; margin-top: 1rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #4CAF50;">Company Owner Details</div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label for="ownerFirstName">First Name <span style="color: #e74c3c;">*</span></label>
+                <input type="text" id="ownerFirstName" th:field="*{ownerFirstName}" class="form-control"
+                       placeholder="John" required>
+                <small th:if="${#fields.hasErrors('ownerFirstName')}" th:errors="*{ownerFirstName}" style="color: #e74c3c; font-size: 12px;"></small>
+            </div>
+
+            <div class="form-group">
+                <label for="ownerLastName">Last Name <span style="color: #e74c3c;">*</span></label>
+                <input type="text" id="ownerLastName" th:field="*{ownerLastName}" class="form-control"
+                       placeholder="Doe" required>
+                <small th:if="${#fields.hasErrors('ownerLastName')}" th:errors="*{ownerLastName}" style="color: #e74c3c; font-size: 12px;"></small>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="ownerEmail">Email Address <span style="color: #e74c3c;">*</span></label>
+            <input type="email" id="ownerEmail" th:field="*{ownerEmail}" class="form-control"
+                   placeholder="owner@company.com" required>
+            <small style="font-size: 12px; color: #7f8c8d; margin-top: 0.25rem;">Verification link will be sent here</small>
+            <small th:if="${#fields.hasErrors('ownerEmail')}" th:errors="*{ownerEmail}" style="color: #e74c3c; font-size: 12px;"></small>
+        </div>
+
+        <div class="form-group">
+            <label for="ownerMobile">Mobile Number <span style="color: #e74c3c;">*</span></label>
+            <input type="tel" id="ownerMobile" th:field="*{ownerMobile}" class="form-control"
+                   placeholder="9876543210" pattern="[0-9]{10,15}" title="Mobile number must be 10-15 digits only" required>
+            <small style="font-size: 12px; color: #7f8c8d; margin-top: 0.25rem;">10-15 digits only</small>
+            <small th:if="${#fields.hasErrors('ownerMobile')}" th:errors="*{ownerMobile}" style="color: #e74c3c; font-size: 12px;"></small>
+        </div>
+
+        <!-- LOGIN CREDENTIALS SECTION - Lines 166-191 -->
+        <div style="font-size: 12px; font-weight: 700; color: #2c3e50; text-transform: uppercase; margin-top: 1rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #4CAF50;">Login Credentials</div>
+
+        <div class="form-group">
+            <label for="username">Username <span style="color: #e74c3c;">*</span></label>
+            <input type="text" id="username" th:field="*{username}" class="form-control"
+                   placeholder="admin_username" required>
+            <small style="font-size: 12px; color: #7f8c8d; margin-top: 0.25rem;">For login to the system</small>
+            <small th:if="${#fields.hasErrors('username')}" th:errors="*{username}" style="color: #e74c3c; font-size: 12px;"></small>
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password <span style="color: #e74c3c;">*</span></label>
+            <input type="password" id="password" th:field="*{password}" class="form-control"
+                   placeholder="••••••••" required>
+            <small style="font-size: 12px; color: #7f8c8d; margin-top: 0.25rem;">At least 6 characters, will be encrypted</small>
+            <small th:if="${#fields.hasErrors('password')}" th:errors="*{password}" style="color: #e74c3c; font-size: 12px;"></small>
+        </div>
+
+        <!-- Submit Button - Line 192 -->
+        <button type="submit" class="btn-register">
+            Register Company
+        </button>
+    </form>
+
+    <div class="footer-text">
+        Already have a company account? <a th:href="@{/login}">Login</a>
+    </div>
+</div>
+
+</body>
+</html>
+

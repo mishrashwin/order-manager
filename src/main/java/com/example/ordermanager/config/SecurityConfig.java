@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -17,6 +18,7 @@ import java.io.IOException;
 
 
 @Configuration
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
   private final CustomUserDetailsService customUserDetailsService;
@@ -41,9 +43,12 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     http.csrf(csrf -> csrf.disable()).authenticationProvider(authenticationProvider())
-        .authorizeHttpRequests(
-            auth -> auth.requestMatchers("/login", "/signup", "/verify", "/resend-verification",
-                "/css/**", "/js/**", "/images/**").permitAll().anyRequest().authenticated())
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/login", "/signup", "/verify", "/resend-verification",
+                "/company/register", "/forgot-password", "/verify-reset-code", "/reset-password",
+                "/css/**", "/js/**", "/images/**")
+            .permitAll().requestMatchers("/admin/**").hasAnyRole("ADMIN").anyRequest()
+            .authenticated())
         .formLogin(form -> form.loginPage("/login").failureHandler(authenticationFailureHandler())
             .defaultSuccessUrl("/dashboard", true).permitAll())
         .logout(

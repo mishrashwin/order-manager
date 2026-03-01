@@ -24,11 +24,12 @@ public class CustomUserDetailsService implements UserDetailsService {
         .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
     // The key line — this prevents login if not verified (enabled=false)
+    // Use the actual role from the database (e.g., "USER" or "ADMIN")
     return new org.springframework.security.core.userdetails.User(user.getUsername(),
         user.getPassword(), user.isEnabled(), // ✅ only true after email verification
         true, // accountNonExpired
         true, // credentialsNonExpired
         true, // accountNonLocked
-        List.of(new SimpleGrantedAuthority("ROLE_USER")));
+        List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole())));
   }
 }

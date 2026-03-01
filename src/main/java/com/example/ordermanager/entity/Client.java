@@ -22,6 +22,10 @@ public class Client {
   private String phone;
   private String address;
 
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "company_id", nullable = false)
+  private Company company;
+
   // Constructors
   public Client() {}
 

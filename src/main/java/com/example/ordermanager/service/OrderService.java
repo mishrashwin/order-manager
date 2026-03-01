@@ -1,5 +1,6 @@
 package com.example.ordermanager.service;
 
+import com.example.ordermanager.entity.Company;
 import com.example.ordermanager.entity.Order;
 import com.example.ordermanager.entity.OrderStatus;
 import com.example.ordermanager.exception.OrderNotFoundException;
@@ -16,11 +17,13 @@ import java.util.Optional;
 public class OrderService {
 
   private final OrderRepository orderRepository;
-
+  private final CompanyService companyService;
   private Helper helper;
 
-  public OrderService(OrderRepository orderRepository, Helper helper) {
+  public OrderService(OrderRepository orderRepository, CompanyService companyService,
+      Helper helper) {
     this.orderRepository = orderRepository;
+    this.companyService = companyService;
     this.helper = helper;
   }
 
@@ -28,9 +31,39 @@ public class OrderService {
     return orderRepository.findAll();
   }
 
+  /**
+   * TENANT-AWARE: Get all orders for a specific company NEVER call getAllOrders() - Always filter
+   * by company!
+   */
+  public List<Order> getOrdersByCompanyId(Long companyId) {
+    return orderRepository.findByCompanyId(companyId);
+  }
+
   public Order createOrder(Order order) {
     if (order.getProductName() != null)
       order.setProductName(helper.toTitleCase(order.getProductName()));
+    return orderRepository.save(order);
+  }
+
+  /**
+   * TENANT-AWARE: Create order with company association The order is automatically assigned to the
+   * authenticated user's company
+   *
+   * @param order Order entity
+   * @param companyId Company ID
+   */
+  public Order createOrderWithCompany(Order order, Long companyId) {
+    // Get company and assign to order
+    Company company =
+        companyService.getCompanyById(companyId).orElseThrow(() -> new IllegalArgumentException(
+            "Company not found. Cannot create order without a company."));
+
+    order.setCompany(company);
+
+    // Apply formatting
+    if (order.getProductName() != null)
+      order.setProductName(helper.toTitleCase(order.getProductName()));
+
     return orderRepository.save(order);
   }
 

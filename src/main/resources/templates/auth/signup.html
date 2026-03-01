@@ -102,9 +102,17 @@
         <p>Create your account and start managing orders.</p>
     </div>
 
+    <!-- Display company context if provided -->
+    <div th:if="${companyName}" class="alert alert-info" style="border-radius: 8px; font-size: 13px;">
+        <strong>Company:</strong> <span th:text="${companyName}"></span>
+    </div>
+
     <h3>Sign Up</h3>
 
     <form th:action="@{/signup}" method="post">
+        <!-- Hidden company_id field -->
+        <input type="hidden" name="company_id" th:value="${companyId}" th:if="${companyId}">
+
         <div class="mb-3">
             <input type="text" class="form-control" name="firstName" placeholder="First Name" required>
         </div>

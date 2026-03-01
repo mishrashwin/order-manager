@@ -1,11 +1,13 @@
 package com.example.ordermanager.user.service;
 
 import com.example.ordermanager.exception.EmailAlreadySentException;
+import com.example.ordermanager.repository.CompanyRepository;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.entity.VerificationToken;
 import com.example.ordermanager.user.repository.UserRepository;
 import com.example.ordermanager.user.repository.VerificationTokenRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -17,15 +19,20 @@ public class RegistrationService {
   private final UserRepository userRepository;
   private final VerificationTokenRepository tokenRepository;
   private final EmailService emailService;
+  private final CompanyRepository companyRepository;
+  private final BCryptPasswordEncoder passwordEncoder;
 
   @Value("${app.base.url}")
   private String baseUrl;
 
   public RegistrationService(UserRepository userRepository,
-      VerificationTokenRepository tokenRepository, EmailService emailService) {
+      VerificationTokenRepository tokenRepository, EmailService emailService,
+      CompanyRepository companyRepository) {
     this.userRepository = userRepository;
     this.tokenRepository = tokenRepository;
     this.emailService = emailService;
+    this.companyRepository = companyRepository;
+    this.passwordEncoder = new BCryptPasswordEncoder();
   }
 
   public void sendVerificationEmail(User user) {
