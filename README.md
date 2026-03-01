@@ -81,7 +81,12 @@ Create MySQL database:
 CREATE DATABASE order_manager_db;
 ```
 
-Update `src/main/resources/application.properties`:
+Set the required environment variable:
+```bash
+export DB_PASSWORD=your_mysql_password
+```
+
+Or update `src/main/resources/application.properties` directly:
 ```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/order_manager_db
 spring.datasource.username=root
@@ -89,10 +94,18 @@ spring.datasource.password=your_password
 ```
 
 ### 3. Configure Email (Required for verification/password reset)
-Set environment variables or update `application.properties`:
+Set the required environment variables:
+```bash
+export MAIL_USERNAME=your_email@gmail.com
+export MAIL_PASSWORD=your_app_password
+export MAIL_FROM=your_email@gmail.com
+```
+
+Or update `src/main/resources/application.properties`:
 ```properties
-MAIL_USERNAME=your_email@gmail.com
-MAIL_PASSWORD=your_app_password
+spring.mail.username=your_email@gmail.com
+spring.mail.password=your_app_password
+spring.mail.from=your_email@gmail.com
 ```
 
 ### 4. Run Application
