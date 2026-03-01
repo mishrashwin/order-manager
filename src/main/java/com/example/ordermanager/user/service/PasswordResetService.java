@@ -9,10 +9,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.Random;
+import java.security.SecureRandom;
 
 @Service
 public class PasswordResetService {
+
+  private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
   private final PasswordResetTokenRepository tokenRepository;
   private final UserRepository userRepository;
@@ -130,8 +132,7 @@ public class PasswordResetService {
    * @return Random 6-digit code as string
    */
   private String generateSixDigitCode() {
-    Random random = new Random();
-    int code = 100000 + random.nextInt(900000);
+    int code = 100000 + SECURE_RANDOM.nextInt(900000);
     return String.valueOf(code);
   }
 }
