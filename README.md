@@ -81,19 +81,47 @@ Create MySQL database:
 CREATE DATABASE order_manager_db;
 ```
 
-Update `src/main/resources/application.properties`:
-```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/order_manager_db
-spring.datasource.username=root
-spring.datasource.password=your_password
+Set the required environment variable before running the application:
+```bash
+# Linux/macOS
+export DB_PASSWORD=your_mysql_password
+
+# Windows (Command Prompt)
+set DB_PASSWORD=your_mysql_password
+
+# Windows (PowerShell)
+$env:DB_PASSWORD="your_mysql_password"
 ```
 
+The `application.properties` reads this as `spring.datasource.password=${DB_PASSWORD}`.
+
 ### 3. Configure Email (Required for verification/password reset)
-Set environment variables or update `application.properties`:
-```properties
-MAIL_USERNAME=your_email@gmail.com
-MAIL_PASSWORD=your_app_password
+Set the following environment variables:
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `MAIL_USERNAME` | SMTP account username (email address) | `your_email@gmail.com` |
+| `MAIL_PASSWORD` | SMTP account password or app password | `your_app_password` |
+| `MAIL_FROM` | From address used in sent emails | `your_email@gmail.com` |
+
+```bash
+# Linux/macOS
+export MAIL_USERNAME=your_email@gmail.com
+export MAIL_PASSWORD=your_app_password
+export MAIL_FROM=your_email@gmail.com
+
+# Windows (Command Prompt)
+set MAIL_USERNAME=your_email@gmail.com
+set MAIL_PASSWORD=your_app_password
+set MAIL_FROM=your_email@gmail.com
+
+# Windows (PowerShell)
+$env:MAIL_USERNAME="your_email@gmail.com"
+$env:MAIL_PASSWORD="your_app_password"
+$env:MAIL_FROM="your_email@gmail.com"
 ```
+
+> **Gmail users**: Enable "App Passwords" in your Google Account settings and use the generated app password as `MAIL_PASSWORD`.
 
 ### 4. Run Application
 ```powershell
