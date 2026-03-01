@@ -45,8 +45,12 @@ public class AdminController {
   public String listUsers(Model model) {
     Long companyId = securityContextHelper.getCompanyIdFromContext();
     List<User> users = userService.getUsersByCompany(companyId);
+    long adminCount = userService.getAdminCountInCompany(companyId);
+    String currentUsername = securityContextHelper.getCurrentUsername();
     model.addAttribute("users", users);
     model.addAttribute("companyId", companyId);
+    model.addAttribute("adminCount", adminCount);
+    model.addAttribute("currentUsername", currentUsername);
     return "admin/users/list";
   }
 
@@ -117,10 +121,8 @@ public class AdminController {
   }
 
   /**
-   * Delete user
-   * Rules:
-   * - Cannot delete self if they're the last admin
-   * - Can delete other admins if there are 2+ admins (at least 1 will remain)
+   * Delete user Rules: - Cannot delete self if they're the last admin - Can delete other admins if
+   * there are 2+ admins (at least 1 will remain)
    */
   @PostMapping("/users/{id}/delete")
   public String deleteUser(@PathVariable Long id, RedirectAttributes redirectAttributes) {
@@ -138,8 +140,7 @@ public class AdminController {
           return "redirect:/admin/users";
         }
         // Allow other users to delete themselves (non-admins)
-        redirectAttributes.addFlashAttribute("error",
-            "You cannot delete your own account!");
+        redirectAttributes.addFlashAttribute("error", "You cannot delete your own account!");
         return "redirect:/admin/users";
       }
 

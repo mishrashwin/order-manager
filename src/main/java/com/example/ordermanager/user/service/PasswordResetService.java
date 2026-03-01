@@ -7,9 +7,9 @@ import com.example.ordermanager.user.repository.PasswordResetTokenRepository;
 import com.example.ordermanager.user.repository.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.Random;
 
 @Service
 public class PasswordResetService {
@@ -67,13 +67,14 @@ public class PasswordResetService {
   }
 
   /**
-   * Verify the 6-digit code
+   * Verify the 6-digit code against the user identified by email
    *
    * @param code The 6-digit code entered by user
+   * @param email The email address submitted at the start of the reset flow
    * @return User if code is valid and not expired, null otherwise
    */
-  public User verifyPasswordResetCode(String code) {
-    Optional<PasswordResetToken> optToken = tokenRepository.findByCode(code);
+  public User verifyPasswordResetCode(String code, String email) {
+    Optional<PasswordResetToken> optToken = tokenRepository.findByCodeAndUser_Email(code, email);
 
     if (optToken.isEmpty()) {
       return null;
@@ -94,14 +95,15 @@ public class PasswordResetService {
   }
 
   /**
-   * Reset password with verified code
+   * Reset password with verified code and email
    *
    * @param code The verified 6-digit code
+   * @param email The email address of the user resetting their password
    * @param newPassword New password to set
    * @return true if password reset successfully
    */
-  public boolean resetPasswordWithCode(String code, String newPassword) {
-    Optional<PasswordResetToken> optToken = tokenRepository.findByCode(code);
+  public boolean resetPasswordWithCode(String code, String email, String newPassword) {
+    Optional<PasswordResetToken> optToken = tokenRepository.findByCodeAndUser_Email(code, email);
 
     if (optToken.isEmpty()) {
       return false;
@@ -130,7 +132,7 @@ public class PasswordResetService {
    * @return Random 6-digit code as string
    */
   private String generateSixDigitCode() {
-    Random random = new Random();
+    SecureRandom random = new SecureRandom();
     int code = 100000 + random.nextInt(900000);
     return String.valueOf(code);
   }

@@ -278,7 +278,7 @@
                                     <span th:if="${user.enabled}" class="badge badge-verified">
                                         <i class="bi bi-check-circle"></i> Verified
                                     </span>
-                                    <span th:if="!${user.enabled}" class="badge badge-pending">
+                                    <span th:if="${!user.enabled}" class="badge badge-pending">
                                         <i class="bi bi-clock"></i> Pending
                                     </span>
                                 </td>
@@ -304,7 +304,7 @@
                                         </form>
 
                                         <!-- Resend Verification -->
-                                        <th:block th:if="!${user.enabled}">
+                                        <th:block th:if="${!user.enabled}">
                                             <form th:action="@{/admin/users/{id}/resend-verification(id=${user.id})}"
                                                   method="POST" style="display: inline;">
                                                 <button type="submit" class="btn-sm-custom btn-resend">

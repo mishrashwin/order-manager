@@ -5,10 +5,13 @@ import com.example.ordermanager.entity.Company;
 import com.example.ordermanager.service.CompanyService;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
  * Controller for company management. Handles company registration and admin operations.
@@ -16,6 +19,8 @@ import org.springframework.web.bind.annotation.*;
 @Controller
 @RequestMapping("/company")
 public class CompanyController {
+
+  private static final Logger logger = LoggerFactory.getLogger(CompanyController.class);
 
   private final CompanyService companyService;
   private final SecurityContextHelper securityContextHelper;
@@ -44,7 +49,7 @@ public class CompanyController {
   @PostMapping("/register")
   public String registerCompany(
       @Valid @ModelAttribute("registrationData") CompanyRegistrationDTO registrationDTO,
-      BindingResult bindingResult, Model model) {
+      BindingResult bindingResult, Model model, RedirectAttributes redirectAttributes) {
 
     // Check if there are validation errors
     if (bindingResult.hasErrors()) {
@@ -80,7 +85,7 @@ public class CompanyController {
       Company savedCompany = companyService.registerCompanyWithAdmin(company, adminUser);
 
       // Success: redirect to login
-      model.addAttribute("message",
+      redirectAttributes.addFlashAttribute("message",
           "Company '" + savedCompany.getName()
               + "' registered successfully! Verification email sent to "
               + registrationDTO.getOwnerEmail() + ". Please verify your email before logging in.");
@@ -93,7 +98,7 @@ public class CompanyController {
     } catch (Exception e) {
       model.addAttribute("error", "Error during registration: " + e.getMessage());
       model.addAttribute("registrationData", registrationDTO);
-      e.printStackTrace();
+      logger.error("Error during company registration", e);
       return "company/register";
     }
   }
