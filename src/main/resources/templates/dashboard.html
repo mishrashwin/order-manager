@@ -2,112 +2,158 @@
 <html th:with="page='dashboard'" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
-  <title>Order Dashboard</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
-        rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | Order Manager</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/style.css}">
 
   <style>
+    /* Dashboard specific styles */
     body { background-color: #f9f9f9; margin: 0; padding: 0; }
     .board {
         display: flex;
-        gap: 1rem;
-        justify-content: space-around;
-        margin-top: 2rem;
+        gap: 1.5rem;
+        margin-top: 1.5rem;
         flex-wrap: wrap;
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
     }
+
     .column {
-        background: #fff;
+        background: white;
         border-radius: 10px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        width: 18%;
-        padding: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        flex: 1;
         min-width: 240px;
+        padding: 1rem;
+        transition: all 0.3s ease;
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
     }
+
+    .column:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+
     .column h5 {
         text-align: center;
-        border-bottom: 2px solid #ddd;
-        padding-bottom: .5rem;
+        border-bottom: 3px solid #3498db;
+        padding-bottom: 0.75rem;
+        margin-bottom: 1rem;
         font-weight: 600;
         text-transform: capitalize;
+        color: #2c3e50;
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
     }
+
     .order-card {
-        background: #f5f5f5;
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        border-left: 4px solid #3498db;
         border-radius: 8px;
-        padding: .6rem;
-        margin-bottom: .6rem;
+        padding: 0.85rem;
+        margin-bottom: 0.75rem;
         cursor: grab;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        touch-action: none;
     }
-    .order-card:active { cursor: grabbing; }
-    * { user-select: none !important; -webkit-user-select: none !important; -moz-user-select: none !important; }
+
+    .order-card:hover {
+        box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+
+    .order-card:active {
+        cursor: grabbing;
+        transform: scale(0.98);
+    }
+
     .order-list {
-min-height: 150px;
-padding: 8px;
-border: 2px dashed transparent;
-max-height: 360px; /* default — fits about 3 orders on desktop */
-overflow-y: auto;
-scrollbar-width: thin;
-}
+        min-height: 200px;
+        padding: 0.5rem;
+        border: 2px dashed transparent;
+        max-height: 450px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+    }
 
-/* 🖥️ Larger screens (wide desktop) */
-@media (min-width: 1400px) {
-.order-list {
-    max-height: 400px; /* slightly taller — consistent spacing */
-}
-}
+    .order-list::-webkit-scrollbar {
+        width: 6px;
+    }
 
-/* 💻 Medium screens (laptop/tablet landscape) */
-@media (max-width: 1200px) {
-.order-list {
-    max-height: 330px;
-}
-}
+    .order-list::-webkit-scrollbar-thumb {
+        background-color: rgba(52, 152, 219, 0.3);
+        border-radius: 4px;
+    }
 
-/* 📱 Tablets or small laptops */
-@media (max-width: 992px) {
-.order-list {
-    max-height: 300px;
-}
-}
+    .order-list::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(52, 152, 219, 0.5);
+    }
 
-/* 📱 Small mobile screens */
-@media (max-width: 768px) {
-.order-list {
-    max-height: 260px;
-}
-}
-
-/* Optional: clean scrollbar styling */
-.order-list::-webkit-scrollbar {
-width: 6px;
-}
-.order-list::-webkit-scrollbar-thumb {
-background-color: rgba(0, 0, 0, 0.2);
-border-radius: 4px;
-}
-
-/* 🧠 Optional: show scrollbar only on hover */
-.order-list::-webkit-scrollbar {
-width: 0px;
-}
-.order-list:hover::-webkit-scrollbar {
-width: 6px;
-}
-
-    .bg-light { opacity: 0.7; }
+    .bg-light {
+        opacity: 0.7;
+        background-color: #e8f4f8 !important;
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+    }
 
     .order-dates small {
         display: block;
         font-size: 0.8rem;
-        color: #555;
+        color: #7f8c8d;
+        margin-top: 0.25rem;
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
     }
 
     .delivery-date {
         font-weight: 600;
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
     }
 
-    .delivery-date.upcoming { color: #000; }
-    .delivery-date.delivered { color: #198754; }
-    .delivery-date.overdue { color: #dc3545; }
+    .delivery-date.upcoming { color: #3498db; }
+    .delivery-date.delivered { color: #27ae60; }
+    .delivery-date.overdue { color: #e74c3c; }
+
+    .order-card strong {
+        color: #2c3e50;
+        font-size: 1rem;
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+    }
+
+    .order-card .text-muted {
+        color: #7f8c8d !important;
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+    }
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -115,12 +161,16 @@ width: 6px;
 </head>
 
 <body>
-<div class="container">
-  <h2 class="text-center mt-3">📦 Order Dashboard</h2>
+<!-- Unified Navbar -->
+<div th:replace="~{fragments/unified-navbar :: unified-navbar}"></div>
 
-  <div th:replace="~{fragments/navbar :: navbar}"></div>
+<!-- Main Content (Full Width) -->
+<div class="main-content">
+  <div class="content-header">
+    <h1><i class="bi bi-speedometer2"></i> Order Dashboard</h1>
+  </div>
 
-  <!-- ✅ Dynamic Columns -->
+  <!-- Order Board -->
   <div class="board">
     <div class="column" th:attr="id=${status.name()}" th:each="status : ${statuses}">
       <h5 th:text="${status.displayName}"></h5>
@@ -138,10 +188,9 @@ width: 6px;
             (<span th:text="${order.quantity}"></span>)
           </small>
 
-          <!-- 🗓 Dates -->
+          <!-- Dates -->
           <div class="order-dates mt-1">
-            <small
-                th:text="'Order: ' + ${#temporals.format(order.orderDate, 'dd MMM yyyy')}"></small>
+            <small th:text="'Order: ' + ${#temporals.format(order.orderDate, 'dd MMM yyyy')}"></small>
 
             <small th:classappend="
                             ${order.status.final}
@@ -156,23 +205,50 @@ width: 6px;
       </div>
     </div>
   </div>
-
-  <div th:replace="~{fragments/footer :: footer}"></div>
 </div>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer}"></div>
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
       const lists = document.querySelectorAll(".order-list");
       const sharedGroup = { name: "orders", pull: true, put: true };
 
+      // Prevent text selection during drag
+      document.addEventListener('selectstart', function(e) {
+          if (e.target.closest('.order-card')) {
+              e.preventDefault();
+          }
+      });
+
+      // Disable text selection during drag via mouse
+      document.addEventListener('mousedown', function(e) {
+          if (e.target.closest('.order-card') || e.target.closest('.column')) {
+              e.preventDefault();
+          }
+      }, true);
+
       lists.forEach(listEl => {
           new Sortable(listEl, {
               group: sharedGroup,
-              animation: 0,
+              animation: 150,
               forceFallback: true,
               fallbackOnBody: true,
               draggable: ".order-card",
               ghostClass: "bg-light",
+              preventOnFilter: false,
+              swapThreshold: 0.65,
+              onStart: function(evt) {
+                  // Disable text selection on start
+                  document.body.style.userSelect = 'none';
+                  document.body.style.WebkitUserSelect = 'none';
+              },
+              onEnd: function(evt) {
+                  // Re-enable text selection
+                  document.body.style.userSelect = 'auto';
+                  document.body.style.WebkitUserSelect = 'auto';
+              },
               onAdd: function (evt) {
                   const orderId = evt.item.dataset.id;
                   const newStatus = evt.to.id.replace("list-", "");

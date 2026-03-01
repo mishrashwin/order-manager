@@ -6,6 +6,8 @@ import com.example.ordermanager.user.entity.PasswordResetToken;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.repository.PasswordResetTokenRepository;
 import com.example.ordermanager.user.repository.UserRepository;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.security.SecureRandom;

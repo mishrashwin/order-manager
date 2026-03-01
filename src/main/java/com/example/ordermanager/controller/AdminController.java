@@ -180,5 +180,23 @@ public class AdminController {
       return "redirect:/admin/users";
     }
   }
+
+  /**
+   * Update user details by admin Can update role and enabled status
+   */
+  @PostMapping("/users/{id}/update")
+  public String updateUser(@PathVariable Long id, @ModelAttribute User user,
+      RedirectAttributes redirectAttributes) {
+    try {
+      Long companyId = securityContextHelper.getCompanyIdFromContext();
+      userService.updateUserByAdmin(id, user, companyId);
+      redirectAttributes.addFlashAttribute("message", "User updated successfully.");
+      return "redirect:/admin/users";
+
+    } catch (IllegalArgumentException e) {
+      redirectAttributes.addFlashAttribute("error", e.getMessage());
+      return "redirect:/admin/users/{id}/edit";
+    }
+  }
 }
 
