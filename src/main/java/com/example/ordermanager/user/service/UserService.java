@@ -103,8 +103,8 @@ public class UserService {
   }
 
   /**
-   * Delete user by admin (with company verification)
-   * Rule: Cannot delete the last admin in the company
+   * Delete user by admin (with company verification) Rule: Cannot delete the last admin in the
+   * company
    *
    * @param userId User to delete
    * @param companyId Admin's company ID
@@ -114,9 +114,8 @@ public class UserService {
 
     // Prevent deleting the last admin in the company
     if ("ADMIN".equals(user.getRole())) {
-      long adminCount = getUsersByCompany(companyId).stream()
-          .filter(u -> "ADMIN".equals(u.getRole()))
-          .count();
+      long adminCount =
+          getUsersByCompany(companyId).stream().filter(u -> "ADMIN".equals(u.getRole())).count();
 
       // Only prevent if this is the LAST and ONLY admin
       if (adminCount <= 1) {
@@ -129,9 +128,8 @@ public class UserService {
   }
 
   /**
-   * Update user role by admin
-   * Rule: Cannot demote the last admin to a lower role
-   * Rule: Cannot have more than 2 admins per company
+   * Update user role by admin Rule: Cannot demote the last admin to a lower role Rule: Cannot have
+   * more than 2 admins per company
    *
    * @param userId User to update
    * @param role New role
@@ -143,9 +141,8 @@ public class UserService {
 
     // If promoting to ADMIN, check max 2 admins rule
     if ("ADMIN".equals(role) && !"ADMIN".equals(currentRole)) {
-      long adminCount = getUsersByCompany(companyId).stream()
-          .filter(u -> "ADMIN".equals(u.getRole()))
-          .count();
+      long adminCount =
+          getUsersByCompany(companyId).stream().filter(u -> "ADMIN".equals(u.getRole())).count();
 
       if (adminCount >= 2) {
         throw new IllegalArgumentException(
@@ -155,9 +152,8 @@ public class UserService {
 
     // Prevent demoting the last admin to another role
     if ("ADMIN".equals(currentRole) && !role.equals("ADMIN")) {
-      long adminCount = getUsersByCompany(companyId).stream()
-          .filter(u -> "ADMIN".equals(u.getRole()))
-          .count();
+      long adminCount =
+          getUsersByCompany(companyId).stream().filter(u -> "ADMIN".equals(u.getRole())).count();
 
       if (adminCount <= 1) {
         throw new IllegalArgumentException(
@@ -183,9 +179,8 @@ public class UserService {
       return false;
     }
 
-    long adminCount = getUsersByCompany(companyId).stream()
-        .filter(u -> "ADMIN".equals(u.getRole()))
-        .count();
+    long adminCount =
+        getUsersByCompany(companyId).stream().filter(u -> "ADMIN".equals(u.getRole())).count();
 
     return adminCount <= 1;
   }
@@ -197,9 +192,7 @@ public class UserService {
    * @return Number of admins
    */
   public long getAdminCountInCompany(Long companyId) {
-    return getUsersByCompany(companyId).stream()
-        .filter(u -> "ADMIN".equals(u.getRole()))
-        .count();
+    return getUsersByCompany(companyId).stream().filter(u -> "ADMIN".equals(u.getRole())).count();
   }
 
   public boolean isCurrentUser(Long userId, String currentUsername) {

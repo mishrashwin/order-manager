@@ -9,6 +9,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
  * Controller for company management. Handles company registration and admin operations.
@@ -44,7 +45,7 @@ public class CompanyController {
   @PostMapping("/register")
   public String registerCompany(
       @Valid @ModelAttribute("registrationData") CompanyRegistrationDTO registrationDTO,
-      BindingResult bindingResult, Model model) {
+      BindingResult bindingResult, Model model, RedirectAttributes redirectAttributes) {
 
     // Check if there are validation errors
     if (bindingResult.hasErrors()) {
@@ -80,7 +81,7 @@ public class CompanyController {
       Company savedCompany = companyService.registerCompanyWithAdmin(company, adminUser);
 
       // Success: redirect to login
-      model.addAttribute("message",
+      redirectAttributes.addFlashAttribute("message",
           "Company '" + savedCompany.getName()
               + "' registered successfully! Verification email sent to "
               + registrationDTO.getOwnerEmail() + ". Please verify your email before logging in.");
