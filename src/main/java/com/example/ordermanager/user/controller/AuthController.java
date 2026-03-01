@@ -162,16 +162,21 @@ public class AuthController {
   @PostMapping("/verify-reset-code")
   public String verifyResetCode(@RequestParam("code") String code,
       @RequestParam("email") String email, RedirectAttributes redirectAttributes) {
-    User user = passwordResetService.verifyPasswordResetCode(code, email);
+    try {
+      User user = passwordResetService.verifyPasswordResetCode(code, email);
 
-    if (user == null) {
-      redirectAttributes.addFlashAttribute("error",
-          "Invalid or expired code. Please request a new password reset.");
-      return "redirect:/verify-reset-code?email=" + encodeEmail(email);
+      if (user == null) {
+        redirectAttributes.addFlashAttribute("error",
+            "Invalid or expired code. Please request a new password reset.");
+        return "redirect:/verify-reset-code?email=" + encodeEmail(email);
+      }
+
+      redirectAttributes.addFlashAttribute("message", "Code verified successfully!");
+      return "redirect:/reset-password?code=" + code + "&email=" + encodeEmail(email);
+    } catch (TooManyAttemptsException e) {
+      redirectAttributes.addFlashAttribute("error", e.getMessage());
+      return "redirect:/forgot-password";
     }
-
-    redirectAttributes.addFlashAttribute("message", "Code verified successfully!");
-    return "redirect:/reset-password?code=" + code + "&email=" + encodeEmail(email);
   }
 
   /**
