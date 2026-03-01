@@ -20,7 +20,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequestMapping("/company")
 public class CompanyController {
 
-  private static final Logger logger = LoggerFactory.getLogger(CompanyController.class);
+  private static final Logger log = LoggerFactory.getLogger(CompanyController.class);
 
   private final CompanyService companyService;
   private final SecurityContextHelper securityContextHelper;
@@ -96,9 +96,9 @@ public class CompanyController {
       model.addAttribute("registrationData", registrationDTO);
       return "company/register";
     } catch (Exception e) {
+      log.error("Error during company registration", e);
       model.addAttribute("error", "Error during registration: " + e.getMessage());
       model.addAttribute("registrationData", registrationDTO);
-      logger.error("Error during company registration", e);
       return "company/register";
     }
   }
