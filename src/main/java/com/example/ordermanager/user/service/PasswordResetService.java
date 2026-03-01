@@ -1,6 +1,7 @@
 package com.example.ordermanager.user.service;
 
 import com.example.ordermanager.exception.EmailAlreadySentException;
+import com.example.ordermanager.exception.TooManyAttemptsException;
 import com.example.ordermanager.user.entity.PasswordResetToken;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.repository.PasswordResetTokenRepository;
@@ -51,12 +52,13 @@ public class PasswordResetService {
         existingToken.setCode(generateSixDigitCode());
         existingToken.setExpiryDate(LocalDateTime.now().plusMinutes(15));
         existingToken.setVerified(false);
+        existingToken.setFailedAttempts(0);
         tokenRepository.save(existingToken);
       }
     } else {
       // Create new token
       newToken = new PasswordResetToken(null, generateSixDigitCode(), user,
-          LocalDateTime.now().plusMinutes(15), false, LocalDateTime.now());
+          LocalDateTime.now().plusMinutes(15), false, LocalDateTime.now(), 0);
       tokenRepository.save(newToken);
     }
 
@@ -69,6 +71,7 @@ public class PasswordResetService {
   /**
    * Verify the 6-digit code against the user identified by email
    *
+   * @param email The email address of the user requesting the reset
    * @param code The 6-digit code entered by user
    * @param email The email address submitted at the start of the reset flow
    * @return User if code is valid and not expired, null otherwise
@@ -82,13 +85,28 @@ public class PasswordResetService {
 
     PasswordResetToken token = optToken.get();
 
+    // Check if max attempts exceeded
+    if (token.getFailedAttempts() >= PasswordResetToken.MAX_ATTEMPTS) {
+      throw new TooManyAttemptsException(
+          "Too many failed attempts. Please request a new reset code.");
+    }
+
     // Check if code is expired
     if (token.getExpiryDate().isBefore(LocalDateTime.now())) {
       return null;
     }
 
-    // Mark as verified
+    // Check if code matches (constant-time comparison to prevent timing attacks)
+    if (!MessageDigest.isEqual(token.getCode().getBytes(StandardCharsets.UTF_8),
+        code.getBytes(StandardCharsets.UTF_8))) {
+      token.setFailedAttempts(token.getFailedAttempts() + 1);
+      tokenRepository.save(token);
+      return null;
+    }
+
+    // Mark as verified and reset failed attempts
     token.setVerified(true);
+    token.setFailedAttempts(0);
     tokenRepository.save(token);
 
     return token.getUser();
@@ -97,6 +115,7 @@ public class PasswordResetService {
   /**
    * Reset password with verified code and email
    *
+   * @param email The email address of the user resetting the password
    * @param code The verified 6-digit code
    * @param email The email address of the user resetting their password
    * @param newPassword New password to set
@@ -110,6 +129,12 @@ public class PasswordResetService {
     }
 
     PasswordResetToken token = optToken.get();
+
+    // Check if code matches (constant-time comparison to prevent timing attacks)
+    if (!MessageDigest.isEqual(token.getCode().getBytes(StandardCharsets.UTF_8),
+        code.getBytes(StandardCharsets.UTF_8))) {
+      return false;
+    }
 
     // Check if code is expired or not verified
     if (token.getExpiryDate().isBefore(LocalDateTime.now()) || !token.isVerified()) {

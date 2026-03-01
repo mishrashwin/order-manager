@@ -1,10 +1,13 @@
 package com.example.ordermanager.user.controller;
 
 import com.example.ordermanager.exception.EmailAlreadySentException;
+import com.example.ordermanager.exception.TooManyAttemptsException;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.service.PasswordResetService;
 import com.example.ordermanager.user.service.RegistrationService;
 import com.example.ordermanager.user.service.UserService;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -187,6 +190,8 @@ public class AuthController {
       @RequestParam("email") String email, @RequestParam("password") String password,
       @RequestParam("confirmPassword") String confirmPassword,
       RedirectAttributes redirectAttributes) {
+
+    String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
 
     if (password == null || password.isEmpty()) {
       redirectAttributes.addFlashAttribute("error", "Password cannot be empty.");
