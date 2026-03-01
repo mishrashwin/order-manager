@@ -45,8 +45,12 @@ public class AdminController {
   public String listUsers(Model model) {
     Long companyId = securityContextHelper.getCompanyIdFromContext();
     List<User> users = userService.getUsersByCompany(companyId);
+    long adminCount = userService.getAdminCountInCompany(companyId);
+    String currentUsername = securityContextHelper.getCurrentUsername();
     model.addAttribute("users", users);
     model.addAttribute("companyId", companyId);
+    model.addAttribute("adminCount", adminCount);
+    model.addAttribute("currentUsername", currentUsername);
     return "admin/users/list";
   }
 

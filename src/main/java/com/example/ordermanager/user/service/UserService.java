@@ -83,9 +83,7 @@ public class UserService {
    * @return List of users in company
    */
   public List<User> getUsersByCompany(Long companyId) {
-    return userRepository.findAll().stream()
-        .filter(user -> user.getCompany() != null && user.getCompany().getId().equals(companyId))
-        .toList();
+    return userRepository.findByCompany_Id(companyId);
   }
 
   /**

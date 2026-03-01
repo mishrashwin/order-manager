@@ -60,12 +60,7 @@ public class OrderController {
       orderService.createOrderWithCompany(order, companyId);
       return "redirect:/orders";
     } catch (IllegalStateException e) {
-      model.addAttribute("error", "You must be logged in to create an order");
-      model.addAttribute("order", order);
-      Long companyId = securityContextHelper.getCompanyIdFromContext();
-      model.addAttribute("clients", clientService.getClientsByCompanyId(companyId));
-      model.addAttribute("statuses", Arrays.asList(OrderStatus.values()));
-      return "orders/form";
+      return "redirect:/login";
     } catch (Exception e) {
       model.addAttribute("error", "Error saving order: " + e.getMessage());
       model.addAttribute("order", order);

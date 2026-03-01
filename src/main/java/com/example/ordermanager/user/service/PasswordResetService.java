@@ -8,8 +8,6 @@ import com.example.ordermanager.user.repository.PasswordResetTokenRepository;
 import com.example.ordermanager.user.repository.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -71,14 +69,15 @@ public class PasswordResetService {
   }
 
   /**
-   * Verify the 6-digit code against the requesting user's email
+   * Verify the 6-digit code against the user identified by email
    *
    * @param email The email address of the user requesting the reset
    * @param code The 6-digit code entered by user
+   * @param email The email address submitted at the start of the reset flow
    * @return User if code is valid and not expired, null otherwise
    */
-  public User verifyPasswordResetCode(String email, String code) {
-    Optional<PasswordResetToken> optToken = tokenRepository.findByUserEmail(email);
+  public User verifyPasswordResetCode(String code, String email) {
+    Optional<PasswordResetToken> optToken = tokenRepository.findByCodeAndUser_Email(code, email);
 
     if (optToken.isEmpty()) {
       return null;
@@ -114,15 +113,16 @@ public class PasswordResetService {
   }
 
   /**
-   * Reset password with verified code scoped to the requesting user's email
+   * Reset password with verified code and email
    *
    * @param email The email address of the user resetting the password
    * @param code The verified 6-digit code
+   * @param email The email address of the user resetting their password
    * @param newPassword New password to set
    * @return true if password reset successfully
    */
-  public boolean resetPasswordWithCode(String email, String code, String newPassword) {
-    Optional<PasswordResetToken> optToken = tokenRepository.findByUserEmail(email);
+  public boolean resetPasswordWithCode(String code, String email, String newPassword) {
+    Optional<PasswordResetToken> optToken = tokenRepository.findByCodeAndUser_Email(code, email);
 
     if (optToken.isEmpty()) {
       return false;
