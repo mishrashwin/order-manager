@@ -1,5 +1,16 @@
 <script th:fragment="tableUtils" xmlns:th="http://www.w3.org/1999/xhtml">
     document.addEventListener("DOMContentLoaded", function () {
+        // 📱 Mobile Table Scroll Indicator
+        document.querySelectorAll(".table-responsive").forEach(container => {
+            function checkScroll() {
+                const isScrolledToEnd = container.scrollLeft + container.clientWidth >= container.scrollWidth - 5;
+                container.classList.toggle("scrolled-end", isScrolledToEnd);
+            }
+
+            container.addEventListener("scroll", checkScroll);
+            checkScroll(); // Initial check
+        });
+
         document.querySelectorAll("table").forEach(table => {
             const tbody = table.querySelector("tbody");
             if (!tbody) return;

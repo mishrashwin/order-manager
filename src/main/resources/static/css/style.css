@@ -311,8 +311,67 @@ body.authenticated {
 /* ===== Responsive Tables ===== */
 .table-responsive {
     border-radius: 8px;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: visible;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    position: relative;
+}
+
+.table-responsive::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #3498db;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #2980b9;
+}
+
+/* Mobile scroll indicator - subtle gradient on right edge */
+@media (max-width: 768px) {
+    .table-responsive::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 30px;
+        height: 100%;
+        background: linear-gradient(to left, rgba(255,255,255,0.9), transparent);
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .table-responsive.scrolled-end::after {
+        display: none;
+    }
+}
+
+/* Mobile-specific table styles */
+@media (max-width: 768px) {
+    .unified-table {
+        min-width: 800px;
+    }
+
+    .unified-table thead th,
+    .unified-table tbody td {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.875rem;
+        white-space: nowrap;
+    }
+
+    .table-responsive {
+        margin-bottom: 1rem;
+    }
 }
 
 /* ===== Footer ===== */
@@ -516,8 +575,21 @@ footer p {
         padding: 1.5rem;
     }
 
+    .content-header {
+        flex-direction: column;
+        gap: 1rem;
+        padding-bottom: 1.5rem;
+    }
+
     .content-header h1 {
         font-size: 1.5rem;
+        width: 100%;
+    }
+
+    .content-header .btn {
+        position: static;
+        width: 100%;
+        max-width: 100%;
     }
 
     .board {
@@ -550,6 +622,20 @@ footer p {
         font-size: 0.9rem;
         padding: 0.75rem;
     }
+
+    .search-box {
+        padding: 1rem;
+    }
+
+    .search-box .d-flex {
+        flex-direction: column !important;
+        gap: 1rem;
+    }
+
+    .search-box input,
+    .search-box select {
+        width: 100% !important;
+    }
 }
 
 @media (max-width: 480px) {
@@ -581,6 +667,26 @@ footer p {
 
     .empty-state i {
         font-size: 2rem;
+    }
+
+    /* Form improvements for small screens */
+    .form-control-custom,
+    .form-select-custom {
+        font-size: 16px !important; /* Prevents zoom on iOS */
+    }
+
+    .action-buttons .btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+    }
+
+    /* Improve button spacing on mobile */
+    .d-flex.gap-3 {
+        gap: 0.75rem !important;
+    }
+
+    .d-flex.gap-2 {
+        gap: 0.5rem !important;
     }
 }
 

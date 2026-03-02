@@ -192,7 +192,7 @@
             <label for="password">Password <span style="color: #e74c3c;">*</span></label>
             <input type="password" id="password" th:field="*{password}" class="form-control"
                    placeholder="••••••••" required>
-            <small style="font-size: 12px; color: #7f8c8d; margin-top: 0.25rem;">At least 6 characters, will be encrypted</small>
+            <small style="font-size: 12px; color: #7f8c8d; margin-top: 0.25rem;">At least 6 characters</small>
             <small th:if="${#fields.hasErrors('password')}" th:errors="*{password}" style="color: #e74c3c; font-size: 12px;"></small>
         </div>
 
