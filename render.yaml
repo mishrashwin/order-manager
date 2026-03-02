@@ -1,0 +1,53 @@
+services:
+  # Web Service - Spring Boot Application
+  - type: web
+    name: order-manager
+    env: docker
+    dockerfilePath: ./Dockerfile
+    region: oregon # Choose your preferred region
+    plan: starter # Free tier or upgrade to standard
+    branch: main
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: DATABASE_URL
+        fromDatabase:
+          name: order-manager-db
+          property: connectionString
+      - key: DB_USERNAME
+        fromDatabase:
+          name: order-manager-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: order-manager-db
+          property: password
+      - key: DB_DRIVER
+        value: com.mysql.cj.jdbc.Driver
+      - key: HIBERNATE_DIALECT
+        value: org.hibernate.dialect.MySQL8Dialect
+      - key: MAIL_HOST
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: 587
+      - key: MAIL_USERNAME
+        sync: false # Set manually in Render dashboard
+      - key: MAIL_PASSWORD
+        sync: false # Set manually in Render dashboard
+      - key: MAIL_FROM
+        sync: false # Set manually in Render dashboard
+      - key: APP_FRONTEND_URL
+        value: https://order-manager.onrender.com
+      - key: APP_BASE_URL
+        value: https://order-manager.onrender.com
+      - key: JAVA_OPTS
+        value: -Xmx512m -Xms256m -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0
+
+databases:
+  # MySQL Database
+  - name: order-manager-db
+    databaseName: order_manager_db
+    plan: starter # Free tier
+    region: oregon
+

@@ -135,6 +135,12 @@
       <artifactId>spring-boot-starter-mail</artifactId>
       <groupId>org.springframework.boot</groupId>
     </dependency>
+
+    <!-- Actuator for health checks and monitoring -->
+    <dependency>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+      <groupId>org.springframework.boot</groupId>
+    </dependency>
   </dependencies>
   <description>Spring Boot executable application for managing client orders end-to-end
   </description>
