@@ -13,83 +13,105 @@
             font-family: "Poppins", sans-serif;
         }
 
-        .admin-stats {
+        .admin-cards-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: white;
-            border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            border-left: 4px solid #3498db;
-            text-align: center;
-        }
-
-        .stat-card i {
-            font-size: 2.5rem;
-            color: #3498db;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-card h5 {
-            color: #7f8c8d;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-card .stat-value {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #2c3e50;
-        }
-
-        .admin-section {
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
             margin-top: 2rem;
         }
 
-        .admin-section h4 {
-            margin-bottom: 1.5rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 2px solid #e0e0e0;
-            color: #2c3e50;
-        }
-
-        .unified-card {
+        .admin-action-card {
             background: white;
-            border-radius: 8px;
-            padding: 2rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            padding: 2.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border-top: 4px solid #3498db;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .admin-action-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+
+        .admin-action-card.company-card {
+            border-top-color: #27ae60;
+        }
+
+        .admin-action-card.users-card {
+            border-top-color: #3498db;
+        }
+
+        .admin-action-card i {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .admin-action-card.company-card i {
+            color: #27ae60;
+        }
+
+        .admin-action-card.users-card i {
+            color: #3498db;
+        }
+
+        .admin-action-card h3 {
+            color: #2c3e50;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .admin-action-card p {
+            color: #7f8c8d;
             margin-bottom: 2rem;
+            line-height: 1.6;
         }
 
-        .btn-primary-custom {
-            background-color: #3498db;
+        .admin-action-card .btn {
+            padding: 0.875rem 2rem;
+            font-weight: 600;
+            font-size: 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            width: 100%;
+            max-width: 250px;
+        }
+
+        .btn-company {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
             color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 5px;
-            text-decoration: none;
-            display: inline-block;
-            transition: 0.3s;
+            border: none;
         }
 
-        .btn-primary-custom:hover {
-            background-color: #2980b9;
-            text-decoration: none;
-        }
-
-        .btn-outline-secondary {
-            color: #34495e;
-            border-color: #34495e;
-        }
-
-        .btn-outline-secondary:hover {
-            background-color: #34495e;
+        .btn-company:hover {
+            background: linear-gradient(135deg, #229954 0%, #1e8449 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
             color: white;
+        }
+
+        .btn-users {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+        }
+
+        .btn-users:hover {
+            background: linear-gradient(135deg, #2980b9 0%, #1f618d 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .admin-cards-container {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -103,48 +125,28 @@
     <!-- Header -->
     <div class="content-header">
         <h1><i class="bi bi-shield-check"></i> Admin Dashboard</h1>
-        <a class="btn btn-primary-custom" th:href="@{/admin/users}">
-            <i class="bi bi-people"></i> Manage Users
-        </a>
     </div>
 
-    <!-- Admin Stats -->
-    <div class="admin-stats">
-        <div class="stat-card">
-            <i class="bi bi-box-seam"></i>
-            <h5>Total Orders</h5>
-            <div class="stat-value" th:text="${totalOrders}">0</div>
+    <!-- Admin Action Cards -->
+    <div class="admin-cards-container">
+        <!-- Company Settings Card -->
+        <div class="admin-action-card company-card">
+            <i class="bi bi-building-gear"></i>
+            <h3>Company Settings</h3>
+            <p>Manage company details, update information, and configure company-wide settings.</p>
+            <a class="btn btn-company" href="#" onclick="alert('Company settings feature coming soon!'); return false;">
+                <i class="bi bi-gear-fill"></i> Manage Company
+            </a>
         </div>
-        <div class="stat-card" style="border-left-color: #27ae60;">
-            <i class="bi bi-people" style="color: #27ae60;"></i>
-            <h5>Total Clients</h5>
-            <div class="stat-value" th:text="${totalClients}">0</div>
-        </div>
-        <div class="stat-card" style="border-left-color: #e74c3c;">
-            <i class="bi bi-building" style="color: #e74c3c;"></i>
-            <h5>Total Vendors</h5>
-            <div class="stat-value" th:text="${totalVendors}">0</div>
-        </div>
-        <div class="stat-card" style="border-left-color: #f39c12;">
-            <i class="bi bi-person-check" style="color: #f39c12;"></i>
-            <h5>Total Users</h5>
-            <div class="stat-value" th:text="${totalUsers}">0</div>
-        </div>
-    </div>
 
-    <!-- Admin Sections -->
-    <div class="admin-section">
-        <h4><i class="bi bi-gear"></i> Administration</h4>
-        <div class="unified-card">
-            <p>Welcome to the Admin Panel. From here you can manage users, view system statistics, and control access permissions.</p>
-            <div class="d-flex gap-2">
-                <a class="btn btn-primary-custom" th:href="@{/admin/users}">
-                    <i class="bi bi-people"></i> Manage Users
-                </a>
-                <a class="btn btn-outline-secondary" th:href="@{/dashboard}">
-                    <i class="bi bi-speedometer2"></i> Back to Dashboard
-                </a>
-            </div>
+        <!-- User Management Card -->
+        <div class="admin-action-card users-card">
+            <i class="bi bi-people-fill"></i>
+            <h3>User Management</h3>
+            <p>Add, edit, or remove users from your company. Manage roles and permissions.</p>
+            <a class="btn btn-users" th:href="@{/admin/users}">
+                <i class="bi bi-person-plus-fill"></i> Manage Users
+            </a>
         </div>
     </div>
 </div>
