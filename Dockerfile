@@ -11,6 +11,8 @@ WORKDIR /app
 
 # Copy pom.xml and download dependencies (cached layer)
 COPY pom.xml .
+COPY eclipse-java-google-style.xml .
+COPY intellij-java-google-style.xml .
 RUN mvn dependency:go-offline -B
 
 # Copy source code
@@ -47,6 +49,9 @@ ENV JAVA_OPTS="-Xmx512m -Xms256m -XX:+UseContainerSupport -XX:MaxRAMPercentage=7
 
 # Set default profile to production
 ENV SPRING_PROFILES_ACTIVE=prod
+
+# Set port environment variable (required by Render and Spring Boot)
+ENV PORT=8080
 
 # Expose port
 EXPOSE 8080

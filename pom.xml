@@ -53,11 +53,11 @@
       <groupId>org.springframework.boot</groupId>
     </dependency>
 
-    <!-- Flyway for database migrations -->
+    <!-- Flyway for database migrations - Updated for PostgreSQL 18 support -->
     <dependency>
       <artifactId>flyway-core</artifactId>
       <groupId>org.flywaydb</groupId>
-      <version>10.17.0</version>
+      <version>10.20.1</version>
     </dependency>
 
     <!--        &lt;!&ndash; H2 in-memory database &ndash;&gt;-->
@@ -67,10 +67,18 @@
     <!--            <scope>runtime</scope>-->
     <!--        </dependency>-->
 
-    <!-- MySQL Database -->
+    <!-- MySQL Database (Dev) -->
     <dependency>
       <artifactId>mysql-connector-j</artifactId>
       <groupId>com.mysql</groupId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- PostgreSQL Database (Prod on Render) - Latest version supporting PostgreSQL 18 -->
+    <dependency>
+      <artifactId>postgresql</artifactId>
+      <groupId>org.postgresql</groupId>
+      <version>42.7.3</version>
       <scope>runtime</scope>
     </dependency>
 

@@ -1,20 +1,36 @@
 services:
-  # Web Service - Spring Boot Application
+  # Web Service - Spring Boot Application (FREE TIER)
   - type: web
     name: order-manager
     env: docker
     dockerfilePath: ./Dockerfile
-    region: oregon # Choose your preferred region
-    plan: starter # Free tier or upgrade to standard
-    branch: main
+    region: oregon # Free tier available
+    plan: free # ✅ FREE TIER - No payment needed!
+    branch: DockerSetup # ✅ Use DockerSetup branch for deployment
     healthCheckPath: /actuator/health
     envVars:
+      # ===== Server Port =====
+      - key: PORT
+        value: "8080"
+
+      # ===== Application Profile =====
       - key: SPRING_PROFILES_ACTIVE
         value: prod
-      - key: DATABASE_URL
+
+      # ===== Database (Render FREE PostgreSQL) =====
+      # Extract individual connection parameters from database service
+      - key: DB_HOST
         fromDatabase:
           name: order-manager-db
-          property: connectionString
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: order-manager-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: order-manager-db
+          property: database
       - key: DB_USERNAME
         fromDatabase:
           name: order-manager-db
@@ -23,31 +39,43 @@ services:
         fromDatabase:
           name: order-manager-db
           property: password
+
+      # ===== PostgreSQL Driver =====
       - key: DB_DRIVER
-        value: com.mysql.cj.jdbc.Driver
+        value: org.postgresql.Driver
+
+      # ===== Hibernate (PostgreSQL) =====
       - key: HIBERNATE_DIALECT
-        value: org.hibernate.dialect.MySQL8Dialect
+        value: org.hibernate.dialect.PostgreSQL10Dialect
+
+      # ===== Email (Gmail) =====
       - key: MAIL_HOST
         value: smtp.gmail.com
       - key: MAIL_PORT
         value: 587
       - key: MAIL_USERNAME
-        sync: false # Set manually in Render dashboard
+        sync: false # Set manually
       - key: MAIL_PASSWORD
-        sync: false # Set manually in Render dashboard
+        sync: false # Set manually
       - key: MAIL_FROM
-        sync: false # Set manually in Render dashboard
+        sync: false # Set manually
+
+      # ===== Application URLs =====
       - key: APP_FRONTEND_URL
         value: https://order-manager.onrender.com
       - key: APP_BASE_URL
         value: https://order-manager.onrender.com
-      - key: JAVA_OPTS
-        value: -Xmx512m -Xms256m -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0
 
+      # ===== JVM Optimization (for free tier's 0.5GB RAM) =====
+      - key: JAVA_OPTS
+        value: -Xmx256m -Xms128m -XX:+UseContainerSupport -XX:MaxRAMPercentage=50.0
+
+# ===== FREE PostgreSQL Database =====
 databases:
-  # MySQL Database
   - name: order-manager-db
     databaseName: order_manager_db
-    plan: starter # Free tier
-    region: oregon
+    plan: free # ✅ COMPLETELY FREE!
+    region: oregon # Same region as web service
+
+
 
