@@ -12,28 +12,47 @@
     /* Dashboard specific styles */
     body { background-color: #f9f9f9; margin: 0; padding: 0; }
     .board {
-        display: flex;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
         gap: 1.5rem;
         margin-top: 1.5rem;
-        flex-wrap: wrap;
         user-select: none;
         -webkit-user-select: none;
         -moz-user-select: none;
         -ms-user-select: none;
     }
 
+    /* Ensure consistent distribution for different screen sizes */
+    @media (max-width: 1400px) {
+        .board {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @media (max-width: 992px) {
+        .board {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 576px) {
+        .board {
+            grid-template-columns: 1fr;
+        }
+    }
+
     .column {
         background: white;
         border-radius: 10px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        flex: 1;
-        min-width: 240px;
         padding: 1rem;
         transition: all 0.3s ease;
         user-select: none;
         -webkit-user-select: none;
         -moz-user-select: none;
         -ms-user-select: none;
+        display: flex;
+        flex-direction: column;
     }
 
     .column:hover {
