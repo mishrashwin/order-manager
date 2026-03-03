@@ -54,10 +54,26 @@
     </dependency>
 
     <!-- Flyway for database migrations - Updated for PostgreSQL 18 support -->
+    <!-- 1. Support for PostgreSQL 18 (Crucial) -->
     <dependency>
-      <artifactId>flyway-core</artifactId>
       <groupId>org.flywaydb</groupId>
-      <version>10.20.1</version>
+      <artifactId>flyway-database-postgresql</artifactId>
+      <version>11.19.1</version> <!-- Supports PostgreSQL 18 wire protocol -->
+    </dependency>
+
+    <!-- 2. Core Engine (Must match above version) -->
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+      <version>11.19.1</version>
+    </dependency>
+
+    <!-- 3. JDBC Driver (42.7.3 is fine, but 42.7.5+ is recommended for PG18) -->
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>42.7.5</version>
+      <scope>runtime</scope>
     </dependency>
 
     <!--        &lt;!&ndash; H2 in-memory database &ndash;&gt;-->
@@ -73,15 +89,6 @@
       <groupId>com.mysql</groupId>
       <scope>runtime</scope>
     </dependency>
-
-    <!-- PostgreSQL Database (Prod on Render) - Latest version supporting PostgreSQL 18 -->
-    <dependency>
-      <artifactId>postgresql</artifactId>
-      <groupId>org.postgresql</groupId>
-      <version>42.7.3</version>
-      <scope>runtime</scope>
-    </dependency>
-
 
     <!-- Lombok -->
     <dependency>
