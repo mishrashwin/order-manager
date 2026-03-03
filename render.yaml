@@ -53,13 +53,24 @@ services:
 
       # ===== Application URLs =====
       - key: APP_FRONTEND_URL
-        value: https://order-manager.onrender.com
+        value: false
       - key: APP_BASE_URL
-        value: https://order-manager.onrender.com
+        value: false
 
       # ===== JVM Optimization (for free tier's 0.5GB RAM) =====
       - key: JAVA_OPTS
         value: -Xmx256m -Xms128m -XX:+UseContainerSupport -XX:MaxRAMPercentage=50.0
+
+  # Cron Job - Keep application alive (FREE TIER)
+  - type: cron
+    name: order-manager-keepalive
+    env: docker
+    region: oregon
+    plan: free # ✅ FREE TIER - Cron jobs are free!
+    schedule: "*/10 * * * *" # Run every 10 minutes
+    dockerCommand: >
+      curl -f ${APP_BASE_URL}/actuator/health || 
+      curl -f ${APP_BASE_URL}/login
 
 # ===== FREE PostgreSQL Database =====
 databases:
