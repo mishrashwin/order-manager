@@ -46,7 +46,7 @@ services:
 
       # ===== Hibernate (PostgreSQL) =====
       - key: HIBERNATE_DIALECT
-        value: org.hibernate.dialect.PostgreSQL10Dialect
+        value: org.hibernate.dialect.PostgreSQLDialect
 
       # ===== Email (Gmail) =====
       - key: MAIL_HOST
