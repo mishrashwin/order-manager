@@ -53,9 +53,9 @@ services:
 
       # ===== Application URLs =====
       - key: APP_FRONTEND_URL
-        value: false
+        sync: false # Set manually in Render dashboard
       - key: APP_BASE_URL
-        value: false
+        sync: false # Set manually in Render dashboard
 
       # ===== JVM Optimization (for free tier's 0.5GB RAM) =====
       - key: JAVA_OPTS
@@ -66,11 +66,14 @@ services:
     name: order-manager-keepalive
     env: docker
     region: oregon
-    plan: free # ✅ FREE TIER - Cron jobs are free!
+    plan: free
     schedule: "*/10 * * * *" # Run every 10 minutes
     dockerCommand: >
-      curl -f ${APP_BASE_URL}/actuator/health || 
-      curl -f ${APP_BASE_URL}/login
+      echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🔄 Cron: Starting keepalive ping to order-manager..." &&
+      curl -f -i https://order-manager-kc67.onrender.com/login && 
+      echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ Cron: Keepalive ping successful!" || 
+      echo "[$(date '+%Y-%m-%d %H:%M:%S')] ❌ Cron: Failed to ping application"
+
 
 # ===== FREE PostgreSQL Database =====
 databases:
@@ -78,6 +81,5 @@ databases:
     databaseName: order_manager_db
     plan: free # ✅ COMPLETELY FREE!
     region: oregon # Same region as web service
-
 
 
