@@ -44,21 +44,12 @@ services:
       - key: DB_DRIVER
         value: org.postgresql.Driver
 
-      # ===== Hibernate (PostgreSQL) =====
-      - key: HIBERNATE_DIALECT
-        value: org.hibernate.dialect.PostgreSQLDialect
-
-      # ===== Email (Gmail) =====
-      - key: MAIL_HOST
-        value: smtp.gmail.com
-      - key: MAIL_PORT
-        value: 587
-      - key: MAIL_USERNAME
-        sync: false # Set manually
-      - key: MAIL_PASSWORD
-        sync: false # Set manually
+      # ===== Email (Brevo API - HTTP-based, Render free tier compatible) =====
+      # Using API instead of SMTP because Render blocks SMTP ports
+      - key: BREVO_API_KEY
+        sync: false # Set manually in Render dashboard
       - key: MAIL_FROM
-        sync: false # Set manually
+        sync: false # Set manually in Render dashboard
 
       # ===== Application URLs =====
       - key: APP_FRONTEND_URL

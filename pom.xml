@@ -151,6 +151,12 @@
       <groupId>org.springframework.boot</groupId>
     </dependency>
 
+    <!-- HTTP Client for Brevo API -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webflux</artifactId>
+    </dependency>
+
     <!-- Actuator for health checks and monitoring -->
     <dependency>
       <artifactId>spring-boot-starter-actuator</artifactId>

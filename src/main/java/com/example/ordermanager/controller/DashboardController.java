@@ -32,9 +32,8 @@ public class DashboardController {
     Long companyId = securityContextHelper.getCompanyIdFromContext();
 
     // Get company name for dashboard header
-    String companyName = companyService.getCompanyById(companyId)
-        .map(Company::getName)
-        .orElse("Order Dashboard");
+    String companyName =
+        companyService.getCompanyById(companyId).map(Company::getName).orElse("Order Dashboard");
 
     List<OrderStatus> statuses = Arrays.asList(OrderStatus.values());
     model.addAttribute("statuses", statuses);

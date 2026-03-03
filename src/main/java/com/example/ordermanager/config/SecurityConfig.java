@@ -16,9 +16,14 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationFa
 
 import java.io.IOException;
 
-
+/**
+ * Security Configuration
+ * - Using DaoAuthenticationProvider with CustomUserDetailsService for username/password authentication
+ * - Intentionally configured to suppress warning about UserDetailsService beans
+ */
 @Configuration
 @EnableMethodSecurity(prePostEnabled = true)
+@SuppressWarnings("deprecation")
 public class SecurityConfig {
 
   private final CustomUserDetailsService customUserDetailsService;
@@ -32,6 +37,10 @@ public class SecurityConfig {
     return new BCryptPasswordEncoder();
   }
 
+  /**
+   * DaoAuthenticationProvider configured with CustomUserDetailsService
+   * This is intentional and properly configured
+   */
   @Bean
   public DaoAuthenticationProvider authenticationProvider() {
     DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
