@@ -7,8 +7,8 @@ import org.slf4j.LoggerFactory;
 /**
  * EmailService - Delegates to Brevo API
  *
- * Uses Brevo API (HTTP-based) instead of SMTP for Render free tier compatibility
- * SMTP ports (25, 465, 587, 2525) are blocked by Render, so API is the solution
+ * Uses Brevo API (HTTP-based) instead of SMTP for Render free tier compatibility SMTP ports (25,
+ * 465, 587, 2525) are blocked by Render, so API is the solution
  */
 @Service
 public class EmailService {

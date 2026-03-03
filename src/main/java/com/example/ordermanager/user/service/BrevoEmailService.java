@@ -12,6 +12,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class BrevoEmailService {
 
   private static final Logger log = LoggerFactory.getLogger(BrevoEmailService.class);
+  private static final String EMAIL_SIGNATURE =
+      "<br><p>Thank You,<br>OrderManager<br>AshLabs Pvt Ltd</p>";
 
   private final WebClient webClient;
   private final String brevoApiKey;
@@ -29,12 +31,9 @@ public class BrevoEmailService {
 
   public void sendVerificationEmail(String to, String verificationUrl) {
     String subject = "Verify your email - Order Manager";
-    String htmlContent = "<html><body>"
-        + "<p>Welcome to Order Manager!</p>"
-        + "<p>Click the link below to verify your email:</p>"
-        + "<p><a href=\"" + verificationUrl + "\">Verify Email</a></p>"
-        + "<p>Link: " + verificationUrl + "</p>"
-        + "<p>This link will expire in 24 hours.</p>"
+    String htmlContent = "<html><body>" + "<p>Welcome to Order Manager!</p>"
+        + "<p>Click the link below to verify your email:</p>" + "<p><a href=\"" + verificationUrl
+        + "\">Verify Email</a></p>" + "<p>This link will expire in 24 hours.</p>" + EMAIL_SIGNATURE
         + "</body></html>";
 
     sendEmail(to, subject, htmlContent);
@@ -42,11 +41,10 @@ public class BrevoEmailService {
 
   public void sendPasswordResetEmail(String to, String code) {
     String subject = "Password Reset Code - Order Manager";
-    String htmlContent = "<html><body>"
-        + "<p>You requested a password reset.</p>"
+    String htmlContent = "<html><body>" + "<p>You requested a password reset.</p>"
         + "<p>Your 6-digit verification code is: <strong>" + code + "</strong></p>"
         + "<p>This code will expire in 15 minutes.</p>"
-        + "<p>If you didn't request this, please ignore this email.</p>"
+        + "<p>If you didn't request this, please ignore this email.</p>" + EMAIL_SIGNATURE
         + "</body></html>";
 
     sendEmail(to, subject, htmlContent);
@@ -93,12 +91,8 @@ public class BrevoEmailService {
             "subject": "%s",
             "htmlContent": "%s"
           }
-          """.formatted(
-          escapeJson(fromEmail),
-          escapeJson(to),
-          escapeJson(subject),
-          escapeJson(htmlContent)
-      );
+          """.formatted(escapeJson(fromEmail), escapeJson(to), escapeJson(subject),
+          escapeJson(htmlContent));
     } catch (Exception e) {
       log.error("Error building Brevo request", e);
       throw new RuntimeException("Error building email request: " + e.getMessage(), e);
@@ -109,11 +103,7 @@ public class BrevoEmailService {
     if (str == null) {
       return "";
     }
-    return str
-        .replace("\\", "\\\\")
-        .replace("\"", "\\\"")
-        .replace("\n", "\\n")
-        .replace("\r", "\\r")
+    return str.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r")
         .replace("\t", "\\t");
   }
 }
