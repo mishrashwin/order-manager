@@ -25,11 +25,23 @@
 
     <!-- Form Card -->
     <div class="unified-card">
-        <form th:action="@{/admin/users}" th:object="${user}" method="post" class="row g-3">
+        <form th:action="@{/admin/users/add}" th:object="${user}" method="post" class="row g-3">
             <input type="hidden" th:field="*{id}">
 
             <div class="col-md-6">
-                <label class="form-label"><i class="bi bi-person"></i> Username</label>
+                <label class="form-label"><i class="bi bi-person"></i> First Name</label>
+                <input type="text" class="form-control form-control-custom" th:field="*{firstName}" required>
+                <div class="form-text">User's first name</div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label"><i class="bi bi-person"></i> Last Name</label>
+                <input type="text" class="form-control form-control-custom" th:field="*{lastName}" required>
+                <div class="form-text">User's last name</div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label"><i class="bi bi-person-badge"></i> Username</label>
                 <input type="text" class="form-control form-control-custom" th:field="*{username}" required>
                 <div class="form-text">Unique username for login</div>
             </div>
@@ -37,6 +49,12 @@
             <div class="col-md-6">
                 <label class="form-label"><i class="bi bi-envelope"></i> Email</label>
                 <input type="email" class="form-control form-control-custom" th:field="*{email}" required>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label"><i class="bi bi-phone"></i> Mobile Number</label>
+                <input type="tel" class="form-control form-control-custom" th:field="*{mobileNumber}" required>
+                <div class="form-text">10-15 digits</div>
             </div>
 
             <div class="col-md-6">
@@ -50,14 +68,6 @@
                     <option value="">-- Select Role --</option>
                     <option value="USER">User</option>
                     <option value="ADMIN">Admin</option>
-                </select>
-            </div>
-
-            <div class="col-md-6">
-                <label class="form-label">Status</label>
-                <select class="form-select form-control-custom" th:field="*{enabled}">
-                    <option value="false">Pending</option>
-                    <option value="true">Verified</option>
                 </select>
             </div>
 

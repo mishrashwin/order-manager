@@ -61,7 +61,14 @@
       <version>11.19.1</version> <!-- Supports PostgreSQL 18 wire protocol -->
     </dependency>
 
-    <!-- 2. Core Engine (Must match above version) -->
+    <!-- 2. Support for MySQL 8.0+ (for dev environment) -->
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-mysql</artifactId>
+      <version>11.19.1</version>
+    </dependency>
+
+    <!-- 3. Core Engine (Must match above version) -->
     <dependency>
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-core</artifactId>

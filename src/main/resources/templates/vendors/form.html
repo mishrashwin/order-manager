@@ -64,7 +64,7 @@
                     <i class="bi bi-x-circle"></i> Cancel
                 </a>
                 <button type="submit" class="btn btn-success-custom">
-                    <i class="bi bi-check-circle"></i> Save Vendor
+                    <i class="bi bi-check-circle"></i> <span th:text="${vendor.id == null ? 'Save Vendor' : 'Update Vendor'}"></span>
                 </button>
             </div>
         </form>

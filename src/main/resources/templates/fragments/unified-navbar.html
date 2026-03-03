@@ -13,7 +13,7 @@
     <div class="container-fluid">
         <!-- Brand -->
         <a class="navbar-brand" th:href="@{/dashboard}">
-            <i class="bi bi-box-seam"></i>
+            <i class="bi bi-building-gear"></i>
             <span th:text="${companyName}">Order Manager</span>
         </a>
 
@@ -58,7 +58,7 @@
                 <!-- Admin Panel Link (Only for Admins) -->
                 <li class="nav-item" th:if="${#authorization.expression('hasRole(''ADMIN'')')}">
                     <a class="nav-link admin-link"
-                       th:classappend="${page == 'admin-dashboard' or page == 'admin-users' or page == 'admin-add-user' or page == 'admin-edit-user'} ? 'active'"
+                       th:classappend="${page == 'admin-dashboard' or page == 'admin-users' or page == 'admin-add-user' or page == 'admin-edit-user' or page == 'admin-company' or page == 'admin-edit-company'} ? 'active'"
                        th:href="@{/admin/dashboard}">
                         <i class="bi bi-shield-check"></i> Admin Panel
                     </a>

@@ -157,6 +157,9 @@ public class CompanyService {
       company.setName(updatedCompany.getName());
     }
 
+    // Update bio (can be null or empty)
+    company.setBio(updatedCompany.getBio());
+
     return companyRepository.save(company);
   }
 }

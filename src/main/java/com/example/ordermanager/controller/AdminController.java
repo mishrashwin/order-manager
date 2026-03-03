@@ -1,5 +1,7 @@
 package com.example.ordermanager.controller;
 
+import com.example.ordermanager.entity.Company;
+import com.example.ordermanager.service.CompanyService;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.service.UserService;
 import com.example.ordermanager.utils.SecurityContextHelper;
@@ -21,10 +23,13 @@ import java.util.List;
 public class AdminController {
 
   private final UserService userService;
+  private final CompanyService companyService;
   private final SecurityContextHelper securityContextHelper;
 
-  public AdminController(UserService userService, SecurityContextHelper securityContextHelper) {
+  public AdminController(UserService userService, CompanyService companyService,
+      SecurityContextHelper securityContextHelper) {
     this.userService = userService;
+    this.companyService = companyService;
     this.securityContextHelper = securityContextHelper;
   }
 
@@ -196,6 +201,48 @@ public class AdminController {
     } catch (IllegalArgumentException e) {
       redirectAttributes.addFlashAttribute("error", e.getMessage());
       return "redirect:/admin/users/{id}/edit";
+    }
+  }
+
+  /**
+   * View company details
+   */
+  @GetMapping("/company")
+  public String viewCompany(Model model) {
+    Long companyId = securityContextHelper.getCompanyIdFromContext();
+    Company company = companyService.getCompanyById(companyId)
+        .orElseThrow(() -> new IllegalArgumentException("Company not found"));
+    model.addAttribute("company", company);
+    return "admin/company/view";
+  }
+
+  /**
+   * Show edit company form
+   */
+  @GetMapping("/company/edit")
+  public String showEditCompanyForm(Model model) {
+    Long companyId = securityContextHelper.getCompanyIdFromContext();
+    Company company = companyService.getCompanyById(companyId)
+        .orElseThrow(() -> new IllegalArgumentException("Company not found"));
+    model.addAttribute("company", company);
+    return "admin/company/edit";
+  }
+
+  /**
+   * Update company details
+   */
+  @PostMapping("/company/update")
+  public String updateCompany(@ModelAttribute Company company,
+      RedirectAttributes redirectAttributes) {
+    try {
+      Long companyId = securityContextHelper.getCompanyIdFromContext();
+      companyService.updateCompany(companyId, company);
+      redirectAttributes.addFlashAttribute("message", "Company details updated successfully.");
+      return "redirect:/admin/company";
+
+    } catch (IllegalArgumentException e) {
+      redirectAttributes.addFlashAttribute("error", e.getMessage());
+      return "redirect:/admin/company/edit";
     }
   }
 }

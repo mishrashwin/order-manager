@@ -71,12 +71,8 @@ public class PasswordResetService {
   }
 
   /**
-   * Verify the 6-digit code against the user identified by email
-   *
-   * @param email The email address of the user requesting the reset
-   * @param code The 6-digit code entered by user
-   * @param email The email address submitted at the start of the reset flow
-   * @return User if code is valid and not expired, null otherwise
+   * Verify the 6-digit code against the user identified by email. On successful verification,
+   * consume the token immediately.
    */
   public User verifyPasswordResetCode(String code, String email) {
     Optional<PasswordResetToken> optToken = tokenRepository.findByCodeAndUser_Email(code, email);
@@ -106,50 +102,32 @@ public class PasswordResetService {
       return null;
     }
 
-    // Mark as verified and reset failed attempts
-    token.setVerified(true);
-    token.setFailedAttempts(0);
-    tokenRepository.save(token);
-
-    return token.getUser();
+    User user = token.getUser();
+    // Consume token as soon as code verification succeeds.
+    tokenRepository.delete(token);
+    return user;
   }
 
   /**
-   * Reset password with verified code and email
+   * Reset password after successful code verification handled in controller/session.
    *
-   * @param email The email address of the user resetting the password
-   * @param code The verified 6-digit code
    * @param email The email address of the user resetting their password
    * @param newPassword New password to set
    * @return true if password reset successfully
    */
-  public boolean resetPasswordWithCode(String code, String email, String newPassword) {
-    Optional<PasswordResetToken> optToken = tokenRepository.findByCodeAndUser_Email(code, email);
+  public boolean resetPasswordWithVerifiedEmail(String email, String newPassword) {
+    Optional<User> optUser = userRepository.findByEmail(email);
 
-    if (optToken.isEmpty()) {
+    if (optUser.isEmpty()) {
       return false;
     }
 
-    PasswordResetToken token = optToken.get();
-
-    // Check if code matches (constant-time comparison to prevent timing attacks)
-    if (!MessageDigest.isEqual(token.getCode().getBytes(StandardCharsets.UTF_8),
-        code.getBytes(StandardCharsets.UTF_8))) {
-      return false;
-    }
-
-    // Check if code is expired or not verified
-    if (token.getExpiryDate().isBefore(LocalDateTime.now()) || !token.isVerified()) {
-      return false;
-    }
-
-    User user = token.getUser();
+    User user = optUser.get();
     user.setPassword(passwordEncoder.encode(newPassword));
     userRepository.save(user);
 
-    // Delete the token after successful reset
-    tokenRepository.delete(token);
-
+    // Defensive cleanup: remove any lingering token for this user.
+    tokenRepository.findByUser(user).ifPresent(tokenRepository::delete);
     return true;
   }
 
@@ -164,4 +142,3 @@ public class PasswordResetService {
     return String.valueOf(code);
   }
 }
-

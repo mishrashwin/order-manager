@@ -224,7 +224,9 @@ public class UserService {
   }
 
   /**
-   * Update user by admin Can update role and enabled status Company cannot be changed
+   * Update user by admin Can update firstName, lastName, username, email, mobileNumber, and role
+   * Status (enabled) cannot be changed by admin - it's automatically managed by email verification
+   * If email is changed, verification email is resent and status is reset to pending
    *
    * @param userId User ID to update
    * @param updatedUser User object with updated fields
@@ -235,11 +237,47 @@ public class UserService {
     // Verify user belongs to company
     User user = getUserByIdAndCompany(userId, companyId);
 
-    // Update only allowed fields
-    user.setRole(updatedUser.getRole() != null ? updatedUser.getRole() : user.getRole());
-    user.setEnabled(updatedUser.isEnabled());
+    String oldEmail = user.getEmail();
+    String newEmail = updatedUser.getEmail();
+    String oldUsername = user.getUsername();
+    String newUsername = updatedUser.getUsername();
 
-    // Save and return
+    // Check if email is being changed and if new email already exists
+    if (!oldEmail.equals(newEmail) && userRepository.findByEmail(newEmail).isPresent()) {
+      throw new IllegalArgumentException("Email already exists!");
+    }
+
+    // Check if username is being changed and if new username already exists
+    if (!oldUsername.equals(newUsername)
+        && userRepository.findByUsername(newUsername).isPresent()) {
+      throw new IllegalArgumentException("Username already exists!");
+    }
+
+    // Update allowed fields
+    user.setFirstName(
+        updatedUser.getFirstName() != null ? updatedUser.getFirstName() : user.getFirstName());
+    user.setLastName(
+        updatedUser.getLastName() != null ? updatedUser.getLastName() : user.getLastName());
+    user.setUsername(newUsername);
+    user.setMobileNumber(updatedUser.getMobileNumber() != null ? updatedUser.getMobileNumber()
+        : user.getMobileNumber());
+    user.setRole(updatedUser.getRole() != null ? updatedUser.getRole() : user.getRole());
+
+    // Handle email change - if email changed, reset to pending and send new verification
+    if (!oldEmail.equals(newEmail)) {
+      user.setEmail(newEmail);
+      user.setEnabled(false); // Reset to pending for re-verification
+
+      // Save user first
+      User savedUser = userRepository.save(user);
+
+      // Send new verification email
+      registrationService.sendVerificationEmail(savedUser);
+
+      return savedUser;
+    }
+
+    // Save and return (email not changed)
     return userRepository.save(user);
   }
 }
