@@ -61,25 +61,9 @@ services:
       - key: JAVA_OPTS
         value: -Xmx256m -Xms128m -XX:+UseContainerSupport -XX:MaxRAMPercentage=50.0
 
-  # Cron Job - Keep application alive (FREE TIER)
-  - type: cron
-    name: order-manager-keepalive
-    env: docker
-    region: oregon
-    plan: free
-    schedule: "*/10 * * * *" # Run every 10 minutes
-    dockerCommand: >
-      echo "[$(date '+%Y-%m-%d %H:%M:%S')] 🔄 Cron: Starting keepalive ping to order-manager..." &&
-      curl -f -i https://order-manager-kc67.onrender.com/login && 
-      echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✅ Cron: Keepalive ping successful!" || 
-      echo "[$(date '+%Y-%m-%d %H:%M:%S')] ❌ Cron: Failed to ping application"
-
-
 # ===== FREE PostgreSQL Database =====
 databases:
   - name: order-manager-db
     databaseName: order_manager_db
     plan: free # ✅ COMPLETELY FREE!
     region: oregon # Same region as web service
-
-
