@@ -10,9 +10,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 
 @Controller
 @RequestMapping("/orders")
@@ -33,9 +32,19 @@ public class OrderController {
 
   // ✅ 1. List all orders
   @GetMapping
-  public String listOrders(Model model) {
+  public String listOrders(@RequestParam(required = false) String startDate,
+      @RequestParam(required = false) String endDate, Model model) {
     Long companyId = securityContextHelper.getCompanyIdFromContext();
-    model.addAttribute("orders", orderService.getOrdersByCompanyId(companyId));
+
+    // Set default date range: past one month
+    LocalDate start =
+        startDate != null ? LocalDate.parse(startDate) : LocalDate.now().minusMonths(1);
+    LocalDate end = endDate != null ? LocalDate.parse(endDate) : LocalDate.now();
+
+    model.addAttribute("orders",
+        orderService.getOrdersByCompanyIdAndDateRange(companyId, start, end));
+    model.addAttribute("startDate", start);
+    model.addAttribute("endDate", end);
     return "orders/list";
   }
 
@@ -99,4 +108,30 @@ public class OrderController {
     return "redirect:/orders";
   }
 
+  // ✅ 7. Duplicate order - fetches existing order and pre-populates form
+  @GetMapping("/duplicate/{id}")
+  public String duplicateOrder(@PathVariable Long id, Model model) {
+    Order existingOrder = orderService.getOrderById(id);
+    if (existingOrder == null) {
+      return "redirect:/orders";
+    }
+
+    // Create a new order copy (without ID so it creates a new one)
+    Order newOrder = new Order();
+    newOrder.setCustomerName(existingOrder.getCustomerName());
+    newOrder.setProductName(existingOrder.getProductName());
+    newOrder.setQuantity(existingOrder.getQuantity());
+    newOrder.setTotalAmount(existingOrder.getTotalAmount());
+    newOrder.setPoOrderNo(existingOrder.getPoOrderNo());
+    newOrder.setOrderDate(LocalDate.now());
+    newOrder.setDeliveryDate(existingOrder.getDeliveryDate());
+    newOrder.setOrderNote(existingOrder.getOrderNote());
+    newOrder.setStatus(OrderStatus.CREATED);
+
+    Long companyId = securityContextHelper.getCompanyIdFromContext();
+    model.addAttribute("order", newOrder);
+    model.addAttribute("clients", clientService.getClientsByCompanyId(companyId));
+    model.addAttribute("statuses", Arrays.asList(OrderStatus.values()));
+    return "orders/form";
+  }
 }

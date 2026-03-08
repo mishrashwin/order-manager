@@ -23,6 +23,8 @@ public class Order {
   private String productName;
   private Integer quantity;
   private Double totalAmount;
+  @Column(length = 50)
+  private String poOrderNo;
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false)
   private OrderStatus status = OrderStatus.CREATED;
@@ -30,6 +32,8 @@ public class Order {
   private LocalDate orderDate;
   @DateTimeFormat(pattern = "yyyy-MM-dd")
   private LocalDate deliveryDate;
+  @Column(columnDefinition = "TEXT")
+  private String orderNote;
 
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "company_id", nullable = false)
@@ -47,6 +51,19 @@ public class Order {
     this.status = status;
     this.orderDate = orderDate;
     this.deliveryDate = deliveryDate;
+  }
+
+  public Order(String customerName, String productName, Integer quantity, Double totalAmount,
+      String poOrderNo, OrderStatus status, LocalDate orderDate, LocalDate deliveryDate, String orderNote) {
+    this.customerName = customerName;
+    this.productName = productName;
+    this.quantity = quantity;
+    this.totalAmount = totalAmount;
+    this.poOrderNo = poOrderNo;
+    this.status = status;
+    this.orderDate = orderDate;
+    this.deliveryDate = deliveryDate;
+    this.orderNote = orderNote;
   }
 
 }

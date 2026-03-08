@@ -49,6 +49,12 @@
                 <small class="form-text text-muted">If the desired client is missing, click "Add Client".</small>
             </div>
 
+            <!-- PO/Order No -->
+            <div class="mb-4">
+                <label class="form-label"><i class="bi bi-receipt"></i> PO/Order No</label>
+                <input type="text" class="form-control form-control-custom" th:field="*{poOrderNo}" placeholder="e.g., PO-2026-001">
+            </div>
+
             <!-- Product Name -->
             <div class="mb-4">
                 <label class="form-label"><i class="bi bi-box"></i> Product Name</label>
@@ -94,6 +100,13 @@
                            th:field="*{deliveryDate}"
                            th:value="${#temporals.format(order.deliveryDate, 'yyyy-MM-dd')}">
                 </div>
+            </div>
+
+            <!-- Order Note -->
+            <div class="mb-4">
+                <label class="form-label"><i class="bi bi-chat-left-text"></i> Order Note</label>
+                <textarea class="form-control form-control-custom" th:field="*{orderNote}"
+                          rows="5" placeholder="Add any notes related to this order (internal use only)..."></textarea>
             </div>
 
             <!-- Actions -->

@@ -9,7 +9,6 @@
   <link rel="stylesheet" th:href="@{/css/style.css}">
 
   <style>
-    /* Dashboard specific styles */
     body { background-color: #f9f9f9; margin: 0; padding: 0; }
     .board {
         display: grid;
@@ -173,6 +172,84 @@
         -moz-user-select: none;
         -ms-user-select: none;
     }
+
+    /* Compact date filter responsive styling */
+    .content-header {
+        margin-bottom: 1.5rem;
+    }
+
+    /* Dashboard header controls: centered title + right-aligned compact filters */
+    .dashboard-header {
+        position: relative;
+        justify-content: center;
+        align-items: center;
+        min-height: 48px;
+    }
+
+    .dashboard-title {
+        margin: 0;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .dashboard-filter {
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+    }
+
+    .dashboard-filter .date-input {
+        width: 118px;
+        font-size: 0.85rem;
+        padding: 0.35rem 0.45rem;
+    }
+
+    .dashboard-filter-actions {
+        display: flex;
+        gap: 0.4rem;
+        align-items: center;
+    }
+
+    /* Override global .content-header .btn absolute positioning for filter buttons */
+    .dashboard-filter .btn {
+        position: static !important;
+        right: auto !important;
+        padding: 0.35rem 0.55rem;
+        line-height: 1;
+    }
+
+    @media (max-width: 1200px) {
+        .dashboard-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.65rem;
+        }
+
+        .dashboard-filter {
+            position: static;
+            transform: none;
+            justify-content: center;
+            width: 100%;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-filter {
+            flex-wrap: wrap;
+            row-gap: 0.5rem;
+        }
+
+        .dashboard-filter .date-input {
+            width: 110px;
+        }
+    }
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -185,8 +262,26 @@
 
 <!-- Main Content (Full Width) -->
 <div class="main-content">
-  <div class="content-header">
-    <h1><i class="bi bi-speedometer2"></i> Order Dashboard</h1>
+  <div class="content-header dashboard-header">
+    <h1 class="dashboard-title"><i class="bi bi-speedometer2"></i> Order Dashboard</h1>
+
+    <form method="get" action="/dashboard" class="dashboard-filter">
+      <input type="date" class="form-control form-control-sm date-input" id="startDate" name="startDate"
+             th:value="${#temporals.format(startDate, 'yyyy-MM-dd')}"
+             title="Start Date" required>
+      <span class="text-muted" style="font-size: 0.8rem;">to</span>
+      <input type="date" class="form-control form-control-sm date-input" id="endDate" name="endDate"
+             th:value="${#temporals.format(endDate, 'yyyy-MM-dd')}"
+             title="End Date" required>
+      <div class="dashboard-filter-actions">
+        <button type="submit" class="btn btn-sm btn-primary" title="Apply Date Filter">
+          <i class="bi bi-funnel"></i>
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetDateRange()" title="Reset Date Range">
+          <i class="bi bi-arrow-counterclockwise"></i>
+        </button>
+      </div>
+    </form>
   </div>
 
   <!-- Order Board -->
@@ -230,6 +325,17 @@
 <div th:replace="~{fragments/footer :: footer}"></div>
 
 <script>
+  // Reset date range to default (past one month)
+  function resetDateRange() {
+    const today = new Date();
+    const oneMonthAgo = new Date(today);
+    oneMonthAgo.setMonth(today.getMonth() - 1);
+
+    const formatDate = (date) => date.toISOString().split('T')[0];
+
+    window.location.href = `/dashboard?startDate=${formatDate(oneMonthAgo)}&endDate=${formatDate(today)}`;
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
       const lists = document.querySelectorAll(".order-list");
       const sharedGroup = { name: "orders", pull: true, put: true };
@@ -286,3 +392,4 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+

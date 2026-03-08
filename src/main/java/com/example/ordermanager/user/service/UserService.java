@@ -8,6 +8,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class UserService {
@@ -238,17 +239,28 @@ public class UserService {
     User user = getUserByIdAndCompany(userId, companyId);
 
     String oldEmail = user.getEmail();
-    String newEmail = updatedUser.getEmail();
     String oldUsername = user.getUsername();
+    String newEmail = updatedUser.getEmail();
     String newUsername = updatedUser.getUsername();
 
+    // Require non-blank email/username to avoid null-based comparisons and invalid updates.
+    if (newEmail == null || newEmail.trim().isEmpty()) {
+      throw new IllegalArgumentException("Email is required!");
+    }
+    if (newUsername == null || newUsername.trim().isEmpty()) {
+      throw new IllegalArgumentException("Username is required!");
+    }
+
+    newEmail = newEmail.trim();
+    newUsername = newUsername.trim();
+
     // Check if email is being changed and if new email already exists
-    if (!oldEmail.equals(newEmail) && userRepository.findByEmail(newEmail).isPresent()) {
+    if (!Objects.equals(oldEmail, newEmail) && userRepository.findByEmail(newEmail).isPresent()) {
       throw new IllegalArgumentException("Email already exists!");
     }
 
     // Check if username is being changed and if new username already exists
-    if (!oldUsername.equals(newUsername)
+    if (!Objects.equals(oldUsername, newUsername)
         && userRepository.findByUsername(newUsername).isPresent()) {
       throw new IllegalArgumentException("Username already exists!");
     }
@@ -264,7 +276,7 @@ public class UserService {
     user.setRole(updatedUser.getRole() != null ? updatedUser.getRole() : user.getRole());
 
     // Handle email change - if email changed, reset to pending and send new verification
-    if (!oldEmail.equals(newEmail)) {
+    if (!Objects.equals(oldEmail, newEmail)) {
       user.setEmail(newEmail);
       user.setEnabled(false); // Reset to pending for re-verification
 

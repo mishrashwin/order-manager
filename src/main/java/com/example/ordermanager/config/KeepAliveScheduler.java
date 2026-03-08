@@ -11,8 +11,8 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.RestClientException;
 
 /**
- * Scheduler to keep the application alive by hitting an endpoint every 10 minutes.
- * Useful for preventing the application from being paused on platforms like Render.
+ * Scheduler to keep the application alive by hitting an endpoint every 10 minutes. Useful for
+ * preventing the application from being paused on platforms like Render.
  *
  * Can be controlled via the property: app.keepalive.enabled (default: true)
  */
@@ -33,8 +33,8 @@ public class KeepAliveScheduler {
   }
 
   /**
-   * Scheduled task that runs every 10 minutes (600000 milliseconds).
-   * Hits the application's health endpoint to keep it active.
+   * Scheduled task that runs every 10 minutes (600000 milliseconds). Hits the application's health
+   * endpoint to keep it active.
    */
   @Scheduled(fixedRate = 600000, initialDelay = 60000)
   public void keepApplicationAlive() {
@@ -46,8 +46,7 @@ public class KeepAliveScheduler {
 
       logger.info("✅ Keep-Alive Cron: Successfully pinged application. Response: {}", response);
     } catch (RestClientException e) {
-      logger.warn("⚠️ Keep-Alive Cron: Failed to ping application at {}. Error: {}",
-          appBaseUrl,
+      logger.warn("⚠️ Keep-Alive Cron: Failed to ping application at {}. Error: {}", appBaseUrl,
           e.getMessage());
     } catch (Exception e) {
       logger.error("❌ Keep-Alive Cron: Unexpected error while keeping application alive", e);

@@ -1,5 +1,6 @@
 # Maven
 target/
+*.jar
 !target/*.jar
 pom.xml.tag
 pom.xml.releaseBackup
@@ -56,7 +57,6 @@ src/test/
 
 # Build artifacts
 *.class
-*.jar
 *.war
 *.ear
 
