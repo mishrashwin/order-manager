@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:with="page='admin-edit-company'">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Company | Admin Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<!-- Unified Navbar -->
+<div th:replace="~{fragments/unified-navbar :: unified-navbar}"></div>
+
+<!-- Main Content (Full Width) -->
+<div class="main-content">
+    <!-- Header -->
+    <div class="content-header">
+        <h1><i class="bi bi-building"></i> Edit Company Details</h1>
+        <a class="btn btn-secondary" th:href="@{/admin/company}">
+            <i class="bi bi-arrow-left"></i> Back to Company Details
+        </a>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill"></i> <span th:text="${message}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill"></i> <span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Form Card -->
+    <div class="unified-card">
+        <form th:action="@{/admin/company/update}" th:object="${company}" method="post" class="row g-3">
+            <input type="hidden" th:field="*{id}">
+
+            <div class="col-md-6">
+                <label class="form-label"><i class="bi bi-building"></i> Company Name</label>
+                <input type="text" class="form-control form-control-custom" th:field="*{name}" required>
+                <div class="form-text">Company name must be unique across the system</div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label"><i class="bi bi-calendar"></i> Created Date</label>
+                <input type="text" class="form-control form-control-custom"
+                       th:value="${#temporals.format(company.createdAt, 'dd MMM yyyy')}" disabled readonly>
+                <div class="form-text">Company registration date</div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label"><i class="bi bi-toggle-on"></i> Status</label>
+                <input type="text" class="form-control form-control-custom"
+                       th:value="${company.active ? 'Active' : 'Inactive'}" disabled readonly>
+                <div class="form-text">Company status is managed by system administrators</div>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label"><i class="bi bi-info-square"></i> Company Bio</label>
+                <textarea class="form-control form-control-custom" th:field="*{bio}" rows="5"
+                          placeholder="Enter a brief description about your company (optional)"></textarea>
+                <div class="form-text">A brief description about your company, its mission, or services (optional)</div>
+            </div>
+
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Note:</strong> Changing the company name will affect all users, orders, clients, and vendors associated with this company.
+                </div>
+            </div>
+
+            <div class="col-12 pt-3 border-top">
+                <div class="d-flex justify-content-end gap-3">
+                    <a class="btn btn-outline-secondary" th:href="@{/admin/company}">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-success-custom">
+                        <i class="bi bi-check-circle"></i> Update Company
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

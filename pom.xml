@@ -53,11 +53,34 @@
       <groupId>org.springframework.boot</groupId>
     </dependency>
 
-    <!-- Flyway for database migrations -->
+    <!-- Flyway for database migrations - Updated for PostgreSQL 18 support -->
+    <!-- 1. Support for PostgreSQL 18 (Crucial) -->
     <dependency>
-      <artifactId>flyway-core</artifactId>
       <groupId>org.flywaydb</groupId>
-      <version>10.17.0</version>
+      <artifactId>flyway-database-postgresql</artifactId>
+      <version>11.19.1</version> <!-- Supports PostgreSQL 18 wire protocol -->
+    </dependency>
+
+    <!-- 2. Support for MySQL 8.0+ (for dev environment) -->
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-mysql</artifactId>
+      <version>11.19.1</version>
+    </dependency>
+
+    <!-- 3. Core Engine (Must match above version) -->
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+      <version>11.19.1</version>
+    </dependency>
+
+    <!-- 3. JDBC Driver (42.7.3 is fine, but 42.7.5+ is recommended for PG18) -->
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>42.7.5</version>
+      <scope>runtime</scope>
     </dependency>
 
     <!--        &lt;!&ndash; H2 in-memory database &ndash;&gt;-->
@@ -67,13 +90,12 @@
     <!--            <scope>runtime</scope>-->
     <!--        </dependency>-->
 
-    <!-- MySQL Database -->
+    <!-- MySQL Database (Dev) -->
     <dependency>
       <artifactId>mysql-connector-j</artifactId>
       <groupId>com.mysql</groupId>
       <scope>runtime</scope>
     </dependency>
-
 
     <!-- Lombok -->
     <dependency>
@@ -133,6 +155,18 @@
     <!-- Email Verification -->
     <dependency>
       <artifactId>spring-boot-starter-mail</artifactId>
+      <groupId>org.springframework.boot</groupId>
+    </dependency>
+
+    <!-- HTTP Client for Brevo API -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webflux</artifactId>
+    </dependency>
+
+    <!-- Actuator for health checks and monitoring -->
+    <dependency>
+      <artifactId>spring-boot-starter-actuator</artifactId>
       <groupId>org.springframework.boot</groupId>
     </dependency>
   </dependencies>

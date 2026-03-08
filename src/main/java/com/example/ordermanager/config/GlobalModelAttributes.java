@@ -39,8 +39,8 @@ public class GlobalModelAttributes {
 
       try {
         Long companyId = securityContextHelper.getCompanyIdFromContext();
-        String companyName = companyService.getCompanyById(companyId)
-            .map(Company::getName).orElse("Order Manager");
+        String companyName =
+            companyService.getCompanyById(companyId).map(Company::getName).orElse("Order Manager");
 
         model.addAttribute("companyName", companyName);
       } catch (Exception e) {
@@ -53,6 +53,5 @@ public class GlobalModelAttributes {
     }
   }
 }
-
 
 

@@ -10,7 +10,6 @@
     <style>
         body {
             background-color: #f5f5f5;
-            font-family: "Poppins", sans-serif;
         }
 
         .admin-cards-container {
@@ -134,7 +133,7 @@
             <i class="bi bi-building-gear"></i>
             <h3>Company Settings</h3>
             <p>Manage company details, update information, and configure company-wide settings.</p>
-            <a class="btn btn-company" href="#" onclick="alert('Company settings feature coming soon!'); return false;">
+            <a class="btn btn-company" th:href="@{/admin/company}">
                 <i class="bi bi-gear-fill"></i> Manage Company
             </a>
         </div>

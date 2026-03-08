@@ -44,6 +44,7 @@ body.authenticated {
     color: white !important;
     font-weight: 700;
     font-size: 1.5rem;
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif !important;
     display: flex;
     align-items: center;
     gap: 0.5rem;

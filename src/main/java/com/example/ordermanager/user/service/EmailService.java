@@ -1,48 +1,46 @@
 package com.example.ordermanager.user.service;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * EmailService - Delegates to Brevo API
+ *
+ * Uses Brevo API (HTTP-based) instead of SMTP for Render free tier compatibility SMTP ports (25,
+ * 465, 587, 2525) are blocked by Render, so API is the solution
+ */
 @Service
 public class EmailService {
 
   private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
-  private final JavaMailSender mailSender;
+  private final BrevoEmailService brevoEmailService;
 
-  @Value("${spring.mail.from}")
-  private String fromEmail;
-
-  public EmailService(JavaMailSender mailSender) {
-    this.mailSender = mailSender;
+  public EmailService(BrevoEmailService brevoEmailService) {
+    this.brevoEmailService = brevoEmailService;
   }
 
   public void sendVerificationEmail(String to, String verificationUrl) {
-    log.info("sendVerificationEmail to email id : " + to);
-    SimpleMailMessage mail = new SimpleMailMessage();
-    mail.setFrom(fromEmail);
-    mail.setTo(to);
-    mail.setSubject("Verify your email - Order Manager");
-    mail.setText("Welcome to Order Manager!\n\nClick the link below to verify your email:\n"
-        + verificationUrl + "\n\nThis link will expire in 24 hours.");
-    mailSender.send(mail);
-    log.info("Verification Email sent successfully to : " + to);
+    log.info("Sending verification email via Brevo to: " + to);
+    try {
+      brevoEmailService.sendVerificationEmail(to, verificationUrl);
+      log.info("Verification email sent successfully to: " + to);
+    } catch (Exception e) {
+      log.error("Failed to send verification email to: " + to, e);
+      throw e;
+    }
   }
 
   public void sendPasswordResetEmail(String to, String code) {
-    log.info("sendPasswordResetEmail to email id : " + to);
-    SimpleMailMessage mail = new SimpleMailMessage();
-    mail.setFrom(fromEmail);
-    mail.setTo(to);
-    mail.setSubject("Password Reset Code - Order Manager");
-    mail.setText("You requested a password reset.\n\n" + "Your 6-digit verification code is: "
-        + code + "\n\n" + "This code will expire in 15 minutes.\n\n"
-        + "If you didn't request this, please ignore this email.");
-    mailSender.send(mail);
-    log.info("Password Reset Email sent successfully to : " + to);
+    log.info("Sending password reset email via Brevo to: " + to);
+    try {
+      brevoEmailService.sendPasswordResetEmail(to, code);
+      log.info("Password reset email sent successfully to: " + to);
+    } catch (Exception e) {
+      log.error("Failed to send password reset email to: " + to, e);
+      throw e;
+    }
   }
 }
+

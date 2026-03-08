@@ -1,0 +1,69 @@
+services:
+  # Web Service - Spring Boot Application (FREE TIER)
+  - type: web
+    name: order-manager
+    env: docker
+    dockerfilePath: ./Dockerfile
+    region: oregon # Free tier available
+    plan: free # ✅ FREE TIER - No payment needed!
+    branch: DockerSetup # ✅ Use DockerSetup branch for deployment
+    healthCheckPath: /actuator/health
+    envVars:
+      # ===== Server Port =====
+      - key: PORT
+        value: "8080"
+
+      # ===== Application Profile =====
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+
+      # ===== Database (Render FREE PostgreSQL) =====
+      # Extract individual connection parameters from database service
+      - key: DB_HOST
+        fromDatabase:
+          name: order-manager-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: order-manager-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: order-manager-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: order-manager-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: order-manager-db
+          property: password
+
+      # ===== PostgreSQL Driver =====
+      - key: DB_DRIVER
+        value: org.postgresql.Driver
+
+      # ===== Email (Brevo API - HTTP-based, Render free tier compatible) =====
+      # Using API instead of SMTP because Render blocks SMTP ports
+      - key: BREVO_API_KEY
+        sync: false # Set manually in Render dashboard
+      - key: MAIL_FROM
+        sync: false # Set manually in Render dashboard
+
+      # ===== Application URLs =====
+      - key: APP_FRONTEND_URL
+        sync: false # Set manually in Render dashboard
+      - key: APP_BASE_URL
+        sync: false # Set manually in Render dashboard
+
+      # ===== JVM Optimization (for free tier's 0.5GB RAM) =====
+      - key: JAVA_OPTS
+        value: -Xmx256m -Xms128m -XX:+UseContainerSupport -XX:MaxRAMPercentage=50.0
+
+# ===== FREE PostgreSQL Database =====
+databases:
+  - name: order-manager-db
+    databaseName: order_manager_db
+    plan: free # ✅ COMPLETELY FREE!
+    region: oregon # Same region as web service

@@ -30,6 +30,9 @@ public class Company {
   @Column(nullable = false, unique = true)
   private String name;
 
+  @Column(columnDefinition = "TEXT")
+  private String bio;
+
   @Column(name = "created_at", nullable = false, updatable = false)
   @CreationTimestamp
   private LocalDateTime createdAt;
