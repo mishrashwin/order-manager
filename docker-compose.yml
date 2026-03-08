@@ -1,3 +1,17 @@
+# ============================================
+# Docker Compose - LOCAL DEVELOPMENT ONLY
+# ============================================
+# This file is for containerized local testing with MySQL.
+#
+# IMPORTANT:
+# - Production uses PostgreSQL on Render (see render.yaml)
+# - Flyway migrations (src/main/resources/db/migration/) are PostgreSQL-specific
+# - This setup uses MySQL with Hibernate auto-schema (Flyway disabled)
+# - For PostgreSQL testing, use: docker-compose -f docker-compose.postgres.yml up
+#
+# See DOCKER_SETUP.md for detailed documentation
+# ============================================
+
 version: '3.8'
 
 services:
@@ -14,7 +28,8 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./src/main/resources/db/migration:/docker-entrypoint-initdb.d
+      # Migration files removed - Hibernate handles schema in dev (Flyway disabled)
+      # Production uses PostgreSQL with Flyway on Render
     networks:
       - order-manager-network
     healthcheck:

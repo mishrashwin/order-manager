@@ -6,8 +6,7 @@ services:
     dockerfilePath: ./Dockerfile
     region: oregon # Free tier available
     plan: free # ✅ FREE TIER - No payment needed!
-    branch: DockerSetup # ✅ Use DockerSetup branch for deployment
-    healthCheckPath: /actuator/health
+    healthCheckPath: /
     envVars:
       # ===== Server Port =====
       - key: PORT

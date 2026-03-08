@@ -8,6 +8,7 @@ import com.example.ordermanager.repository.OrderRepository;
 import com.example.ordermanager.utils.Helper;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,19 @@ public class OrderService {
    */
   public List<Order> getOrdersByCompanyId(Long companyId) {
     return orderRepository.findByCompanyId(companyId);
+  }
+
+  /**
+   * TENANT-AWARE: Get orders for a specific company filtered by date range
+   *
+   * @param companyId Company ID
+   * @param startDate Start date (inclusive)
+   * @param endDate End date (inclusive)
+   * @return List of orders within the date range
+   */
+  public List<Order> getOrdersByCompanyIdAndDateRange(Long companyId, LocalDate startDate,
+      LocalDate endDate) {
+    return orderRepository.findByCompanyIdAndOrderDateBetween(companyId, startDate, endDate);
   }
 
   public Order createOrder(Order order) {

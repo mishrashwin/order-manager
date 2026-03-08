@@ -8,7 +8,9 @@ import com.example.ordermanager.utils.SecurityContextHelper;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 
@@ -27,7 +29,8 @@ public class DashboardController {
   }
 
   @GetMapping("/dashboard")
-  public String dashboard(Model model) {
+  public String dashboard(@RequestParam(required = false) String startDate,
+      @RequestParam(required = false) String endDate, Model model) {
     // TENANT-AWARE: Get company ID from authenticated user
     Long companyId = securityContextHelper.getCompanyIdFromContext();
 
@@ -35,12 +38,20 @@ public class DashboardController {
     String companyName =
         companyService.getCompanyById(companyId).map(Company::getName).orElse("Order Dashboard");
 
+    // Set default date range: past one month
+    LocalDate start =
+        startDate != null ? LocalDate.parse(startDate) : LocalDate.now().minusMonths(1);
+    LocalDate end = endDate != null ? LocalDate.parse(endDate) : LocalDate.now();
+
     List<OrderStatus> statuses = Arrays.asList(OrderStatus.values());
     model.addAttribute("statuses", statuses);
     model.addAttribute("companyName", companyName);
+    model.addAttribute("startDate", start);
+    model.addAttribute("endDate", end);
 
-    // Filter orders by company - ensures tenant isolation
-    model.addAttribute("orders", orderService.getOrdersByCompanyId(companyId));
+    // Filter orders by company and date range - ensures tenant isolation
+    model.addAttribute("orders",
+        orderService.getOrdersByCompanyIdAndDateRange(companyId, start, end));
     return "dashboard";
   }
 
