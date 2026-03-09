@@ -16,28 +16,19 @@ services:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
 
-      # ===== Database (Render FREE PostgreSQL) =====
-      # Extract individual connection parameters from database service
+      # ===== Database (Neon PostgreSQL - External Free Tier) =====
+      # Using Neon.tech for persistent PostgreSQL database
+      # Connection details from: https://console.neon.tech/app/projects/winter-lake-23781382
       - key: DB_HOST
-        fromDatabase:
-          name: order-manager-db
-          property: host
+        value: ep-damp-term-adjgxa80-pooler.c-2.us-east-1.aws.neon.tech
       - key: DB_PORT
-        fromDatabase:
-          name: order-manager-db
-          property: port
+        value: "5432"
       - key: DB_NAME
-        fromDatabase:
-          name: order-manager-db
-          property: database
+        value: neondb
       - key: DB_USERNAME
-        fromDatabase:
-          name: order-manager-db
-          property: user
+        value: neondb_owner
       - key: DB_PASSWORD
-        fromDatabase:
-          name: order-manager-db
-          property: password
+        sync: false # Set this manually in Render dashboard with your Neon password
 
       # ===== PostgreSQL Driver =====
       - key: DB_DRIVER
@@ -60,9 +51,7 @@ services:
       - key: JAVA_OPTS
         value: -Xmx256m -Xms128m -XX:+UseContainerSupport -XX:MaxRAMPercentage=50.0
 
-# ===== FREE PostgreSQL Database =====
-databases:
-  - name: order-manager-db
-    databaseName: order_manager_db
-    plan: free # ✅ COMPLETELY FREE!
-    region: oregon # Same region as web service
+# ===== DATABASE CONFIGURATION =====
+# Using Neon.tech PostgreSQL (external provider)
+# No database section needed - using external Neon database
+# Neon provides persistent storage without 1-month limitation
