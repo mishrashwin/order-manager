@@ -45,11 +45,7 @@ END $$;
 -- Step 4: Create index for better query performance (if not already exists)
 DO $$
 BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.statistics
-        WHERE table_name = 'orders' AND index_name = 'idx_orders_client_id'
-    ) THEN
+    IF to_regclass('public.idx_orders_client_id') IS NULL THEN
         CREATE INDEX idx_orders_client_id ON orders(client_id);
     END IF;
 END $$;
-
