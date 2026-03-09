@@ -19,7 +19,15 @@ public class Order {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  // Client relationship for data integrity
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "client_id")
+  private Client client;
+
+  // Legacy field - kept for backward compatibility
+  // This is now auto-populated from client.name
   private String customerName;
+
   private String productName;
   private Integer quantity;
   private Double totalAmount;
@@ -38,6 +46,27 @@ public class Order {
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "company_id", nullable = false)
   private Company company;
+
+  /**
+   * Helper method to get customer name from client relationship
+   * Falls back to customerName field if client is not set
+   */
+  public String getCustomerName() {
+    if (client != null) {
+      return client.getName();
+    }
+    return customerName;
+  }
+
+  /**
+   * Helper method to set client and sync customerName
+   */
+  public void setClient(Client client) {
+    this.client = client;
+    if (client != null) {
+      this.customerName = client.getName();
+    }
+  }
 
   // Constructors
   public Order() {}

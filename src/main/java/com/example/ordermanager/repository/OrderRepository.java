@@ -13,4 +13,13 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
   List<Order> findByCompanyIdAndOrderDateBetween(Long companyId, LocalDate startDate,
       LocalDate endDate);
+
+  /**
+   * Count orders associated with a specific client
+   * Used for validation before client deletion
+   *
+   * @param clientId Client ID
+   * @return Number of orders for this client
+   */
+  long countByClientId(Long clientId);
 }

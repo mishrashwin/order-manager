@@ -2,7 +2,9 @@ package com.example.ordermanager.service;
 
 import com.example.ordermanager.entity.Client;
 import com.example.ordermanager.entity.Company;
+import com.example.ordermanager.exception.ClientHasActiveOrdersException;
 import com.example.ordermanager.repository.ClientRepository;
+import com.example.ordermanager.repository.OrderRepository;
 import com.example.ordermanager.utils.Helper;
 import org.springframework.stereotype.Service;
 
@@ -12,12 +14,14 @@ import java.util.List;
 public class ClientService {
 
   private final ClientRepository clientRepository;
+  private final OrderRepository orderRepository;
   private final CompanyService companyService;
   private Helper helper;
 
-  public ClientService(ClientRepository clientRepository, CompanyService companyService,
-      Helper helper) {
+  public ClientService(ClientRepository clientRepository, OrderRepository orderRepository,
+      CompanyService companyService, Helper helper) {
     this.clientRepository = clientRepository;
+    this.orderRepository = orderRepository;
     this.companyService = companyService;
     this.helper = helper;
   }
@@ -66,7 +70,21 @@ public class ClientService {
     clientRepository.save(client);
   }
 
+  /**
+   * Delete a client after validating no active orders exist
+   *
+   * @param id Client ID
+   * @throws ClientHasActiveOrdersException if client has active orders
+   */
   public void deleteClient(Long id) {
+    // Check if client has any orders
+    long orderCount = orderRepository.countByClientId(id);
+
+    if (orderCount > 0) {
+      throw new ClientHasActiveOrdersException(id, orderCount);
+    }
+
+    // Safe to delete - no orders reference this client
     clientRepository.deleteById(id);
   }
 }

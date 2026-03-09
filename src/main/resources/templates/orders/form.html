@@ -35,11 +35,12 @@
             <div class="mb-4">
                 <label class="form-label"><i class="bi bi-person"></i> Customer Name</label>
                 <div class="input-group">
-                    <select class="form-select form-control-custom" th:field="*{customerName}" required>
+                    <select class="form-select form-control-custom" th:field="*{client.id}" required>
                         <option value="">-- Select Client --</option>
                         <option th:each="client : ${clients}"
-                                th:value="${client.name}"
-                                th:text="${client.name}">
+                                th:value="${client.id}"
+                                th:text="${client.name}"
+                                th:selected="${order.client != null && order.client.id == client.id}">
                         </option>
                     </select>
                     <a class="btn btn-outline-success" th:href="@{/clients/new}" target="_blank">

@@ -39,12 +39,12 @@ public class KeepAliveScheduler {
   @Scheduled(fixedRate = 600000, initialDelay = 60000)
   public void keepApplicationAlive() {
     try {
-      String healthUrl = appBaseUrl + "/actuator/health";
+      String healthUrl = appBaseUrl + "/login";
       logger.info("🔄 Keep-Alive Cron: Hitting URL: {}", healthUrl);
 
       String response = restTemplate.getForObject(healthUrl, String.class);
 
-      logger.info("✅ Keep-Alive Cron: Successfully pinged application. Response: {}", response);
+      logger.info("✅ Keep-Alive Cron: Successfully pinged application");
     } catch (RestClientException e) {
       logger.warn("⚠️ Keep-Alive Cron: Failed to ping application at {}. Error: {}", appBaseUrl,
           e.getMessage());

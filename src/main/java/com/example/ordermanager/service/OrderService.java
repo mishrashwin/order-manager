@@ -74,6 +74,11 @@ public class OrderService {
 
     order.setCompany(company);
 
+    // Sync customerName from client relationship for data integrity
+    if (order.getClient() != null) {
+      order.setCustomerName(order.getClient().getName());
+    }
+
     // Apply formatting
     if (order.getProductName() != null)
       order.setProductName(helper.toTitleCase(order.getProductName()));
@@ -83,8 +88,15 @@ public class OrderService {
 
   public Order patchOrder(Long id, Order partialOrder) {
     return orderRepository.findById(id).map(existingOrder -> {
-      if (partialOrder.getCustomerName() != null)
+      // Update client relationship first (this auto-syncs customerName via setter)
+      if (partialOrder.getClient() != null) {
+        existingOrder.setClient(partialOrder.getClient());
+      }
+
+      // Legacy support: if customerName is provided without client
+      if (partialOrder.getCustomerName() != null && partialOrder.getClient() == null) {
         existingOrder.setCustomerName(partialOrder.getCustomerName());
+      }
 
       if (partialOrder.getProductName() != null)
         existingOrder.setProductName(helper.toTitleCase(partialOrder.getProductName()));
@@ -103,6 +115,12 @@ public class OrderService {
 
       if (partialOrder.getDeliveryDate() != null)
         existingOrder.setDeliveryDate(partialOrder.getDeliveryDate());
+
+      if (partialOrder.getPoOrderNo() != null)
+        existingOrder.setPoOrderNo(partialOrder.getPoOrderNo());
+
+      if (partialOrder.getOrderNote() != null)
+        existingOrder.setOrderNote(partialOrder.getOrderNote());
 
       return orderRepository.save(existingOrder);
     }).orElseThrow(() -> new OrderNotFoundException(id));
