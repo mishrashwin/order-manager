@@ -48,8 +48,8 @@ public class Order {
   private Company company;
 
   /**
-   * Helper method to get customer name from client relationship
-   * Falls back to customerName field if client is not set
+   * Helper method to get customer name from client relationship Falls back to customerName field if
+   * client is not set
    */
   public String getCustomerName() {
     if (client != null) {
@@ -83,7 +83,8 @@ public class Order {
   }
 
   public Order(String customerName, String productName, Integer quantity, Double totalAmount,
-      String poOrderNo, OrderStatus status, LocalDate orderDate, LocalDate deliveryDate, String orderNote) {
+      String poOrderNo, OrderStatus status, LocalDate orderDate, LocalDate deliveryDate,
+      String orderNote) {
     this.customerName = customerName;
     this.productName = productName;
     this.quantity = quantity;

@@ -169,6 +169,12 @@
       <artifactId>spring-boot-starter-actuator</artifactId>
       <groupId>org.springframework.boot</groupId>
     </dependency>
+
+    <!-- AOP for centralized method execution logging -->
+    <dependency>
+      <artifactId>spring-boot-starter-aop</artifactId>
+      <groupId>org.springframework.boot</groupId>
+    </dependency>
   </dependencies>
   <description>Spring Boot executable application for managing client orders end-to-end
   </description>
