@@ -48,8 +48,8 @@ public class Order {
   private Company company;
 
   /**
-   * Helper method to get customer name from client relationship Falls back to customerName field if
-   * client is not set
+   * Helper method to get the customer name from the client relationship.
+   * Falls back to the customerName field if the client is not set.
    */
   public String getCustomerName() {
     if (client != null) {
