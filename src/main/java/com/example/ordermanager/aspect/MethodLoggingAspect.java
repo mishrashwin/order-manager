@@ -34,22 +34,32 @@ public class MethodLoggingAspect {
   public Object logMethodExecution(ProceedingJoinPoint joinPoint) throws Throwable {
     Logger logger = LoggerFactory.getLogger(resolveLoggerType(joinPoint));
     String methodName = joinPoint.getSignature().toShortString();
-    String arguments =
-        logValueFormatter.formatArguments(resolveParameterNames(joinPoint), joinPoint.getArgs());
+    boolean debugEnabled = logger.isDebugEnabled();
+    String arguments = null;
 
     long startTime = System.nanoTime();
-    logger.info("{} started with input={}", methodName, arguments);
+    if (debugEnabled) {
+      arguments =
+          logValueFormatter.formatArguments(resolveParameterNames(joinPoint), joinPoint.getArgs());
+      logger.debug("{} started with input={}", methodName, arguments);
+    }
 
     try {
       Object result = joinPoint.proceed();
       long durationMs = toDurationMillis(startTime);
-      String formattedResult =
-          isVoidMethod(joinPoint) ? "void" : logValueFormatter.formatResult(result);
-      logger.info("{} finished with result={} durationMs={}", methodName, formattedResult,
-          durationMs);
+      if (debugEnabled) {
+        String formattedResult =
+            isVoidMethod(joinPoint) ? "void" : logValueFormatter.formatResult(result);
+        logger.debug("{} finished with result={} durationMs={}", methodName, formattedResult,
+            durationMs);
+      }
       return result;
     } catch (Throwable throwable) {
       long durationMs = toDurationMillis(startTime);
+      if (arguments == null) {
+        arguments =
+            logValueFormatter.formatArguments(resolveParameterNames(joinPoint), joinPoint.getArgs());
+      }
       logger.error("{} failed after {} ms with input={} error={}", methodName, durationMs,
           arguments, throwable.getMessage(), throwable);
       throw throwable;
