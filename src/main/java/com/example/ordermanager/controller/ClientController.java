@@ -3,7 +3,6 @@ package com.example.ordermanager.controller;
 import com.example.ordermanager.entity.Client;
 import com.example.ordermanager.exception.ClientHasActiveOrdersException;
 import com.example.ordermanager.service.ClientService;
-import com.example.ordermanager.service.CompanyService;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -15,20 +14,19 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class ClientController {
 
   private final ClientService clientService;
-  private final CompanyService companyService;
   private final SecurityContextHelper securityContextHelper;
 
-  public ClientController(ClientService clientService, CompanyService companyService,
+  public ClientController(ClientService clientService,
       SecurityContextHelper securityContextHelper) {
     this.clientService = clientService;
-    this.companyService = companyService;
     this.securityContextHelper = securityContextHelper;
   }
 
   @GetMapping
   public String listClients(Model model) {
     Long companyId = securityContextHelper.getCompanyIdFromContext();
-    model.addAttribute("clients", clientService.getClientsByCompanyId(companyId));
+    var clients = clientService.getClientsByCompanyId(companyId);
+    model.addAttribute("clients", clients);
     return "clients/list";
   }
 
@@ -68,12 +66,12 @@ public class ClientController {
       redirectAttributes.addFlashAttribute("success", "Client deleted successfully");
     } catch (ClientHasActiveOrdersException e) {
       redirectAttributes.addFlashAttribute("error",
-          String.format("Cannot delete client: This client has %d active order(s). " +
-              "Please delete or reassign the orders before deleting the client.",
+          String.format(
+              "Cannot delete client: This client has %d active order(s). "
+                  + "Please delete or reassign the orders before deleting the client.",
               e.getOrderCount()));
     } catch (Exception e) {
-      redirectAttributes.addFlashAttribute("error",
-          "Error deleting client: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("error", "Error deleting client: " + e.getMessage());
     }
     return "redirect:/clients";
   }
