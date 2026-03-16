@@ -148,13 +148,16 @@
     <!-- 🔴 Error: invalid credentials or unverified -->
     <div th:if="${param.error}" class="alert alert-danger text-center py-3" role="alert"
          style="font-size: 0.95rem; border-radius: 8px;">
-        Invalid credentials or your account is not verified yet.
-        <br>
-        <a id="resendLink"
-           th:href="@{/resend-verification}"
-           class="text-decoration-none" style="color:#0d6efd; font-weight:500;">
-            Click here to resend verification email
-        </a>
+        <span th:text="${param.reason != null ? param.reason[0] : 'Invalid credentials or your account is not verified yet.'}">Invalid credentials or your account is not verified yet.</span>
+        <!-- Show resend link only if reason is empty (default generic error) or explicitly about verification -->
+        <div th:if="${param.reason == null || #strings.contains(#strings.toLowerCase(param.reason[0]), 'verified') || #strings.contains(#strings.toLowerCase(param.reason[0]), 'verification')}">
+            <br>
+            <a id="resendLink"
+               th:href="@{/resend-verification}"
+               class="text-decoration-none" style="color:#0d6efd; font-weight:500;">
+                Click here to resend verification email
+            </a>
+        </div>
     </div>
 
     <!-- 🟢 Success: verification email resent -->
@@ -175,16 +178,10 @@
         You have been logged out successfully.
     </div>
 
-    <!-- 🟢 Account registered -->
-    <div th:if="${param.registered}" class="alert alert-success text-center py-2" role="alert"
-         style="font-size: 0.95rem; border-radius: 8px;">
-        Account created successfully! A verification email has been sent. Please check your inbox.
-    </div>
-
     <!-- 🧾 Login Form -->
     <form th:action="@{/login}" method="post">
         <div class="mb-3">
-            <input type="text" class="form-control" name="username" placeholder="Username" required>
+            <input type="text" class="form-control" name="username" placeholder="Username" required th:value="${param.username != null ? param.username[0] : ''}">
         </div>
 
         <div class="mb-2">
@@ -194,7 +191,7 @@
         <button type="submit" class="btn-login">Log In</button>
     </form>
 
-    <a th:href="@{/forgot-password}" class="forgot-password">Forgot password?</a>
+    <a th:href="@{/forgot-password}" class="forgot-password">Forgot/Reset Password?</a>
 
     <div class="divider"></div>
 
@@ -202,7 +199,7 @@
     <a th:href="@{/company/register}" class="btn-create" style="background-color: #FF9800; width: 100%;">Register New Company</a>
 
     <p style="text-align: center; margin-top: 1rem; font-size: 12px; color: #999;">
-        User accounts are created by company administrators
+        Company users are created by company administrators.
     </p>
 </div>
 
@@ -215,7 +212,7 @@
         const usernameField = document.querySelector('input[name="username"]');
         if (usernameField) usernameField.focus();
 
-        // Update resend link dynamically with entered email/username
+        // Update resend link dynamically with entered email/username (only if link exists)
         const resendLink = document.getElementById('resendLink');
         if (usernameField && resendLink) {
             const updateLink = () => {
@@ -234,7 +231,7 @@
         alert.style.opacity = "0";
         setTimeout(() => alert.style.display = "none", 500);
       });
-    }, 4000);
+    }, 20000);
 </script>
 </body>
 </html>

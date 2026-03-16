@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:with="page='owner-dashboard'">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owner Dashboard | Order Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="~{fragments/unified-navbar :: unified-navbar}"></div>
+
+<div class="main-content">
+    <div class="content-header">
+        <h1><i class="bi bi-shield-lock"></i> Owner Dashboard</h1>
+        <p class="text-muted mb-0">Approve companies, monitor onboarding, and manage tenant access centrally.</p>
+    </div>
+
+    <div class="row g-3 mt-2">
+        <div class="col-md-4 col-lg-2">
+            <div class="card text-bg-primary">
+                <div class="card-body">
+                    <div class="small">Total Companies</div>
+                    <div class="h3 mb-0" th:text="${metrics.totalCompanies}">0</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-lg-2">
+            <div class="card text-bg-success">
+                <div class="card-body">
+                    <div class="small">Approved</div>
+                    <div class="h3 mb-0" th:text="${metrics.approvedCompanies}">0</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-lg-2">
+            <div class="card text-bg-warning">
+                <div class="card-body">
+                    <div class="small">Pending</div>
+                    <div class="h3 mb-0" th:text="${metrics.pendingCompanies}">0</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-lg-2">
+            <div class="card text-bg-danger">
+                <div class="card-body">
+                    <div class="small">Rejected</div>
+                    <div class="h3 mb-0" th:text="${metrics.rejectedCompanies}">0</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-lg-2">
+            <div class="card text-bg-info">
+                <div class="card-body">
+                    <div class="small">Access Enabled</div>
+                    <div class="h3 mb-0" th:text="${metrics.activeCompanies}">0</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-lg-2">
+            <div class="card text-bg-secondary">
+                <div class="card-body">
+                    <div class="small">Access Suspended</div>
+                    <div class="h3 mb-0" th:text="${metrics.suspendedCompanies}">0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-hourglass-split"></i> Pending Approvals</h5>
+            <a class="btn btn-outline-primary btn-sm" th:href="@{/owner/companies}">Open Company Management</a>
+        </div>
+        <div class="card-body">
+            <div th:if="${#lists.isEmpty(pendingCompanies)}" class="text-muted">No pending registrations.</div>
+            <div class="table-responsive" th:if="${!#lists.isEmpty(pendingCompanies)}">
+                <table class="table table-hover align-middle">
+                    <thead>
+                    <tr>
+                        <th>Company</th>
+                        <th>Created On</th>
+                        <th>Users</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="company : ${pendingCompanies}">
+                        <td th:text="${company.companyName}">ACME</td>
+                        <td th:text="${#temporals.format(company.createdAt, 'dd MMM yyyy HH:mm')}">-</td>
+                        <td th:text="${company.usersCount}">0</td>
+                        <td class="d-flex gap-2">
+                            <form th:action="@{/owner/companies/{id}/approve(id=${company.companyId})}" method="post">
+                                <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                            </form>
+                            <form th:action="@{/owner/companies/{id}/reject(id=${company.companyId})}" method="post">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Reject</button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-stars"></i> Future Owner Features</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4"><span class="badge text-bg-light">Billing Tracking</span></div>
+                <div class="col-md-4"><span class="badge text-bg-light">Audit Logs</span></div>
+                <div class="col-md-4"><span class="badge text-bg-light">Global Announcements</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

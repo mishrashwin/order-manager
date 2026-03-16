@@ -207,6 +207,16 @@
     </div>
 </div>
 
+<script>
+    setTimeout(() => {
+        document.querySelectorAll('.alert').forEach(alert => {
+            alert.style.transition = "opacity 0.5s ease";
+            alert.style.opacity = "0";
+            setTimeout(() => alert.style.display = "none", 500);
+        });
+    }, 20000);
+</script>
+
 </body>
 </html>
 

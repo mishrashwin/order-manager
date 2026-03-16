@@ -27,6 +27,8 @@ public class MethodLoggingAspect {
   @Around("execution(public * com.example.ordermanager..*(..))"
       + " && !within(com.example.ordermanager.aspect.MethodLoggingAspect)"
       + " && !within(com.example.ordermanager.aspect.LogValueFormatter)"
+      + " && !@annotation(com.example.ordermanager.aspect.SkipMethodLogging)"
+      + " && !@within(com.example.ordermanager.aspect.SkipMethodLogging)"
       + " && !within(com.example.ordermanager..entity..*)"
       + " && !within(com.example.ordermanager..dto..*)"
       + " && !within(com.example.ordermanager..exception..*)"
@@ -57,8 +59,8 @@ public class MethodLoggingAspect {
     } catch (Throwable throwable) {
       long durationMs = toDurationMillis(startTime);
       if (arguments == null) {
-        arguments =
-            logValueFormatter.formatArguments(resolveParameterNames(joinPoint), joinPoint.getArgs());
+        arguments = logValueFormatter.formatArguments(resolveParameterNames(joinPoint),
+            joinPoint.getArgs());
       }
       logger.error("{} failed after {} ms with input={} error={}", methodName, durationMs,
           arguments, throwable.getMessage(), throwable);

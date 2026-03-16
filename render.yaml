@@ -47,6 +47,14 @@ services:
       - key: APP_BASE_URL
         sync: false # Set manually in Render dashboard
 
+      # ===== Owner Console Credentials / Notifications =====
+      - key: OWNER_EMAIL
+        sync: false # Set manually in Render dashboard
+      - key: OWNER_USERNAME
+        sync: false # Set manually in Render dashboard
+      - key: OWNER_PASSWORD
+        sync: false # Set manually in Render dashboard
+
       # ===== JVM Optimization (for free tier's 0.5GB RAM) =====
       - key: JAVA_OPTS
         value: -Xmx256m -Xms128m -XX:+UseContainerSupport -XX:MaxRAMPercentage=50.0

@@ -1,16 +1,21 @@
 package com.example.ordermanager.service;
 
 import com.example.ordermanager.entity.Company;
+import com.example.ordermanager.entity.CompanyApprovalStatus;
 import com.example.ordermanager.repository.CompanyRepository;
 import com.example.ordermanager.user.entity.User;
-import com.example.ordermanager.user.service.RegistrationService;
+import com.example.ordermanager.user.service.EmailService;
 import com.example.ordermanager.user.service.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 /**
  * Service for managing companies (tenants) in the multi-tenant system.
@@ -18,16 +23,23 @@ import java.util.Optional;
 @Service
 public class CompanyService {
 
+  private static final Logger log = LoggerFactory.getLogger(CompanyService.class);
+
   private final CompanyRepository companyRepository;
   private final UserService userService;
-  private final RegistrationService registrationService;
+  private final EmailService emailService;
   private final BCryptPasswordEncoder passwordEncoder;
+  private final String ownerEmail;
+  private final String appBaseUrl;
 
   public CompanyService(CompanyRepository companyRepository, UserService userService,
-      RegistrationService registrationService) {
+      EmailService emailService, @Value("${app.owner.email}") String ownerEmail,
+      @Value("${app.base.url}") String appBaseUrl) {
     this.companyRepository = companyRepository;
     this.userService = userService;
-    this.registrationService = registrationService;
+    this.emailService = emailService;
+    this.ownerEmail = ownerEmail;
+    this.appBaseUrl = appBaseUrl;
     this.passwordEncoder = new BCryptPasswordEncoder();
   }
 
@@ -46,9 +58,10 @@ public class CompanyService {
     }
 
     // Set default values
-    if (company.isActive() == false) {
-      company.setActive(true);
-    }
+    company.setActive(true);
+    company.setApprovalStatus(CompanyApprovalStatus.PENDING);
+    company.setApprovedAt(null);
+    company.setApprovedBy(null);
 
     return companyRepository.save(company);
   }
@@ -80,8 +93,16 @@ public class CompanyService {
           "Email '" + adminUser.getEmail() + "' already registered!");
     }
 
+    if (userService.findByMobileNumber(adminUser.getMobileNumber()) != null) {
+      throw new IllegalArgumentException(
+          "Mobile number '" + adminUser.getMobileNumber() + "' is already registered!");
+    }
+
     // Step 3: Create and save company FIRST
     company.setActive(true);
+    company.setApprovalStatus(CompanyApprovalStatus.PENDING);
+    company.setApprovedAt(null);
+    company.setApprovedBy(null);
     Company savedCompany = companyRepository.save(company);
 
     // Step 4: Prepare admin user
@@ -92,9 +113,28 @@ public class CompanyService {
 
     // Step 5: Save user with company and send verification email
     // Uses saveUserWithCompany to avoid double-hashing password
-    userService.saveUserWithCompany(adminUser);
+    User savedAdminUser = userService.saveUserWithCompany(adminUser);
+
+    notifyOwnerOfNewCompany(savedCompany, savedAdminUser);
 
     return savedCompany;
+  }
+
+  private void notifyOwnerOfNewCompany(Company company, User adminUser) {
+    if (ownerEmail == null || ownerEmail.isBlank()) {
+      log.warn("Owner email is not configured; skipping owner notification for company: {}",
+          company.getName());
+      return;
+    }
+
+    String reviewUrl = appBaseUrl + "/owner/companies";
+    try {
+      emailService.sendNewCompanyRegistrationNotification(ownerEmail, company, adminUser,
+          reviewUrl);
+    } catch (Exception ex) {
+      log.warn("Company registration succeeded but owner notification failed for company: {}",
+          company.getName(), ex);
+    }
   }
 
   /**
@@ -125,8 +165,13 @@ public class CompanyService {
     Company company = companyRepository.findById(companyId).orElseThrow(
         () -> new IllegalArgumentException("Company with ID " + companyId + " not found"));
 
+    boolean wasActive = company.isActive();
     company.setActive(false);
-    return companyRepository.save(company);
+    Company savedCompany = companyRepository.save(company);
+    if (wasActive) {
+      notifyCompanyAccessRevoked(savedCompany);
+    }
+    return savedCompany;
   }
 
   /**
@@ -136,8 +181,13 @@ public class CompanyService {
     Company company = companyRepository.findById(companyId).orElseThrow(
         () -> new IllegalArgumentException("Company with ID " + companyId + " not found"));
 
+    boolean wasActive = company.isActive();
     company.setActive(true);
-    return companyRepository.save(company);
+    Company savedCompany = companyRepository.save(company);
+    if (!wasActive) {
+      notifyCompanyAccessRestored(savedCompany);
+    }
+    return savedCompany;
   }
 
   /**
@@ -161,5 +211,113 @@ public class CompanyService {
     company.setBio(updatedCompany.getBio());
 
     return companyRepository.save(company);
+  }
+
+  public List<Company> getPendingCompanies() {
+    return companyRepository
+        .findByApprovalStatusOrderByCreatedAtDesc(CompanyApprovalStatus.PENDING);
+  }
+
+  public long getPendingCompanyCount() {
+    return companyRepository.countByApprovalStatus(CompanyApprovalStatus.PENDING);
+  }
+
+  public Company approveCompany(Long companyId, String ownerUsername) {
+    Company company = companyRepository.findById(companyId).orElseThrow(
+        () -> new IllegalArgumentException("Company with ID " + companyId + " not found"));
+    company.setApprovalStatus(CompanyApprovalStatus.APPROVED);
+    company.setApprovedAt(LocalDateTime.now());
+    company.setApprovedBy(ownerUsername);
+    Company approvedCompany = companyRepository.save(company);
+    notifyCompanyApproval(approvedCompany);
+    return approvedCompany;
+  }
+
+  public Company rejectCompany(Long companyId, String ownerUsername) {
+    Company company = companyRepository.findById(companyId).orElseThrow(
+        () -> new IllegalArgumentException("Company with ID " + companyId + " not found"));
+    company.setApprovalStatus(CompanyApprovalStatus.REJECTED);
+    company.setApprovedAt(LocalDateTime.now());
+    company.setApprovedBy(ownerUsername);
+    company.setActive(false);
+    Company rejectedCompany = companyRepository.save(company);
+    notifyCompanyRejection(rejectedCompany);
+    return rejectedCompany;
+  }
+
+  public boolean canUsersLogin(Company company) {
+    return company != null && company.isActive()
+        && CompanyApprovalStatus.APPROVED.equals(company.getApprovalStatus());
+  }
+
+  private void notifyCompanyApproval(Company company) {
+    User primaryAdmin = resolvePrimaryAdmin(company, "approved");
+    if (primaryAdmin == null) {
+      return;
+    }
+
+    String loginUrl = appBaseUrl + "/login";
+    try {
+      emailService.sendCompanyApprovedWelcomeEmail(primaryAdmin.getEmail(), company, primaryAdmin,
+          loginUrl);
+    } catch (Exception ex) {
+      log.warn("Company approved but welcome email failed for company: {}", company.getName(), ex);
+    }
+  }
+
+  private void notifyCompanyRejection(Company company) {
+    User primaryAdmin = resolvePrimaryAdmin(company, "rejected");
+    if (primaryAdmin == null) {
+      return;
+    }
+
+    try {
+      emailService.sendCompanyRejectedEmail(primaryAdmin.getEmail(), company, primaryAdmin);
+    } catch (Exception ex) {
+      log.warn("Company rejected but notification email failed for company: {}", company.getName(),
+          ex);
+    }
+  }
+
+  private void notifyCompanyAccessRevoked(Company company) {
+    User primaryAdmin = resolvePrimaryAdmin(company, "suspended");
+    if (primaryAdmin == null) {
+      return;
+    }
+
+    String loginUrl = appBaseUrl + "/login";
+    try {
+      emailService.sendCompanyAccessRevokedEmail(primaryAdmin.getEmail(), company, primaryAdmin,
+          loginUrl);
+    } catch (Exception ex) {
+      log.warn("Company suspended but notification email failed for company: {}", company.getName(),
+          ex);
+    }
+  }
+
+  private void notifyCompanyAccessRestored(Company company) {
+    User primaryAdmin = resolvePrimaryAdmin(company, "restored");
+    if (primaryAdmin == null) {
+      return;
+    }
+
+    String loginUrl = appBaseUrl + "/login";
+    try {
+      emailService.sendCompanyAccessRestoredEmail(primaryAdmin.getEmail(), company, primaryAdmin,
+          loginUrl);
+    } catch (Exception ex) {
+      log.warn("Company restored but notification email failed for company: {}", company.getName(),
+          ex);
+    }
+  }
+
+  private User resolvePrimaryAdmin(Company company, String action) {
+    User primaryAdmin = userService.findPrimaryAdminByCompanyId(company.getId());
+    if (primaryAdmin == null || primaryAdmin.getEmail() == null
+        || primaryAdmin.getEmail().isBlank()) {
+      log.warn("No primary admin email found for {} company: {}", action, company.getName());
+      return null;
+    }
+    return primaryAdmin;
   }
 }

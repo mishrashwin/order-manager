@@ -12,7 +12,11 @@
 <nav th:fragment="unified-navbar" class="unified-navbar navbar navbar-expand-lg navbar-dark">
     <div class="container-fluid">
         <!-- Brand -->
-        <a class="navbar-brand" th:href="@{/dashboard}">
+        <a class="navbar-brand" th:if="${#authorization.expression('hasRole(''OWNER'')')}" th:href="@{/owner/dashboard}">
+            <i class="bi bi-shield-lock"></i>
+            <span th:text="${companyName}">Owner Console</span>
+        </a>
+        <a class="navbar-brand" th:unless="${#authorization.expression('hasRole(''OWNER'')')}" th:href="@{/dashboard}">
             <i class="bi bi-building-gear"></i>
             <span th:text="${companyName}">Order Manager</span>
         </a>
@@ -25,7 +29,7 @@
         <!-- Navigation Links -->
         <div class="collapse navbar-collapse" id="navbarNav">
             <!-- Left: Main Navigation -->
-            <ul class="navbar-nav me-auto" th:if="${#authorization.expression('isAuthenticated()')}">
+            <ul class="navbar-nav me-auto" th:if="${#authorization.expression('isAuthenticated() and !hasRole(''OWNER'')')}">
                 <li class="nav-item">
                     <a class="nav-link"
                        th:classappend="${page == 'dashboard'} ? 'active'"
@@ -65,6 +69,23 @@
                 </li>
             </ul>
 
+            <ul class="navbar-nav me-auto" th:if="${#authorization.expression('hasRole(''OWNER'')')}">
+                <li class="nav-item">
+                    <a class="nav-link"
+                       th:classappend="${page == 'owner-dashboard'} ? 'active'"
+                       th:href="@{/owner/dashboard}">
+                        <i class="bi bi-speedometer2"></i> Owner Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link"
+                       th:classappend="${page == 'owner-companies'} ? 'active'"
+                       th:href="@{/owner/companies}">
+                        <i class="bi bi-buildings"></i> Companies
+                    </a>
+                </li>
+            </ul>
+
             <!-- Right: User Info & Logout -->
             <ul class="navbar-nav ms-auto">
                 <!-- User Welcome -->
@@ -72,7 +93,7 @@
                     th:if="${#authorization.expression('isAuthenticated()')}">
                     <span class="navbar-user-info">
                         <i class="bi bi-person-circle"></i>
-                        Welcome, <strong th:text="${#authentication.name}">User</strong>
+                        Welcome, <strong th:text="${navbarGreetingName}">User</strong>
                     </span>
                 </li>
 

@@ -4,6 +4,7 @@ import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.repository.UserRepository;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
@@ -28,10 +29,10 @@ public class SecurityContextHelper {
    * @throws IllegalStateException if user is not authenticated or company is null
    */
   public Long getCompanyIdFromContext() {
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (authentication == null || !authentication.isAuthenticated()
-        || authentication instanceof AnonymousAuthenticationToken) {
-      throw new IllegalStateException("User is not authenticated");
+    Authentication authentication = getAuthenticatedContext();
+
+    if (isOwnerContext(authentication)) {
+      throw new IllegalStateException("Owner session does not have a tenant company context");
     }
 
     String username = authentication.getName();
@@ -52,10 +53,10 @@ public class SecurityContextHelper {
    * @throws IllegalStateException if user is not authenticated
    */
   public User getUserFromContext() {
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (authentication == null || !authentication.isAuthenticated()
-        || authentication instanceof AnonymousAuthenticationToken) {
-      throw new IllegalStateException("User is not authenticated");
+    Authentication authentication = getAuthenticatedContext();
+
+    if (isOwnerContext(authentication)) {
+      throw new IllegalStateException("Owner session is not mapped to a tenant user record");
     }
 
     String username = authentication.getName();
@@ -70,12 +71,28 @@ public class SecurityContextHelper {
    * @throws IllegalStateException if user is not authenticated
    */
   public String getCurrentUsername() {
+    return getAuthenticatedContext().getName();
+  }
+
+  public boolean isOwnerContext() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    return authentication != null && authentication.isAuthenticated()
+        && !(authentication instanceof AnonymousAuthenticationToken)
+        && isOwnerContext(authentication);
+  }
+
+  private Authentication getAuthenticatedContext() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication == null || !authentication.isAuthenticated()
         || authentication instanceof AnonymousAuthenticationToken) {
       throw new IllegalStateException("User is not authenticated");
     }
-    return authentication.getName();
+    return authentication;
+  }
+
+  private boolean isOwnerContext(Authentication authentication) {
+    return authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority)
+        .anyMatch("ROLE_OWNER"::equals);
   }
 }
 
