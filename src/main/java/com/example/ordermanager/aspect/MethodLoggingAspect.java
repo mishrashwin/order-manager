@@ -8,11 +8,15 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.aop.support.AopUtils;
+import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.stereotype.Component;
 
 @Aspect
 @Component
 public class MethodLoggingAspect {
+
+  private static final DefaultParameterNameDiscoverer PARAMETER_NAME_DISCOVERER =
+      new DefaultParameterNameDiscoverer();
 
   private final LogValueFormatter logValueFormatter;
 
@@ -61,6 +65,13 @@ public class MethodLoggingAspect {
   }
 
   private String[] resolveParameterNames(ProceedingJoinPoint joinPoint) {
+    if (joinPoint.getSignature() instanceof MethodSignature methodSignature) {
+      String[] parameterNames =
+          PARAMETER_NAME_DISCOVERER.getParameterNames(methodSignature.getMethod());
+      if (parameterNames != null) {
+        return parameterNames;
+      }
+    }
     if (joinPoint.getSignature() instanceof CodeSignature codeSignature) {
       return codeSignature.getParameterNames();
     }
