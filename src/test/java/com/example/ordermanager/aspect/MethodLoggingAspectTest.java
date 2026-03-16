@@ -19,6 +19,8 @@ class MethodLoggingAspectTest {
   private ListAppender<ILoggingEvent> logEvents;
   private LoggingTestService proxy;
   private Logger targetLogger;
+  private Level originalLevel;
+  private boolean originalAdditivity;
 
   @BeforeEach
   void setUp() {
@@ -28,6 +30,8 @@ class MethodLoggingAspectTest {
     proxy = proxyFactory.getProxy();
 
     targetLogger = (Logger) LoggerFactory.getLogger(LoggingTestService.class);
+    originalLevel = targetLogger.getLevel();
+    originalAdditivity = targetLogger.isAdditive();
     targetLogger.setLevel(Level.INFO);
     logEvents = new ListAppender<>();
     logEvents.start();
@@ -39,6 +43,10 @@ class MethodLoggingAspectTest {
     if (targetLogger != null && logEvents != null) {
       targetLogger.detachAppender(logEvents);
       logEvents.stop();
+    }
+    if (targetLogger != null) {
+      targetLogger.setLevel(originalLevel);
+      targetLogger.setAdditive(originalAdditivity);
     }
   }
 
