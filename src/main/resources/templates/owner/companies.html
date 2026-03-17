@@ -66,7 +66,7 @@
                                 <form th:if="${company.approvalStatus.name() != 'REJECTED'}" th:action="@{/owner/companies/{id}/reject(id=${company.companyId})}" method="post">
                                     <button type="submit" class="btn btn-outline-danger btn-sm">Reject</button>
                                 </form>
-                                <form th:action="@{/owner/companies/{id}/toggle-access(id=${company.companyId})}" method="post">
+                                <form th:if="${company.approvalStatus.name() == 'APPROVED'}" th:action="@{/owner/companies/{id}/toggle-access(id=${company.companyId})}" method="post">
                                     <button type="submit" class="btn btn-outline-primary btn-sm"
                                             th:text="${company.active ? 'Suspend Access' : 'Enable Access'}">Toggle</button>
                                 </form>
