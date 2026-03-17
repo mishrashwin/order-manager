@@ -129,7 +129,7 @@ public class CompanyController {
     if (lowered.contains("email") || lowered.contains("users_email_key")) {
       return "Email is already registered. Please use a different email.";
     }
-    if (lowered.contains("companies_name_key") || lowered.contains("company")) {
+    if (lowered.contains("companies_name_key") || lowered.contains("companies.name")) {
       return "Company name already exists. Please use a different company name.";
     }
     return "Duplicate value found. Please use different registration details.";
