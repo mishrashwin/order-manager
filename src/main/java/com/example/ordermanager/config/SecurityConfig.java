@@ -87,10 +87,10 @@ public class SecurityConfig {
           redirectUrl += "&username="
               + java.net.URLEncoder.encode(username, java.nio.charset.StandardCharsets.UTF_8);
         }
-        if (exception.getMessage() != null && !exception.getMessage().isBlank()) {
-          redirectUrl += "&reason=" + java.net.URLEncoder.encode(exception.getMessage(),
-              java.nio.charset.StandardCharsets.UTF_8);
-        }
+        // Use a generic reason code to avoid leaking sensitive authentication details
+        String reason = "authentication_failed";
+        redirectUrl += "&reason="
+            + java.net.URLEncoder.encode(reason, java.nio.charset.StandardCharsets.UTF_8);
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
       }
     };
