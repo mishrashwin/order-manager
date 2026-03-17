@@ -21,6 +21,7 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import java.io.IOException;
 import java.util.stream.Collectors;
@@ -56,16 +57,9 @@ public class SecurityConfig {
   public SecurityFilterChain filterChain(HttpSecurity http,
       DaoAuthenticationProvider authenticationProvider, AccessDeniedHandler accessDeniedHandler)
       throws Exception {
-    // CSRF is disabled here for simplicity, but this creates a security risk for the owner
-    // console's state-changing POST endpoints (e.g. approve/reject company, toggle user access).
-    // Without CSRF protection, if an owner is logged in and visits a malicious website, that
-    // site can silently submit forged POST requests to these endpoints using the owner's active
-    // session cookie (which the browser attaches automatically). Spring Security's authentication
-    // check passes because the cookie is valid, so the attacker can approve or reject companies
-    // and enable or disable user accounts without the owner's knowledge.
-    // To mitigate this, either enable CSRF (Spring's default) and include the CSRF token in every
-    // owner-console form, or restrict CSRF disabling to stateless/API endpoints only.
-    http.csrf(AbstractHttpConfigurer::disable).authenticationProvider(authenticationProvider)
+    http
+        .csrf(csrf -> csrf.ignoringRequestMatchers(new AntPathRequestMatcher("/api/**")))
+        .authenticationProvider(authenticationProvider)
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/login", "/signup", "/verify", "/resend-verification",
                 "/company/register", "/forgot-password", "/verify-reset-code", "/reset-password",
@@ -96,10 +90,10 @@ public class SecurityConfig {
           redirectUrl += "&username="
               + java.net.URLEncoder.encode(username, java.nio.charset.StandardCharsets.UTF_8);
         }
-        if (exception.getMessage() != null && !exception.getMessage().isBlank()) {
-          redirectUrl += "&reason=" + java.net.URLEncoder.encode(exception.getMessage(),
-              java.nio.charset.StandardCharsets.UTF_8);
-        }
+        // Use a generic reason code to avoid leaking sensitive authentication details
+        String reason = "authentication_failed";
+        redirectUrl += "&reason="
+            + java.net.URLEncoder.encode(reason, java.nio.charset.StandardCharsets.UTF_8);
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
       }
     };
