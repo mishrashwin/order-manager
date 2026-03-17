@@ -56,15 +56,13 @@ public class OwnerManagementService {
 
   private long countCompaniesByApprovalStatus(CompanyApprovalStatus status) {
     String jpql = "SELECT COUNT(c) FROM Company c WHERE c.approvalStatus = :status";
-    return entityManager.createQuery(jpql, Long.class)
-        .setParameter("status", status)
+    return entityManager.createQuery(jpql, Long.class).setParameter("status", status)
         .getSingleResult();
   }
 
   private long countCompaniesByActive(boolean active) {
     String jpql = "SELECT COUNT(c) FROM Company c WHERE c.active = :active";
-    return entityManager.createQuery(jpql, Long.class)
-        .setParameter("active", active)
+    return entityManager.createQuery(jpql, Long.class).setParameter("active", active)
         .getSingleResult();
   }
 }
