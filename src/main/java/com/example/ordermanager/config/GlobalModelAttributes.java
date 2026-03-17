@@ -46,10 +46,18 @@ public class GlobalModelAttributes {
       }
 
       try {
-        Long companyId = securityContextHelper.getCompanyIdFromContext();
-        String firstName = securityContextHelper.getUserFromContext().getFirstName();
-        String companyName =
-            companyService.getCompanyById(companyId).map(Company::getName).orElse("Order Manager");
+        var user = securityContextHelper.getUserFromContext();
+        Long companyId = null;
+        String firstName = null;
+        if (user != null) {
+          firstName = user.getFirstName();
+          if (user.getCompany() != null) {
+            companyId = user.getCompany().getId();
+          }
+        }
+        String companyName = (companyId != null)
+            ? companyService.getCompanyById(companyId).map(Company::getName).orElse("Order Manager")
+            : "Order Manager";
 
         model.addAttribute("companyName", companyName);
         if (firstName != null && !firstName.isBlank()) {
