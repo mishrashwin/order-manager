@@ -57,8 +57,7 @@ public class SecurityConfig {
   public SecurityFilterChain filterChain(HttpSecurity http,
       DaoAuthenticationProvider authenticationProvider, AccessDeniedHandler accessDeniedHandler)
       throws Exception {
-    http
-        .csrf(csrf -> csrf.ignoringRequestMatchers(new AntPathRequestMatcher("/api/**")))
+    http.csrf(csrf -> csrf.ignoringRequestMatchers(new AntPathRequestMatcher("/api/**")))
         .authenticationProvider(authenticationProvider)
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/login", "/signup", "/verify", "/resend-verification",

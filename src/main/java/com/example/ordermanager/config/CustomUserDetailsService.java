@@ -45,7 +45,8 @@ public class CustomUserDetailsService implements UserDetailsService {
 
       this.ownerUserDetails = new org.springframework.security.core.userdetails.User(
           this.ownerUsername, passwordForUserDetails, true, true, true, true,
-          List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_OWNER")));
+          List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority(
+              "ROLE_OWNER")));
     } else {
       // Owner credentials not configured; disable owner login.
       this.ownerUserDetails = null;
