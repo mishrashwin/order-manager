@@ -21,6 +21,7 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import java.io.IOException;
 import java.util.stream.Collectors;
@@ -56,7 +57,9 @@ public class SecurityConfig {
   public SecurityFilterChain filterChain(HttpSecurity http,
       DaoAuthenticationProvider authenticationProvider, AccessDeniedHandler accessDeniedHandler)
       throws Exception {
-    http.csrf(AbstractHttpConfigurer::disable).authenticationProvider(authenticationProvider)
+    http
+        .csrf(csrf -> csrf.ignoringRequestMatchers(new AntPathRequestMatcher("/api/**")))
+        .authenticationProvider(authenticationProvider)
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/login", "/signup", "/verify", "/resend-verification",
                 "/company/register", "/forgot-password", "/verify-reset-code", "/reset-password",
