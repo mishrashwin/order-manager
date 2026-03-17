@@ -1,5 +1,8 @@
 package com.example.ordermanager.user.service;
 
+import com.example.ordermanager.aspect.SkipMethodLogging;
+import com.example.ordermanager.entity.Company;
+import com.example.ordermanager.user.entity.User;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
@@ -11,6 +14,7 @@ import org.springframework.web.reactive.function.client.WebClientRequestExceptio
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 @Service
+@SkipMethodLogging
 public class BrevoEmailService {
 
   private static final Logger log = LoggerFactory.getLogger(BrevoEmailService.class);
@@ -49,6 +53,94 @@ public class BrevoEmailService {
         + "</body></html>";
 
     sendEmail(to, subject, htmlContent);
+  }
+
+  public void sendNewCompanyRegistrationNotification(String to, Company company, User adminUser,
+      String reviewUrl) {
+    String subject = "New company registration awaiting approval - Order Manager";
+    String htmlContent = "<html><body>"
+        + "<p>A new company has completed registration and is awaiting your approval.</p>"
+        + "<p><strong>Company:</strong> " + escapeHtml(company.getName()) + "</p>"
+        + "<p><strong>Primary admin:</strong> " + escapeHtml(adminUser.getFirstName()) + " "
+        + escapeHtml(adminUser.getLastName()) + "</p>" + "<p><strong>Email:</strong> "
+        + escapeHtml(adminUser.getEmail()) + "</p>" + "<p><strong>Mobile:</strong> "
+        + escapeHtml(adminUser.getMobileNumber()) + "</p>"
+        + "<p>Please review this company from your owner console:</p>" + "<p><a href=\"" + reviewUrl
+        + "\">Open owner company approvals</a></p>"
+        + "<p>You can approve or reject the company after logging in with your owner account.</p>"
+        + getEmailSignature() + "</body></html>";
+
+    sendEmail(to, subject, htmlContent);
+  }
+
+  public void sendCompanyApprovedWelcomeEmail(String to, Company company, User adminUser,
+      String loginUrl) {
+    String greetingName =
+        adminUser.getFirstName() == null || adminUser.getFirstName().isBlank() ? "there"
+            : escapeHtml(adminUser.getFirstName());
+    String subject = "Welcome to Order Manager - Your company is now approved";
+    String verificationNote = adminUser.isEnabled()
+        ? "You can sign in right away using your registered credentials."
+        : "Please verify your email address first, then sign in using your registered credentials.";
+
+    String htmlContent = "<html><body>" + "<p>Hi " + greetingName + ",</p>"
+        + "<p>Great news — your company <strong>" + escapeHtml(company.getName())
+        + "</strong> has been successfully approved and your Order Manager workspace is now ready.</p>"
+        + "<p>With Order Manager, your team can manage orders, clients, and vendors from one place with better visibility and control.</p>"
+        + "<p>" + verificationNote + "</p>" + "<p><a href=\"" + loginUrl
+        + "\" style=\"display:inline-block;padding:12px 20px;background:#1877f2;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;\">Log in to Order Manager</a></p>"
+        + "<p>If the button above does not work, use this link:</p>" + "<p><a href=\"" + loginUrl
+        + "\">" + escapeHtml(loginUrl) + "</a></p>"
+        + "<p>We’re excited to help you manage all your orders from one place.</p>"
+        + getEmailSignature() + "</body></html>";
+
+    sendEmail(to, subject, htmlContent);
+  }
+
+  public void sendCompanyRejectedEmail(String to, Company company, User adminUser) {
+    String greetingName = resolveGreetingName(adminUser);
+    String subject = "Update on your Order Manager company registration";
+    String htmlContent = "<html><body>" + "<p>Hi " + greetingName + ",</p>"
+        + "<p>Thank you for registering <strong>" + escapeHtml(company.getName())
+        + "</strong> with Order Manager.</p>"
+        + "<p>After reviewing the registration, we’re unable to approve the company at this time.</p>"
+        + "<p>If you believe this is an error or would like to continue the onboarding process, please reply to this email or contact our support team with your company details.</p>"
+        + "<p>We appreciate your interest in Order Manager and would be happy to assist you further.</p>"
+        + getEmailSignature() + "</body></html>";
+
+    sendEmail(to, subject, htmlContent);
+  }
+
+  public void sendCompanyAccessRevokedEmail(String to, Company company, User adminUser,
+      String loginUrl) {
+    String greetingName = resolveGreetingName(adminUser);
+    String htmlContent = "<html><body>" + "<p>Hi " + greetingName + ",</p>"
+        + "<p>This is to let you know that access to your company workspace <strong>"
+        + escapeHtml(company.getName()) + "</strong> has been temporarily suspended.</p>"
+        + "<p>During this time, your team will not be able to sign in or use the platform.</p>"
+        + "<p>This usually happens due to account, billing, or compliance review. Please contact your administrator or support team for assistance.</p>"
+        + "<p>Once access is restored, you can sign in again here:</p>" + "<p><a href=\"" + loginUrl
+        + "\">" + escapeHtml(loginUrl) + "</a></p>" + getEmailSignature() + "</body></html>";
+
+    sendEmail(to, "Your Order Manager company access has been suspended", htmlContent);
+  }
+
+  public void sendCompanyAccessRestoredEmail(String to, Company company, User adminUser,
+      String loginUrl) {
+    String greetingName = resolveGreetingName(adminUser);
+    String verificationNote =
+        adminUser.isEnabled() ? "You can sign in again using your existing credentials."
+            : "Please verify your email first, then sign in using your registered credentials.";
+    String htmlContent = "<html><body>" + "<p>Hi " + greetingName + ",</p>"
+        + "<p>Good news — access to your company workspace <strong>" + escapeHtml(company.getName())
+        + "</strong> has been restored.</p>"
+        + "<p>Your team can now continue managing orders, clients, and vendors from one place.</p>"
+        + "<p>" + verificationNote + "</p>" + "<p><a href=\"" + loginUrl
+        + "\" style=\"display:inline-block;padding:12px 20px;background:#1877f2;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;\">Log in to Order Manager</a></p>"
+        + "<p>If the button above does not work, use this link:</p>" + "<p><a href=\"" + loginUrl
+        + "\">" + escapeHtml(loginUrl) + "</a></p>" + getEmailSignature() + "</body></html>";
+
+    sendEmail(to, "Your Order Manager company access has been restored", htmlContent);
   }
 
   private void sendEmail(String to, String subject, String htmlContent) {
@@ -134,6 +226,19 @@ public class BrevoEmailService {
     }
     return str.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r")
         .replace("\t", "\\t");
+  }
+
+  private String escapeHtml(String str) {
+    if (str == null) {
+      return "";
+    }
+    return str.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        .replace("\"", "&quot;").replace("'", "&#39;");
+  }
+
+  private String resolveGreetingName(User adminUser) {
+    return adminUser.getFirstName() == null || adminUser.getFirstName().isBlank() ? "there"
+        : escapeHtml(adminUser.getFirstName());
   }
 }
 

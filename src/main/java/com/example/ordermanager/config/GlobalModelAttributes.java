@@ -37,12 +37,32 @@ public class GlobalModelAttributes {
     if (authentication != null && authentication.isAuthenticated()
         && !"anonymousUser".equals(authentication.getPrincipal())) {
 
+      model.addAttribute("navbarGreetingName", authentication.getName());
+
+      if (securityContextHelper.isOwnerContext()) {
+        model.addAttribute("companyName", "Owner Console");
+        model.addAttribute("navbarGreetingName", "Owner");
+        return;
+      }
+
       try {
-        Long companyId = securityContextHelper.getCompanyIdFromContext();
-        String companyName =
-            companyService.getCompanyById(companyId).map(Company::getName).orElse("Order Manager");
+        var user = securityContextHelper.getUserFromContext();
+        Long companyId = null;
+        String firstName = null;
+        if (user != null) {
+          firstName = user.getFirstName();
+          if (user.getCompany() != null) {
+            companyId = user.getCompany().getId();
+          }
+        }
+        String companyName = (companyId != null)
+            ? companyService.getCompanyById(companyId).map(Company::getName).orElse("Order Manager")
+            : "Order Manager";
 
         model.addAttribute("companyName", companyName);
+        if (firstName != null && !firstName.isBlank()) {
+          model.addAttribute("navbarGreetingName", firstName);
+        }
       } catch (Exception e) {
         // If there's any issue getting company name, use default
         model.addAttribute("companyName", "Order Manager");
@@ -50,6 +70,7 @@ public class GlobalModelAttributes {
     } else {
       // For unauthenticated users, use default
       model.addAttribute("companyName", "Order Manager");
+      model.addAttribute("navbarGreetingName", "User");
     }
   }
 }

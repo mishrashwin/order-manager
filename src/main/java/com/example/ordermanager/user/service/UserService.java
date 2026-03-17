@@ -225,6 +225,20 @@ public class UserService {
   }
 
   /**
+   * Find user by mobile number
+   */
+  public User findByMobileNumber(String mobileNumber) {
+    return userRepository.findByMobileNumber(mobileNumber).orElse(null);
+  }
+
+  /**
+   * Find the first admin user for a company. Used as the primary contact for onboarding emails.
+   */
+  public User findPrimaryAdminByCompanyId(Long companyId) {
+    return userRepository.findFirstByCompanyIdAndRoleOrderByIdAsc(companyId, "ADMIN").orElse(null);
+  }
+
+  /**
    * Update user by admin Can update firstName, lastName, username, email, mobileNumber, and role
    * Status (enabled) cannot be changed by admin - it's automatically managed by email verification
    * If email is changed, verification email is resent and status is reset to pending

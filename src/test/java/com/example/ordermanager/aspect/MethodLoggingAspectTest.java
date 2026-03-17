@@ -32,7 +32,7 @@ class MethodLoggingAspectTest {
     targetLogger = (Logger) LoggerFactory.getLogger(LoggingTestService.class);
     originalLevel = targetLogger.getLevel();
     originalAdditivity = targetLogger.isAdditive();
-    targetLogger.setLevel(Level.INFO);
+    targetLogger.setLevel(Level.DEBUG);
     logEvents = new ListAppender<>();
     logEvents.start();
     targetLogger.addAppender(logEvents);
@@ -88,6 +88,15 @@ class MethodLoggingAspectTest {
         .contains("token=***");
   }
 
+  @Test
+  void skipsLoggingForAnnotatedSensitiveMethods() {
+    String result = proxy.sendVerificationEmail("alice@example.com",
+        "http://localhost:8080/verify?token=secret-token");
+
+    assertThat(result).isEqualTo("email queued");
+    assertThat(logEvents.list).isEmpty();
+  }
+
   static class LoggingTestService {
 
     public String greet(String name) {
@@ -103,6 +112,11 @@ class MethodLoggingAspectTest {
         throw new IllegalStateException("blank");
       }
       throw new IllegalStateException("boom");
+    }
+
+    @SkipMethodLogging
+    public String sendVerificationEmail(String to, String verificationUrl) {
+      return "email queued";
     }
   }
 }

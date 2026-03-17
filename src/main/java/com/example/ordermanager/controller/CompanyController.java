@@ -7,6 +7,8 @@ import com.example.ordermanager.utils.SecurityContextHelper;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -88,19 +90,49 @@ public class CompanyController {
       redirectAttributes.addFlashAttribute("message",
           "Company '" + savedCompany.getName()
               + "' registered successfully! Verification email sent to "
-              + registrationDTO.getOwnerEmail() + ". Please verify your email before logging in.");
+              + registrationDTO.getOwnerEmail()
+              + ". Please verify your email and wait for owner approval before logging in.");
       return "redirect:/login?registered=true";
 
     } catch (IllegalArgumentException e) {
       model.addAttribute("error", e.getMessage());
       model.addAttribute("registrationData", registrationDTO);
       return "company/register";
+    } catch (DataIntegrityViolationException e) {
+      log.warn("Duplicate/constraint violation during company registration", e);
+      model.addAttribute("error", getFriendlyRegistrationError(e));
+      model.addAttribute("registrationData", registrationDTO);
+      return "company/register";
     } catch (Exception e) {
       log.error("Error during company registration", e);
-      model.addAttribute("error", "Error during registration: " + e.getMessage());
+      model.addAttribute("error",
+          "We could not complete registration right now. Please verify your details and try again.");
       model.addAttribute("registrationData", registrationDTO);
       return "company/register";
     }
+  }
+
+  private String getFriendlyRegistrationError(DataIntegrityViolationException ex) {
+    String message = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage()
+        : ex.getMessage();
+    if (message == null) {
+      return "Duplicate value found. Please use different registration details.";
+    }
+
+    String lowered = message.toLowerCase();
+    if (lowered.contains("mobile_number") || lowered.contains("users_mobile_number_key")) {
+      return "Mobile number is already registered. Please use a different mobile number.";
+    }
+    if (lowered.contains("username") || lowered.contains("users_username_key")) {
+      return "Username already exists. Please choose another username.";
+    }
+    if (lowered.contains("email") || lowered.contains("users_email_key")) {
+      return "Email is already registered. Please use a different email.";
+    }
+    if (lowered.contains("companies_name_key") || lowered.contains("companies.name")) {
+      return "Company name already exists. Please use a different company name.";
+    }
+    return "Duplicate value found. Please use different registration details.";
   }
 
   /**
@@ -125,9 +157,8 @@ public class CompanyController {
    * Admin only: View all companies Typically restricted to super-admin role
    */
   @GetMapping("/admin/all")
+  @PreAuthorize("hasRole('OWNER')")
   public String getAllCompanies(Model model) {
-    // TODO: Add @PreAuthorize("hasRole('SUPER_ADMIN')")
-    // when role model is complete
     model.addAttribute("companies", companyService.getAllCompanies());
     return "company/all-companies";
   }
@@ -136,8 +167,8 @@ public class CompanyController {
    * Admin only: Deactivate a company
    */
   @PostMapping("/{id}/deactivate")
+  @PreAuthorize("hasRole('OWNER')")
   public String deactivateCompany(@PathVariable Long id) {
-    // TODO: Add @PreAuthorize("hasRole('SUPER_ADMIN')")
     try {
       companyService.deactivateCompany(id);
       return "redirect:/company/admin/all?message=Company deactivated";
@@ -150,8 +181,8 @@ public class CompanyController {
    * Admin only: Activate a company
    */
   @PostMapping("/{id}/activate")
+  @PreAuthorize("hasRole('OWNER')")
   public String activateCompany(@PathVariable Long id) {
-    // TODO: Add @PreAuthorize("hasRole('SUPER_ADMIN')")
     try {
       companyService.activateCompany(id);
       return "redirect:/company/admin/all?message=Company activated";

@@ -40,10 +40,21 @@ public class Company {
   @Column(nullable = false)
   private boolean active = true;
 
+  @Enumerated(EnumType.STRING)
+  @Column(name = "approval_status", nullable = false)
+  private CompanyApprovalStatus approvalStatus = CompanyApprovalStatus.PENDING;
+
+  @Column(name = "approved_at")
+  private LocalDateTime approvedAt;
+
+  @Column(name = "approved_by", length = 100)
+  private String approvedBy;
+
   // Constructor with name
   public Company(String name) {
     this.name = name;
     this.active = true;
+    this.approvalStatus = CompanyApprovalStatus.PENDING;
   }
 }
 

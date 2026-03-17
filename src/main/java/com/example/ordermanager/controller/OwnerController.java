@@ -1,0 +1,96 @@
+package com.example.ordermanager.controller;
+
+import com.example.ordermanager.entity.Company;
+import com.example.ordermanager.entity.CompanyApprovalStatus;
+import com.example.ordermanager.service.CompanyService;
+import com.example.ordermanager.service.OwnerManagementService;
+import java.security.Principal;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+@Controller
+@RequestMapping("/owner")
+@PreAuthorize("hasRole('OWNER')")
+public class OwnerController {
+
+  private final OwnerManagementService ownerManagementService;
+  private final CompanyService companyService;
+
+  public OwnerController(OwnerManagementService ownerManagementService,
+      CompanyService companyService) {
+    this.ownerManagementService = ownerManagementService;
+    this.companyService = companyService;
+  }
+
+  @GetMapping("/dashboard")
+  public String dashboard(Model model) {
+    model.addAttribute("companyName", "Owner Console");
+    model.addAttribute("page", "owner-dashboard");
+    model.addAttribute("metrics", ownerManagementService.getDashboardMetrics());
+    model.addAttribute("pendingCompanies", ownerManagementService.getPendingCompanySummaries());
+    return "owner/dashboard";
+  }
+
+  @GetMapping("/companies")
+  public String companies(Model model) {
+    model.addAttribute("companyName", "Owner Console");
+    model.addAttribute("page", "owner-companies");
+    model.addAttribute("companies", ownerManagementService.getAllCompanySummaries());
+    model.addAttribute("pendingCount", companyService.getPendingCompanyCount());
+    return "owner/companies";
+  }
+
+  @PostMapping("/companies/{id}/approve")
+  public String approve(@PathVariable Long id, Principal principal,
+      RedirectAttributes redirectAttributes) {
+    try {
+      companyService.approveCompany(id, principal.getName());
+      redirectAttributes.addFlashAttribute("message", "Company approved successfully.");
+    } catch (IllegalArgumentException ex) {
+      redirectAttributes.addFlashAttribute("error", ex.getMessage());
+    }
+    return "redirect:/owner/companies";
+  }
+
+  @PostMapping("/companies/{id}/reject")
+  public String reject(@PathVariable Long id, Principal principal,
+      RedirectAttributes redirectAttributes) {
+    try {
+      companyService.rejectCompany(id, principal.getName());
+      redirectAttributes.addFlashAttribute("message", "Company rejected and suspended.");
+    } catch (IllegalArgumentException ex) {
+      redirectAttributes.addFlashAttribute("error", ex.getMessage());
+    }
+    return "redirect:/owner/companies";
+  }
+
+  @PostMapping("/companies/{id}/toggle-access")
+  public String toggleAccess(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    try {
+      Company company = companyService.getCompanyById(id)
+          .orElseThrow(() -> new IllegalArgumentException("Company not found"));
+      if (company.isActive()) {
+        companyService.deactivateCompany(id);
+        redirectAttributes.addFlashAttribute("message", "Company access suspended.");
+      } else {
+        if (!CompanyApprovalStatus.APPROVED.equals(company.getApprovalStatus())) {
+          redirectAttributes.addFlashAttribute("error",
+              "Approve the company before re-enabling access.");
+          return "redirect:/owner/companies";
+        }
+        companyService.activateCompany(id);
+        redirectAttributes.addFlashAttribute("message", "Company access restored.");
+      }
+    } catch (IllegalArgumentException ex) {
+      redirectAttributes.addFlashAttribute("error", ex.getMessage());
+    }
+    return "redirect:/owner/companies";
+  }
+}
+
