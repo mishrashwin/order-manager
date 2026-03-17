@@ -8,6 +8,8 @@ import com.example.ordermanager.repository.CompanyRepository;
 import com.example.ordermanager.user.repository.UserRepository;
 import java.util.Comparator;
 import java.util.List;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,6 +18,9 @@ public class OwnerManagementService {
   private final CompanyRepository companyRepository;
   private final UserRepository userRepository;
 
+  @PersistenceContext
+  private EntityManager entityManager;
+
   public OwnerManagementService(CompanyRepository companyRepository,
       UserRepository userRepository) {
     this.companyRepository = companyRepository;
@@ -23,16 +28,13 @@ public class OwnerManagementService {
   }
 
   public OwnerDashboardMetrics getDashboardMetrics() {
-    List<Company> companies = companyRepository.findAll();
-    long total = companies.size();
-    long approved = companies.stream()
-        .filter(c -> CompanyApprovalStatus.APPROVED.equals(c.getApprovalStatus())).count();
-    long pending = companies.stream()
-        .filter(c -> CompanyApprovalStatus.PENDING.equals(c.getApprovalStatus())).count();
-    long rejected = companies.stream()
-        .filter(c -> CompanyApprovalStatus.REJECTED.equals(c.getApprovalStatus())).count();
-    long active = companies.stream().filter(Company::isActive).count();
-    return new OwnerDashboardMetrics(total, approved, pending, rejected, active, total - active);
+    long total = companyRepository.count();
+    long approved = countCompaniesByApprovalStatus(CompanyApprovalStatus.APPROVED);
+    long pending = countCompaniesByApprovalStatus(CompanyApprovalStatus.PENDING);
+    long rejected = countCompaniesByApprovalStatus(CompanyApprovalStatus.REJECTED);
+    long active = countCompaniesByActive(true);
+    long inactive = total - active;
+    return new OwnerDashboardMetrics(total, approved, pending, rejected, active, inactive);
   }
 
   public List<OwnerCompanySummary> getAllCompanySummaries() {
@@ -50,6 +52,20 @@ public class OwnerManagementService {
     return new OwnerCompanySummary(company.getId(), company.getName(), company.getApprovalStatus(),
         company.isActive(), usersCount, company.getCreatedAt(), company.getApprovedBy(),
         company.getApprovedAt());
+  }
+
+  private long countCompaniesByApprovalStatus(CompanyApprovalStatus status) {
+    String jpql = "SELECT COUNT(c) FROM Company c WHERE c.approvalStatus = :status";
+    return entityManager.createQuery(jpql, Long.class)
+        .setParameter("status", status)
+        .getSingleResult();
+  }
+
+  private long countCompaniesByActive(boolean active) {
+    String jpql = "SELECT COUNT(c) FROM Company c WHERE c.active = :active";
+    return entityManager.createQuery(jpql, Long.class)
+        .setParameter("active", active)
+        .getSingleResult();
   }
 }
 
