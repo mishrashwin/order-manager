@@ -19,27 +19,44 @@ public class CustomUserDetailsService implements UserDetailsService {
   private final UserRepository userRepository;
   private final CompanyService companyService;
   private final PasswordEncoder passwordEncoder;
-
-  @Value("${app.owner.username}")
-  private String ownerUsername;
-
-  @Value("${app.owner.password}")
-  private String ownerPassword;
+  private final String ownerUsername;
+  private final String ownerPassword;
+  private final UserDetails ownerUserDetails;
 
   public CustomUserDetailsService(UserRepository userRepository, CompanyService companyService,
-      PasswordEncoder passwordEncoder) {
+      PasswordEncoder passwordEncoder,
+      @Value("${app.owner.username}") String ownerUsername,
+      @Value("${app.owner.password}") String ownerPassword) {
     this.userRepository = userRepository;
     this.companyService = companyService;
     this.passwordEncoder = passwordEncoder;
+    this.ownerUsername = ownerUsername;
+    this.ownerPassword = ownerPassword;
+
+    String passwordForUserDetails;
+    if (ownerPassword != null && ownerPassword.startsWith("{")) {
+      // Assume already-encoded password in Spring's "{id}..." format.
+      passwordForUserDetails = ownerPassword;
+    } else {
+      // Encode raw password once at startup.
+      passwordForUserDetails = this.passwordEncoder.encode(ownerPassword);
+    }
+
+    this.ownerUserDetails = new org.springframework.security.core.userdetails.User(
+        this.ownerUsername,
+        passwordForUserDetails,
+        true,
+        true,
+        true,
+        true,
+        List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_OWNER")));
   }
 
   @Override
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
     if (ownerUsername.equals(username)) {
-      return new org.springframework.security.core.userdetails.User(ownerUsername,
-          passwordEncoder.encode(ownerPassword), true, true, true, true,
-          List.of(new SimpleGrantedAuthority("ROLE_OWNER")));
+      return ownerUserDetails;
     }
 
     User user = userRepository.findByUsername(username)
