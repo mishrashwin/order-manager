@@ -32,24 +32,30 @@ public class CustomUserDetailsService implements UserDetailsService {
     this.ownerUsername = ownerUsername;
     this.ownerPassword = ownerPassword;
 
-    String passwordForUserDetails;
-    if (ownerPassword != null && ownerPassword.startsWith("{")) {
-      // Assume already-encoded password in Spring's "{id}..." format.
-      passwordForUserDetails = ownerPassword;
-    } else {
-      // Encode raw password once at startup.
-      passwordForUserDetails = this.passwordEncoder.encode(ownerPassword);
-    }
+    if (ownerUsername != null && !ownerUsername.isBlank() && ownerPassword != null
+        && !ownerPassword.isBlank()) {
+      String passwordForUserDetails;
+      if (ownerPassword.startsWith("{")) {
+        // Assume already-encoded password in Spring's "{id}..." format.
+        passwordForUserDetails = ownerPassword;
+      } else {
+        // Encode raw password once at startup.
+        passwordForUserDetails = this.passwordEncoder.encode(ownerPassword);
+      }
 
-    this.ownerUserDetails = new org.springframework.security.core.userdetails.User(
-        this.ownerUsername, passwordForUserDetails, true, true, true, true, List.of(
-            new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_OWNER")));
+      this.ownerUserDetails = new org.springframework.security.core.userdetails.User(
+          this.ownerUsername, passwordForUserDetails, true, true, true, true,
+          List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_OWNER")));
+    } else {
+      // Owner credentials not configured; disable owner login.
+      this.ownerUserDetails = null;
+    }
   }
 
   @Override
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
-    if (ownerUsername.equals(username)) {
+    if (ownerUserDetails != null && ownerUsername != null && ownerUsername.equals(username)) {
       return ownerUserDetails;
     }
 
