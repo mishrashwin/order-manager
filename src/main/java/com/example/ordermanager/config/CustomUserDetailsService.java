@@ -24,8 +24,7 @@ public class CustomUserDetailsService implements UserDetailsService {
   private final UserDetails ownerUserDetails;
 
   public CustomUserDetailsService(UserRepository userRepository, CompanyService companyService,
-      PasswordEncoder passwordEncoder,
-      @Value("${app.owner.username}") String ownerUsername,
+      PasswordEncoder passwordEncoder, @Value("${app.owner.username}") String ownerUsername,
       @Value("${app.owner.password}") String ownerPassword) {
     this.userRepository = userRepository;
     this.companyService = companyService;
@@ -43,13 +42,8 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     this.ownerUserDetails = new org.springframework.security.core.userdetails.User(
-        this.ownerUsername,
-        passwordForUserDetails,
-        true,
-        true,
-        true,
-        true,
-        List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_OWNER")));
+        this.ownerUsername, passwordForUserDetails, true, true, true, true, List.of(
+            new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_OWNER")));
   }
 
   @Override

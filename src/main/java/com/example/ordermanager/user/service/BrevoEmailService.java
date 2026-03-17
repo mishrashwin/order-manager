@@ -120,8 +120,7 @@ public class BrevoEmailService {
         + "<p>During this time, your team will not be able to sign in or use the platform.</p>"
         + "<p>This usually happens due to account, billing, or compliance review. Please contact your administrator or support team for assistance.</p>"
         + "<p>Once access is restored, you can sign in again here:</p>" + "<p><a href=\"" + loginUrl
-        + "\">" + escapeHtml(loginUrl) + "</a></p>"
-        + getEmailSignature() + "</body></html>";
+        + "\">" + escapeHtml(loginUrl) + "</a></p>" + getEmailSignature() + "</body></html>";
 
     sendEmail(to, "Your Order Manager company access has been suspended", htmlContent);
   }
@@ -139,8 +138,7 @@ public class BrevoEmailService {
         + "<p>" + verificationNote + "</p>" + "<p><a href=\"" + loginUrl
         + "\" style=\"display:inline-block;padding:12px 20px;background:#1877f2;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;\">Log in to Order Manager</a></p>"
         + "<p>If the button above does not work, use this link:</p>" + "<p><a href=\"" + loginUrl
-        + "\">" + escapeHtml(loginUrl) + "</a></p>"
-        + getEmailSignature() + "</body></html>";
+        + "\">" + escapeHtml(loginUrl) + "</a></p>" + getEmailSignature() + "</body></html>";
 
     sendEmail(to, "Your Order Manager company access has been restored", htmlContent);
   }
