@@ -15,5 +15,7 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
   List<Company> findByApprovalStatusOrderByCreatedAtDesc(CompanyApprovalStatus approvalStatus);
 
   long countByApprovalStatus(CompanyApprovalStatus approvalStatus);
+
+  long countByActive(boolean active);
 }
 
