@@ -10,6 +10,151 @@
 
   <style>
     body { background-color: #f9f9f9; margin: 0; padding: 0; }
+
+    /* Flash Notifications Container */
+    .flash-notifications-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        max-width: 300px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column-reverse;
+        gap: 8px;
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
+    }
+
+    .flash-notification {
+        background: linear-gradient(135deg, #fff3cd 0%, #fffbea 100%);
+        border: 2px solid #ffc107;
+        border-radius: 6px;
+        padding: 10px 12px;
+        box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+        animation: slideIn 0.3s ease-out;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 240px;
+    }
+
+    .flash-notification.urgent {
+        background: linear-gradient(135deg, #ffe0e0 0%, #fff5f5 100%);
+        border-color: #e74c3c;
+        box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+    }
+
+    .flash-notification.attention {
+        background: linear-gradient(135deg, #ffe8d6 0%, #fff9f3 100%);
+        border-color: #f39c12;
+        box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+    }
+
+    .flash-notification-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .flash-notification-title {
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #333;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .flash-notification.urgent .flash-notification-title {
+        color: #c0392b;
+    }
+
+    .flash-notification.attention .flash-notification-title {
+        color: #d68910;
+    }
+
+    .flash-notification-close {
+        background: none;
+        border: none;
+        color: #666;
+        cursor: pointer;
+        font-size: 1rem;
+        padding: 0;
+        line-height: 1;
+        transition: color 0.2s ease;
+    }
+
+    .flash-notification.urgent .flash-notification-close {
+        color: #c0392b;
+    }
+
+    .flash-notification.attention .flash-notification-close {
+        color: #d68910;
+    }
+
+    .flash-notification-close:hover {
+        color: #333;
+    }
+
+    .flash-notification-content {
+        font-size: 0.8rem;
+        color: #555;
+        line-height: 1.5;
+        margin: 0;
+    }
+
+    .flash-notification-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 5px;
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+        font-size: 0.75rem;
+        color: #666;
+    }
+
+    .flash-notification-delivery {
+        font-weight: 600;
+    }
+
+    .flash-notification.urgent .flash-notification-delivery {
+        color: #c0392b;
+    }
+
+    .flash-notification.attention .flash-notification-delivery {
+        color: #d68910;
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateX(100%) translateY(12px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0) translateY(0);
+        }
+    }
+
+    /* Responsive: Stack on smaller screens */
+    @media (max-width: 768px) {
+        .flash-notifications-container {
+            bottom: 10px;
+            right: 10px;
+            left: 10px;
+            max-width: none;
+            width: calc(100% - 20px);
+            max-height: calc(100vh - 20px);
+        }
+
+        .flash-notification {
+            min-width: unset;
+            width: 100%;
+        }
+    }
+
     .board {
         display: grid;
         grid-template-columns: repeat(5, 1fr);
@@ -260,6 +405,9 @@
 <!-- Unified Navbar -->
 <div th:replace="~{fragments/unified-navbar :: unified-navbar}"></div>
 
+<!-- Flash Notifications Container -->
+<div class="flash-notifications-container" id="flashNotificationsContainer"></div>
+
 <!-- Main Content (Full Width) -->
 <div class="main-content">
   <div class="content-header dashboard-header">
@@ -324,7 +472,7 @@
 <!-- Footer -->
 <div th:replace="~{fragments/footer :: footer}"></div>
 
-<script>
+<script th:inline="javascript">
   // Reset date range to default (past one month)
   function resetDateRange() {
     const today = new Date();
@@ -336,7 +484,75 @@
     window.location.href = `/dashboard?startDate=${formatDate(oneMonthAgo)}&endDate=${formatDate(today)}`;
   }
 
+  // Create and render a flash notification for an urgent order
+  function createFlashNotification(order) {
+    const container = document.getElementById('flashNotificationsContainer');
+
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = 'flash-notification urgent';
+    notification.id = `notification-${order.id}`;
+
+    // Calculate days until delivery
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const deliveryDate = new Date(order.deliveryDate);
+    deliveryDate.setHours(0, 0, 0, 0);
+    const daysUntilDelivery = Math.ceil((deliveryDate - today) / (1000 * 60 * 60 * 24));
+    const daysText = daysUntilDelivery === 0 ? 'Today' : `In ${daysUntilDelivery} day${daysUntilDelivery !== 1 ? 's' : ''}`;
+
+    notification.innerHTML = `
+      <div class="flash-notification-header">
+        <h6 class="flash-notification-title">
+          <i class="bi bi-exclamation-circle-fill"></i>
+          Urgent Order Alert
+        </h6>
+        <button class="flash-notification-close" onclick="this.closest('.flash-notification').remove()" title="Dismiss">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <p class="flash-notification-content">
+        <strong>${order.customerName}</strong> - ${order.productName} (Qty: ${order.quantity})
+      </p>
+      <div class="flash-notification-meta">
+        <span class="flash-notification-delivery">
+          <i class="bi bi-calendar-event"></i> Delivery: ${daysText}
+        </span>
+      </div>
+    `;
+
+    // Append to container
+    container.appendChild(notification);
+
+    // Auto-dismiss after 20 seconds
+    setTimeout(() => {
+      notification.remove();
+    }, 20000);
+
+    return notification;
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
+      // Initialize urgent order notifications from Thymeleaf-inlined data.
+      try {
+        const urgentOrders = /*[[${urgentOrders}]]*/ [];
+        if (window._debug) console.log('Urgent Orders Data:', urgentOrders);
+
+        if (urgentOrders && Array.isArray(urgentOrders) && urgentOrders.length > 0) {
+          if (window._debug) console.log('Found ' + urgentOrders.length + ' urgent orders, initializing notifications...');
+          // Create a notification for each urgent order with slight delay between each
+          urgentOrders.forEach((order, index) => {
+            setTimeout(() => {
+              createFlashNotification(order);
+            }, index * 300); // 300ms stagger between notifications
+          });
+        } else {
+          if (window._debug) console.log('No urgent orders found or urgentOrders is not an array');
+        }
+      } catch (e) {
+        if (window._debug) console.error('Error initializing urgent notifications:', e);
+      }
+
       const lists = document.querySelectorAll(".order-list");
       const sharedGroup = { name: "orders", pull: true, put: true };
 
@@ -378,9 +594,11 @@
                   const orderId = evt.item.dataset.id;
                   const newStatus = evt.to.id.replace("list-", "");
                   axios.patch(`/api/orders/${orderId}`, { status: newStatus })
-                      .then(() => console.log(`✅ Order ${orderId} moved to ${newStatus}`))
+                      .then(() => {
+                          if (window._debug) console.log(`✅ Order ${orderId} moved to ${newStatus}`);
+                      })
                       .catch(err => {
-                          console.error("❌ Failed to update order:", err);
+                          if (window._debug) console.error("❌ Failed to update order:", err);
                           evt.from.appendChild(evt.item);
                       });
               }

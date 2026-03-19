@@ -10,7 +10,6 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -89,10 +88,10 @@ public class SecurityConfig {
           redirectUrl += "&username="
               + java.net.URLEncoder.encode(username, java.nio.charset.StandardCharsets.UTF_8);
         }
-        // Use a generic reason code to avoid leaking sensitive authentication details
-        String reason = "authentication_failed";
-        redirectUrl += "&reason="
-            + java.net.URLEncoder.encode(reason, java.nio.charset.StandardCharsets.UTF_8);
+        if (exception.getMessage() != null && !exception.getMessage().isBlank()) {
+          redirectUrl += "&reason=" + java.net.URLEncoder.encode(exception.getMessage(),
+              java.nio.charset.StandardCharsets.UTF_8);
+        }
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
       }
     };

@@ -149,4 +149,30 @@ public class OrderService {
     return map;
   }
 
+  /**
+   * TENANT-AWARE: Get urgent orders for a company (non-final status + delivery date ≤ 7 days from
+   * today). Used for dashboard flash notifications.
+   *
+   * @param companyId Company ID
+   * @return List of urgent orders sorted by delivery date ascending
+   */
+  public List<Order> getUrgentOrdersByCompanyId(Long companyId) {
+    LocalDate today = LocalDate.now();
+    LocalDate sevenDaysFromNow = today.plusDays(7);
+
+    return orderRepository.findByCompanyIdAndDeliveryDateBetween(companyId, today, sevenDaysFromNow)
+        .stream().filter(order -> !order.getStatus().isFinal()) // Exclude final status orders
+                                                                // (DELIVERED, COMPLETED, RETURNED,
+                                                                // CANCELLED, PENDING_PAYMENT)
+        .sorted((o1, o2) -> {
+          // Sort by delivery date ascending (earliest first)
+          if (o1.getDeliveryDate() == null && o2.getDeliveryDate() == null)
+            return 0;
+          if (o1.getDeliveryDate() == null)
+            return 1;
+          if (o2.getDeliveryDate() == null)
+            return -1;
+          return o1.getDeliveryDate().compareTo(o2.getDeliveryDate());
+        }).toList();
+  }
 }
