@@ -216,8 +216,8 @@
         const resendLink = document.getElementById('resendLink');
         if (usernameField && resendLink) {
             const updateLink = () => {
-                const email = usernameField.value.trim();
-                resendLink.href = "/resend-verification" + (email ? "?email=" + encodeURIComponent(email) : "");
+                const identifier = usernameField.value.trim();
+                resendLink.href = "/resend-verification" + (identifier ? "?email=" + encodeURIComponent(identifier) : "");
             };
             usernameField.addEventListener("input", updateLink);
             updateLink();

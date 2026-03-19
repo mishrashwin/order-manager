@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 public class DashboardController {
@@ -52,6 +53,15 @@ public class DashboardController {
     // Filter orders by company and date range - ensures tenant isolation
     model.addAttribute("orders",
         orderService.getOrdersByCompanyIdAndDateRange(companyId, start, end));
+
+    // Send only minimal fields needed by dashboard notification JS.
+    var urgentOrderNotifications = orderService.getUrgentOrdersByCompanyId(companyId).stream()
+        .map(order -> Map.of("id", order.getId(), "customerName", order.getCustomerName(),
+            "productName", order.getProductName(), "quantity", order.getQuantity(), "deliveryDate",
+            order.getDeliveryDate().toString()))
+        .toList();
+    model.addAttribute("urgentOrders", urgentOrderNotifications);
+
     return "dashboard";
   }
 

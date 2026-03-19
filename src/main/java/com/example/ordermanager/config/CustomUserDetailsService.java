@@ -18,50 +18,80 @@ public class CustomUserDetailsService implements UserDetailsService {
 
   private final UserRepository userRepository;
   private final CompanyService companyService;
-  private final PasswordEncoder passwordEncoder;
   private final String ownerUsername;
-  private final String ownerPassword;
-  private final UserDetails ownerUserDetails;
+  private final String ownerEmail;
+  // Store the encoded password as an immutable String instead of a mutable UserDetails.
+  // Spring Security's User implements CredentialsContainer — eraseCredentials() sets
+  // password = null after first successful auth, breaking all subsequent owner logins.
+  private final String ownerEncodedPassword;
 
   public CustomUserDetailsService(UserRepository userRepository, CompanyService companyService,
       PasswordEncoder passwordEncoder, @Value("${app.owner.username}") String ownerUsername,
-      @Value("${app.owner.password}") String ownerPassword) {
+      @Value("${app.owner.password}") String ownerPassword,
+      @Value("${app.owner.email:}") String ownerEmail) {
     this.userRepository = userRepository;
     this.companyService = companyService;
-    this.passwordEncoder = passwordEncoder;
-    this.ownerUsername = ownerUsername;
-    this.ownerPassword = ownerPassword;
+    this.ownerUsername = ownerUsername != null ? ownerUsername.trim() : null;
+    this.ownerEmail = ownerEmail != null ? ownerEmail.trim() : null;
 
-    if (ownerUsername != null && !ownerUsername.isBlank() && ownerPassword != null
+    if (this.ownerUsername != null && !this.ownerUsername.isBlank() && ownerPassword != null
         && !ownerPassword.isBlank()) {
-      String passwordForUserDetails;
-      if (ownerPassword.startsWith("{")) {
-        // Assume already-encoded password in Spring's "{id}..." format.
-        passwordForUserDetails = ownerPassword;
+      String rawOwnerPassword = ownerPassword.trim();
+
+      if (rawOwnerPassword.startsWith("$2a$") || rawOwnerPassword.startsWith("$2b$")
+          || rawOwnerPassword.startsWith("$2y$")) {
+        // Already a BCrypt hash (without delegating prefix).
+        this.ownerEncodedPassword = rawOwnerPassword;
+      } else if (rawOwnerPassword.startsWith("{")) {
+        int endIdx = rawOwnerPassword.indexOf('}');
+        if (endIdx > 1) {
+          String id = rawOwnerPassword.substring(1, endIdx);
+          String value = rawOwnerPassword.substring(endIdx + 1).trim();
+          if ("bcrypt".equalsIgnoreCase(id) && !value.isBlank()) {
+            this.ownerEncodedPassword = value;
+          } else if ("bcrypt".equalsIgnoreCase(id)) {
+            // {bcrypt} with empty hash — invalid config, disable owner login.
+            this.ownerEncodedPassword = null;
+          } else {
+            this.ownerEncodedPassword = passwordEncoder.encode(value);
+          }
+        } else {
+          this.ownerEncodedPassword = passwordEncoder.encode(rawOwnerPassword);
+        }
       } else {
         // Encode raw password once at startup.
-        passwordForUserDetails = this.passwordEncoder.encode(ownerPassword);
+        this.ownerEncodedPassword = passwordEncoder.encode(rawOwnerPassword);
       }
-
-      this.ownerUserDetails = new org.springframework.security.core.userdetails.User(
-          this.ownerUsername, passwordForUserDetails, true, true, true, true,
-          List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority(
-              "ROLE_OWNER")));
     } else {
       // Owner credentials not configured; disable owner login.
-      this.ownerUserDetails = null;
+      this.ownerEncodedPassword = null;
     }
   }
 
   @Override
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    String normalizedUsername = username != null ? username.trim() : null;
 
-    if (ownerUserDetails != null && ownerUsername != null && ownerUsername.equals(username)) {
-      return ownerUserDetails;
+    boolean ownerUsernameMatch = ownerUsername != null && normalizedUsername != null
+        && ownerUsername.equalsIgnoreCase(normalizedUsername);
+    boolean ownerEmailMatch = ownerEmail != null && !ownerEmail.isBlank()
+        && normalizedUsername != null && ownerEmail.equalsIgnoreCase(normalizedUsername);
+
+    if (ownerEncodedPassword != null && (ownerUsernameMatch || ownerEmailMatch)) {
+      // Return a fresh UserDetails each time so eraseCredentials() after successful
+      // authentication does not wipe the stored password for subsequent login attempts.
+      return new org.springframework.security.core.userdetails.User(ownerUsername,
+          ownerEncodedPassword, true, true, true, true,
+          List.of(new SimpleGrantedAuthority("ROLE_OWNER")));
     }
 
-    User user = userRepository.findByUsername(username)
-        .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+    User user = userRepository.findByUsername(normalizedUsername)
+        .orElseThrow(() -> new UsernameNotFoundException("User not found: " + normalizedUsername));
+
+    if (user.getPassword() == null || user.getPassword().isBlank()) {
+      throw new DisabledException(
+          "Account credentials are unavailable. Please reset your password.");
+    }
 
     if (user.getCompany() == null) {
       throw new DisabledException("Company assignment missing. Contact support.");
@@ -82,8 +112,13 @@ public class CustomUserDetailsService implements UserDetailsService {
           "Company access is currently paused due to account status. Please contact support.");
     }
 
+    // Keep unverified-user message explicit so login page can show resend verification guidance.
+    if (!user.isEnabled()) {
+      throw new DisabledException("User is not verified.");
+    }
+
     return new org.springframework.security.core.userdetails.User(user.getUsername(),
-        user.getPassword(), user.isEnabled(), true, true, true,
+        user.getPassword(), true, true, true, true,
         List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole())));
   }
 }

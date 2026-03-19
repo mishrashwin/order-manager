@@ -7,9 +7,8 @@
 
 <!-- 🌐 Footer Fragment -->
 <div th:fragment="footer">
-    <footer class="text-center text-muted mt-5 mb-3 small">
-        <hr class="mt-4">
-        <div>
+    <footer class="text-center mt-5 mb-3 small">
+        <div style="max-width: 600px; margin: 0 auto; padding: 0 20px;">
             <p class="mb-1">
                 © <span th:text="${#temporals.format(#temporals.createNow(), 'yyyy')}"></span>
                 <strong>Order Manager</strong> | All Rights Reserved
