@@ -536,10 +536,10 @@
       // Initialize urgent order notifications from Thymeleaf-inlined data.
       try {
         const urgentOrders = /*[[${urgentOrders}]]*/ [];
-        console.log('Urgent Orders Data:', urgentOrders);
+        if (window._debug) console.log('Urgent Orders Data:', urgentOrders);
 
         if (urgentOrders && Array.isArray(urgentOrders) && urgentOrders.length > 0) {
-          console.log('Found ' + urgentOrders.length + ' urgent orders, initializing notifications...');
+          if (window._debug) console.log('Found ' + urgentOrders.length + ' urgent orders, initializing notifications...');
           // Create a notification for each urgent order with slight delay between each
           urgentOrders.forEach((order, index) => {
             setTimeout(() => {
@@ -547,10 +547,10 @@
             }, index * 300); // 300ms stagger between notifications
           });
         } else {
-          console.log('No urgent orders found or urgentOrders is not an array');
+          if (window._debug) console.log('No urgent orders found or urgentOrders is not an array');
         }
       } catch (e) {
-        console.error('Error initializing urgent notifications:', e);
+        if (window._debug) console.error('Error initializing urgent notifications:', e);
       }
 
       const lists = document.querySelectorAll(".order-list");
@@ -594,9 +594,11 @@
                   const orderId = evt.item.dataset.id;
                   const newStatus = evt.to.id.replace("list-", "");
                   axios.patch(`/api/orders/${orderId}`, { status: newStatus })
-                      .then(() => console.log(`✅ Order ${orderId} moved to ${newStatus}`))
+                      .then(() => {
+                          if (window._debug) console.log(`✅ Order ${orderId} moved to ${newStatus}`);
+                      })
                       .catch(err => {
-                          console.error("❌ Failed to update order:", err);
+                          if (window._debug) console.error("❌ Failed to update order:", err);
                           evt.from.appendChild(evt.item);
                       });
               }
