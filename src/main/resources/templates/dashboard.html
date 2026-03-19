@@ -484,42 +484,101 @@
     window.location.href = `/dashboard?startDate=${formatDate(oneMonthAgo)}&endDate=${formatDate(today)}`;
   }
 
+  // Parse YYYY-MM-DD as a local date to avoid UTC timezone shifts.
+  function parseLocalIsoDate(value) {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) {
+      return null;
+    }
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const parsed = new Date(year, month - 1, day);
+
+    // Reject rollover dates like 2026-02-31.
+    if (parsed.getFullYear() !== year || parsed.getMonth() !== month - 1
+        || parsed.getDate() !== day) {
+      return null;
+    }
+
+    return parsed;
+  }
+
   // Create and render a flash notification for an urgent order
   function createFlashNotification(order) {
     const container = document.getElementById('flashNotificationsContainer');
+    const safeOrder = order || {};
 
     // Create notification element
     const notification = document.createElement('div');
     notification.className = 'flash-notification urgent';
-    notification.id = `notification-${order.id}`;
+    notification.id = `notification-${String(safeOrder.id ?? 'unknown')}`;
+
+    const customerName = safeOrder.customerName == null ? 'Unknown customer' : String(safeOrder.customerName);
+    const productName = safeOrder.productName == null ? 'Unknown product' : String(safeOrder.productName);
+    const quantityText = safeOrder.quantity == null ? '-' : String(safeOrder.quantity);
 
     // Calculate days until delivery
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const deliveryDate = new Date(order.deliveryDate);
-    deliveryDate.setHours(0, 0, 0, 0);
-    const daysUntilDelivery = Math.ceil((deliveryDate - today) / (1000 * 60 * 60 * 24));
-    const daysText = daysUntilDelivery === 0 ? 'Today' : `In ${daysUntilDelivery} day${daysUntilDelivery !== 1 ? 's' : ''}`;
+    const deliveryDate = parseLocalIsoDate(safeOrder.deliveryDate);
+    let daysText = 'Soon';
+    if (deliveryDate !== null) {
+      deliveryDate.setHours(0, 0, 0, 0);
+      const daysUntilDelivery = Math.ceil((deliveryDate - today) / (1000 * 60 * 60 * 24));
+      daysText =
+          daysUntilDelivery === 0 ? 'Today' : `In ${daysUntilDelivery} day${daysUntilDelivery !== 1 ? 's' : ''}`;
+    }
 
-    notification.innerHTML = `
-      <div class="flash-notification-header">
-        <h6 class="flash-notification-title">
-          <i class="bi bi-exclamation-circle-fill"></i>
-          Urgent Order Alert
-        </h6>
-        <button class="flash-notification-close" onclick="this.closest('.flash-notification').remove()" title="Dismiss">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
-      <p class="flash-notification-content">
-        <strong>${order.customerName}</strong> - ${order.productName} (Qty: ${order.quantity})
-      </p>
-      <div class="flash-notification-meta">
-        <span class="flash-notification-delivery">
-          <i class="bi bi-calendar-event"></i> Delivery: ${daysText}
-        </span>
-      </div>
-    `;
+    const header = document.createElement('div');
+    header.className = 'flash-notification-header';
+
+    const title = document.createElement('h6');
+    title.className = 'flash-notification-title';
+    const titleIcon = document.createElement('i');
+    titleIcon.className = 'bi bi-exclamation-circle-fill';
+    title.appendChild(titleIcon);
+    title.appendChild(document.createTextNode(' Urgent Order Alert'));
+
+    const closeButton = document.createElement('button');
+    closeButton.className = 'flash-notification-close';
+    closeButton.type = 'button';
+    closeButton.title = 'Dismiss';
+    closeButton.addEventListener('click', function () {
+      notification.remove();
+    });
+    const closeIcon = document.createElement('i');
+    closeIcon.className = 'bi bi-x-lg';
+    closeButton.appendChild(closeIcon);
+
+    header.appendChild(title);
+    header.appendChild(closeButton);
+
+    const content = document.createElement('p');
+    content.className = 'flash-notification-content';
+    const customerStrong = document.createElement('strong');
+    customerStrong.textContent = customerName;
+    content.appendChild(customerStrong);
+    content.appendChild(document.createTextNode(` - ${productName} (Qty: ${quantityText})`));
+
+    const meta = document.createElement('div');
+    meta.className = 'flash-notification-meta';
+    const deliverySpan = document.createElement('span');
+    deliverySpan.className = 'flash-notification-delivery';
+    const deliveryIcon = document.createElement('i');
+    deliveryIcon.className = 'bi bi-calendar-event';
+    deliverySpan.appendChild(deliveryIcon);
+    deliverySpan.appendChild(document.createTextNode(` Delivery: ${daysText}`));
+    meta.appendChild(deliverySpan);
+
+    notification.appendChild(header);
+    notification.appendChild(content);
+    notification.appendChild(meta);
 
     // Append to container
     container.appendChild(notification);
