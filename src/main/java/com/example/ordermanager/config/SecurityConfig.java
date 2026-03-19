@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -29,6 +30,12 @@ import java.util.stream.Collectors;
  * Security Configuration - Using DaoAuthenticationProvider with CustomUserDetailsService for
  * username/password authentication - Intentionally configured to suppress warning about
  * UserDetailsService beans
+ *
+ * <p>
+ * CSRF is intentionally enabled for all browser-facing endpoints and disabled only for
+ * {@code /api/**} (stateless REST). All Thymeleaf POST forms use {@code th:action}, which causes
+ * the {@code thymeleaf-extras-springsecurity6} integration to automatically inject the CSRF hidden
+ * field — no explicit {@code _csrf} inputs are required in the templates.
  */
 @Configuration
 @EnableMethodSecurity
