@@ -2,42 +2,26 @@ package com.example.ordermanager.service;
 
 import com.example.ordermanager.entity.Company;
 import com.example.ordermanager.entity.Order;
-import com.example.ordermanager.entity.OrderStatus;
 import com.example.ordermanager.exception.OrderNotFoundException;
 import com.example.ordermanager.repository.OrderRepository;
 import com.example.ordermanager.utils.Helper;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 @Service
 public class OrderService {
 
   private final OrderRepository orderRepository;
   private final CompanyService companyService;
-  private Helper helper;
+  private final Helper helper;
 
   public OrderService(OrderRepository orderRepository, CompanyService companyService,
       Helper helper) {
     this.orderRepository = orderRepository;
     this.companyService = companyService;
     this.helper = helper;
-  }
-
-  public List<Order> getAllOrders() {
-    return orderRepository.findAll();
-  }
-
-  /**
-   * TENANT-AWARE: Get all orders for a specific company NEVER call getAllOrders() - Always filter
-   * by company!
-   */
-  public List<Order> getOrdersByCompanyId(Long companyId) {
-    return orderRepository.findByCompanyId(companyId);
   }
 
   /**
@@ -138,16 +122,6 @@ public class OrderService {
     return orderRepository.findById(id).orElse(null);
   }
 
-  public Map<OrderStatus, Long> getOrdersGroupedByStatus() {
-    Map<OrderStatus, Long> map = new EnumMap<>(OrderStatus.class);
-    List<Order> allOrders = orderRepository.findAll();
-
-    for (OrderStatus status : OrderStatus.values()) {
-      long count = allOrders.stream().filter(order -> order.getStatus() == status).count();
-      map.put(status, count);
-    }
-    return map;
-  }
 
   /**
    * TENANT-AWARE: Get urgent orders for a company (non-final status + delivery date ≤ 7 days from

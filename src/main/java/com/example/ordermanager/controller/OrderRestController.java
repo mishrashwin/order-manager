@@ -28,14 +28,6 @@ public class OrderRestController {
     this.orderService = orderService;
   }
 
-  @Operation(summary = "Get all Orders",
-      description = "Retrieve a list of all customer orders in the system")
-  @ApiResponses(value = {
-      @ApiResponse(responseCode = "200", description = "Successfully retrieved list of orders")})
-  @GetMapping
-  public List<Order> getAllOrders() {
-    return orderService.getAllOrders();
-  }
 
   @Operation(summary = "Create a new order", description = "Add a new order to the system")
   @ApiResponses(
