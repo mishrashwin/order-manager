@@ -501,25 +501,50 @@
     const daysUntilDelivery = Math.ceil((deliveryDate - today) / (1000 * 60 * 60 * 24));
     const daysText = daysUntilDelivery === 0 ? 'Today' : `In ${daysUntilDelivery} day${daysUntilDelivery !== 1 ? 's' : ''}`;
 
-    notification.innerHTML = `
-      <div class="flash-notification-header">
-        <h6 class="flash-notification-title">
-          <i class="bi bi-exclamation-circle-fill"></i>
-          Urgent Order Alert
-        </h6>
-        <button class="flash-notification-close" onclick="this.closest('.flash-notification').remove()" title="Dismiss">
-          <i class="bi bi-x-lg"></i>
-        </button>
-      </div>
-      <p class="flash-notification-content">
-        <strong>${order.customerName}</strong> - ${order.productName} (Qty: ${order.quantity})
-      </p>
-      <div class="flash-notification-meta">
-        <span class="flash-notification-delivery">
-          <i class="bi bi-calendar-event"></i> Delivery: ${daysText}
-        </span>
-      </div>
-    `;
+    // Build DOM nodes instead of innerHTML to prevent DOM XSS from stored data
+    const header = document.createElement('div');
+    header.className = 'flash-notification-header';
+
+    const title = document.createElement('h6');
+    title.className = 'flash-notification-title';
+    const titleIcon = document.createElement('i');
+    titleIcon.className = 'bi bi-exclamation-circle-fill';
+    title.appendChild(titleIcon);
+    title.appendChild(document.createTextNode(' Urgent Order Alert'));
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'flash-notification-close';
+    closeBtn.title = 'Dismiss';
+    closeBtn.addEventListener('click', () => notification.remove());
+    const closeIcon = document.createElement('i');
+    closeIcon.className = 'bi bi-x-lg';
+    closeBtn.appendChild(closeIcon);
+
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+
+    const content = document.createElement('p');
+    content.className = 'flash-notification-content';
+    const strong = document.createElement('strong');
+    strong.textContent = order.customerName;
+    content.appendChild(strong);
+    content.appendChild(document.createTextNode(' - '));
+    content.appendChild(document.createTextNode(order.productName));
+    content.appendChild(document.createTextNode(' (Qty: ' + order.quantity + ')'));
+
+    const meta = document.createElement('div');
+    meta.className = 'flash-notification-meta';
+    const deliverySpan = document.createElement('span');
+    deliverySpan.className = 'flash-notification-delivery';
+    const calIcon = document.createElement('i');
+    calIcon.className = 'bi bi-calendar-event';
+    deliverySpan.appendChild(calIcon);
+    deliverySpan.appendChild(document.createTextNode(' Delivery: ' + daysText));
+    meta.appendChild(deliverySpan);
+
+    notification.appendChild(header);
+    notification.appendChild(content);
+    notification.appendChild(meta);
 
     // Append to container
     container.appendChild(notification);
