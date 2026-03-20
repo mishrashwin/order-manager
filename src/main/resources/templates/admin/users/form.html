@@ -98,10 +98,6 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         initPhoneInput('mobileNumber', 'mobileCountryCode', 'mobileLocalNumber');
-        document.querySelector('form').addEventListener('submit', function () {
-            document.getElementById('mobileLocalNumber').disabled = true;
-            document.getElementById('mobileCountryCode').disabled = true;
-        });
     });
 </script>
 </body>

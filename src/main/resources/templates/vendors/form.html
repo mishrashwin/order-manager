@@ -84,10 +84,6 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         initPhoneInput('phone', 'phoneCountryCode', 'phoneLocalNumber');
-        document.querySelector('form').addEventListener('submit', function () {
-            document.getElementById('phoneLocalNumber').disabled = true;
-            document.getElementById('phoneCountryCode').disabled = true;
-        });
     });
 </script>
 </body>

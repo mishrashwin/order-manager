@@ -225,10 +225,6 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         initPhoneInput('ownerMobile', 'ownerMobileCountryCode', 'ownerMobileLocalNumber');
-        document.querySelector('form').addEventListener('submit', function () {
-            document.getElementById('ownerMobileLocalNumber').disabled = true;
-            document.getElementById('ownerMobileCountryCode').disabled = true;
-        });
     });
 </script>
 
