@@ -30,13 +30,11 @@ public class OrderController {
     this.securityContextHelper = securityContextHelper;
   }
 
-  // ✅ 1. List all orders
   @GetMapping
   public String listOrders(@RequestParam(required = false) String startDate,
       @RequestParam(required = false) String endDate, Model model) {
     Long companyId = securityContextHelper.getCompanyIdFromContext();
 
-    // Set default date range: past one month
     LocalDate start =
         startDate != null ? LocalDate.parse(startDate) : LocalDate.now().minusMonths(1);
     LocalDate end = endDate != null ? LocalDate.parse(endDate) : LocalDate.now();
@@ -48,7 +46,6 @@ public class OrderController {
     return "orders/list";
   }
 
-  // ✅ 2. Show form to create a new order
   @GetMapping("/new")
   public String showCreateForm(Model model) {
     Long companyId = securityContextHelper.getCompanyIdFromContext();
@@ -58,7 +55,6 @@ public class OrderController {
     return "orders/form";
   }
 
-  // ✅ 3. Handle new order submission
   @PostMapping
   public String saveOrder(@ModelAttribute("order") Order order, Model model) {
     try {
@@ -80,7 +76,6 @@ public class OrderController {
     }
   }
 
-  // ✅ 4. Show edit form
   @GetMapping("/edit/{id}")
   public String showEditForm(@PathVariable Long id, Model model) {
     Order order = orderService.getOrderById(id);
@@ -94,21 +89,18 @@ public class OrderController {
     return "orders/form";
   }
 
-  // ✅ 5. Handle update
   @PostMapping("/update/{id}")
   public String updateOrder(@PathVariable Long id, @ModelAttribute("order") Order updatedOrder) {
     orderService.patchOrder(id, updatedOrder);
     return "redirect:/orders";
   }
 
-  // ✅ 6. Delete order
   @GetMapping("/delete/{id}")
   public String deleteOrder(@PathVariable Long id) {
     orderService.deleteOrder(id);
     return "redirect:/orders";
   }
 
-  // ✅ 7. Duplicate order - fetches existing order and pre-populates form
   @GetMapping("/duplicate/{id}")
   public String duplicateOrder(@PathVariable Long id, Model model) {
     Order existingOrder = orderService.getOrderById(id);
@@ -116,7 +108,6 @@ public class OrderController {
       return "redirect:/orders";
     }
 
-    // Create a new order copy (without ID so it creates a new one)
     Order newOrder = new Order();
     newOrder.setCustomerName(existingOrder.getCustomerName());
     newOrder.setProductName(existingOrder.getProductName());

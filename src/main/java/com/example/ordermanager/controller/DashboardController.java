@@ -32,14 +32,11 @@ public class DashboardController {
   @GetMapping("/dashboard")
   public String dashboard(@RequestParam(required = false) String startDate,
       @RequestParam(required = false) String endDate, Model model) {
-    // TENANT-AWARE: Get company ID from authenticated user
     Long companyId = securityContextHelper.getCompanyIdFromContext();
 
-    // Get company name for dashboard header
     String companyName =
         companyService.getCompanyById(companyId).map(Company::getName).orElse("Order Dashboard");
 
-    // Set default date range: past one month
     LocalDate start =
         startDate != null ? LocalDate.parse(startDate) : LocalDate.now().minusMonths(1);
     LocalDate end = endDate != null ? LocalDate.parse(endDate) : LocalDate.now();
@@ -50,11 +47,9 @@ public class DashboardController {
     model.addAttribute("startDate", start);
     model.addAttribute("endDate", end);
 
-    // Filter orders by company and date range - ensures tenant isolation
     model.addAttribute("orders",
         orderService.getOrdersByCompanyIdAndDateRange(companyId, start, end));
 
-    // Send only minimal fields needed by dashboard notification JS.
     var urgentOrderNotifications = orderService.getUrgentOrdersByCompanyId(companyId).stream()
         .map(order -> Map.of("id", order.getId(), "customerName", order.getCustomerName(),
             "productName", order.getProductName(), "quantity", order.getQuantity(), "deliveryDate",

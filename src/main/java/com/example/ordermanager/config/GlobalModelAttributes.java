@@ -1,8 +1,7 @@
 package com.example.ordermanager.config;
 
-import com.example.ordermanager.entity.Company;
-import com.example.ordermanager.service.CompanyService;
 import com.example.ordermanager.utils.SecurityContextHelper;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.ui.Model;
@@ -10,68 +9,71 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 /**
- * Global controller advice to add common model attributes to all views. Adds company name to all
- * authenticated pages for display in navbar.
+ * Global controller advice to inject common model attributes (company name, greeting) into all
+ * views. Cache company lookup per request to avoid N+1 queries on authenticated pages.
  */
 @ControllerAdvice
 public class GlobalModelAttributes {
 
-  private final CompanyService companyService;
+  private static final String REQ_ATTR_COMPANY_NAME = "cachedCompanyName";
+  private static final String REQ_ATTR_GREETING_NAME = "cachedNavbarGreetingName";
+
   private final SecurityContextHelper securityContextHelper;
 
-  public GlobalModelAttributes(CompanyService companyService,
-      SecurityContextHelper securityContextHelper) {
-    this.companyService = companyService;
+  public GlobalModelAttributes(SecurityContextHelper securityContextHelper) {
     this.securityContextHelper = securityContextHelper;
   }
 
-  /**
-   * Add company name to all views for authenticated users. This is used in the navbar to display
-   * company name instead of generic "Order Manager"
-   */
   @ModelAttribute
-  public void addCompanyNameToModel(Model model) {
+  public void addCompanyNameToModel(Model model, HttpServletRequest request) {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-    // Only add company name if user is authenticated and not anonymous
-    if (authentication != null && authentication.isAuthenticated()
-        && !"anonymousUser".equals(authentication.getPrincipal())) {
-
-      model.addAttribute("navbarGreetingName", authentication.getName());
-
-      if (securityContextHelper.isOwnerContext()) {
-        model.addAttribute("companyName", "Owner Console");
-        model.addAttribute("navbarGreetingName", "Owner");
-        return;
-      }
-
-      try {
-        var user = securityContextHelper.getUserFromContext();
-        Long companyId = null;
-        String firstName = null;
-        if (user != null) {
-          firstName = user.getFirstName();
-          if (user.getCompany() != null) {
-            companyId = user.getCompany().getId();
-          }
-        }
-        String companyName = (companyId != null)
-            ? companyService.getCompanyById(companyId).map(Company::getName).orElse("Order Manager")
-            : "Order Manager";
-
-        model.addAttribute("companyName", companyName);
-        if (firstName != null && !firstName.isBlank()) {
-          model.addAttribute("navbarGreetingName", firstName);
-        }
-      } catch (Exception e) {
-        // If there's any issue getting company name, use default
-        model.addAttribute("companyName", "Order Manager");
-      }
-    } else {
-      // For unauthenticated users, use default
+    if (authentication == null || !authentication.isAuthenticated()
+        || "anonymousUser".equals(authentication.getPrincipal())) {
       model.addAttribute("companyName", "Order Manager");
       model.addAttribute("navbarGreetingName", "User");
+      return;
     }
+
+    String cachedCompanyName = (String) request.getAttribute(REQ_ATTR_COMPANY_NAME);
+    String cachedGreetingName = (String) request.getAttribute(REQ_ATTR_GREETING_NAME);
+    if (cachedCompanyName != null) {
+      model.addAttribute("companyName", cachedCompanyName);
+      model.addAttribute("navbarGreetingName",
+          cachedGreetingName != null ? cachedGreetingName : authentication.getName());
+      return;
+    }
+
+    String greetingName = authentication.getName();
+
+    if (securityContextHelper.isOwnerContext()) {
+      request.setAttribute(REQ_ATTR_COMPANY_NAME, "Owner Console");
+      request.setAttribute(REQ_ATTR_GREETING_NAME, greetingName);
+      model.addAttribute("companyName", "Owner Console");
+      model.addAttribute("navbarGreetingName", greetingName);
+      return;
+    }
+
+    try {
+      var user = securityContextHelper.getUserFromContext();
+      if (user != null && user.getCompany() != null) {
+        String companyName = user.getCompany().getName();
+        request.setAttribute(REQ_ATTR_COMPANY_NAME, companyName);
+        model.addAttribute("companyName", companyName);
+        if (user.getFirstName() != null && !user.getFirstName().isBlank()) {
+          greetingName = user.getFirstName();
+        }
+      } else {
+        request.setAttribute(REQ_ATTR_COMPANY_NAME, "Order Manager");
+        model.addAttribute("companyName", "Order Manager");
+      }
+    } catch (Exception e) {
+      request.setAttribute(REQ_ATTR_COMPANY_NAME, "Order Manager");
+      model.addAttribute("companyName", "Order Manager");
+    }
+
+    request.setAttribute(REQ_ATTR_GREETING_NAME, greetingName);
+    model.addAttribute("navbarGreetingName", greetingName);
   }
 }
 
