@@ -1,0 +1,178 @@
+# Controller + Service Test Cases
+
+This file is the living test inventory for controller and service methods.
+
+## Scope
+- Controllers under `src/main/java/com/example/ordermanager/**/controller` (for example `company/controller`, `order/controller`, `admin/controller`, `dashboard/controller`, `error/controller`, `user/controller`)
+- Services under `src/main/java/com/example/ordermanager/**/service` (for example `company/service`, `order/service`, `client/service`, `vendor/service`, `owner/service`, `user/service`)
+- Includes happy path, tenant/auth boundaries, and edge-case scenarios discoverable from current code.
+
+## Workflow Automation Chain (End-to-End)
+- `WF-01` Company registration creates company + first admin in one transaction (`CompanyService.registerCompanyWithAdmin`)
+- `WF-02` Verification token generation + email send (`RegistrationService.sendVerificationEmail`)
+- `WF-03` Verification token consumption enables admin (`RegistrationService.verifyToken`)
+- `WF-04` Owner approval enables login eligibility (`CompanyService.approveCompany`, `CompanyService.canUsersLogin`)
+- `WF-05` Admin creates additional user (`UserService.createUserByAdmin`)
+- `WF-06` Tenant client creation with formatting and company assignment (`ClientService.saveClientWithCompany`)
+- `WF-07` Tenant vendor creation with formatting and company assignment (`VendorService.saveVendorWithCompany`)
+- `WF-08` Order creation with client/customer synchronization (`OrderService.createOrderWithCompany`)
+- `WF-09` Order patch/edit updates selected fields only (`OrderService.patchOrder`)
+- Automated baseline for this chain: `src/test/java/com/example/ordermanager/company/workflow/CompanyLifecycleWorkflowTest.java`
+
+## Controller Test Cases
+
+### `AdminController`
+- `ADM-01` `GET /admin/dashboard` returns `admin/dashboard` and model contains tenant `companyId`
+- `ADM-02` `GET /admin/users` includes users list, admin count, and current username from security context
+- `ADM-03` `POST /admin/users/add` success sets flash success message and redirects `/admin/users`
+- `ADM-04` `POST /admin/users/add` `IllegalArgumentException` sets flash error and redirects `/admin/users/add`
+- `ADM-05` `GET /admin/users/{id}/edit` success returns `admin/users/form-edit` with role options
+- `ADM-06` `GET /admin/users/{id}/edit` invalid id/company mismatch redirects with query error
+- `ADM-07` `POST /admin/users/{id}/role` enforces service rule failures via flash error
+- `ADM-08` `POST /admin/users/{id}/delete` blocks self-delete and last-admin self-delete with exact message branches
+- `ADM-09` `POST /admin/users/{id}/delete` non-self delete success message includes deleted username
+- `ADM-10` `POST /admin/users/{id}/update` validation failure redirects back to edit page
+- `ADM-11` company view/edit/update paths load current tenant company and handle missing company
+
+### `CompanyController`
+- `COM-01` `GET /company/register` initializes `registrationData`
+- `COM-02` `POST /company/register` binding errors return `company/register` and preserve DTO
+- `COM-03` empty company name is rejected before service call
+- `COM-04` happy path redirects `redirect:/login?registered=true` with onboarding message
+- `COM-05` `DataIntegrityViolationException` maps to user-friendly duplicate messages by key name (`mobile_number`, `username`, `email`, `companies_name_key`)
+- `COM-06` generic exception returns safe fallback error message
+- `COM-07` `GET /company` redirects to login on missing tenant context (`IllegalStateException`)
+- `COM-08` owner endpoints (`/company/admin/all`, `/company/{id}/activate`, `/company/{id}/deactivate`) map success/error query params
+
+### `DashboardController`
+- `DASH-01` no `startDate/endDate` defaults to `now().minusMonths(1)` and `now()`
+- `DASH-02` valid date params are parsed and passed to `getOrdersByCompanyIdAndDateRange`
+- `DASH-03` urgent order projection includes only expected fields (`id`, `customerName`, `productName`, `quantity`, `deliveryDate`)
+- `DASH-04` includes all enum statuses and selected company name fallback
+
+### `OrderController`
+- `ORDC-01` list endpoint uses tenant id and date range defaults
+- `ORDC-02` `GET /orders/new` loads clients by company and enum statuses
+- `ORDC-03` `POST /orders` sets default status `CREATED` when missing
+- `ORDC-04` `POST /orders` handles unauthenticated state (`IllegalStateException`) by redirecting `/login`
+- `ORDC-05` `POST /orders` generic failure returns form with clients/statuses restored
+- `ORDC-06` edit/duplicate for missing order redirects to `/orders`
+- `ORDC-07` duplicate order copies fields and resets `orderDate=now`, `status=CREATED`
+
+### `OrderRestController`
+- `ORDA-01` `POST /api/orders` delegates create and returns created payload
+- `ORDA-02` `PATCH /api/orders/{id}` updates only supplied fields and propagates `OrderNotFoundException`
+- `ORDA-03` `DELETE /api/orders/{id}` returns `204 No Content`
+- `ORDA-04` `GET /api/orders/api/order-statuses` includes enum `name`, `displayName`, `isFinal`
+
+### `ClientController`
+- `CLI-01` list endpoint uses tenant-scoped `getClientsByCompanyId`
+- `CLI-02` save success redirects `/clients`
+- `CLI-03` save unauthenticated path returns form with specific login-required error
+- `CLI-04` `ClientHasActiveOrdersException` renders order count in flash error message
+- `CLI-05` generic delete error returns fallback flash error
+
+### `VendorController`
+- `VEN-01` list endpoint uses tenant-scoped `getVendorsByCompanyId`
+- `VEN-02` save success redirects `/vendors`
+- `VEN-03` save unauthenticated/general error returns form with error
+- `VEN-04` edit/delete route delegates by id and redirects
+
+### `OwnerController`
+- `OWN-01` dashboard model includes owner page markers and metrics/pending lists
+- `OWN-02` companies page includes summaries + pending count
+- `OWN-03` approve/reject success and `IllegalArgumentException` branches set flash messages
+- `OWN-04` toggle-access deactivates active company
+- `OWN-05` toggle-access blocks re-enable unless approval status is `APPROVED`
+
+### `ErrorPageController`
+- `ERR-01` no reason defaults to `forbidden` reason key and fallback message
+- `ERR-02` each reason (`suspended`, `pending-approval`, `rejected`) resolves correct copy
+
+### `AuthController`
+- `AUTH-01` `/signup` always redirects to login with admin-managed registration message
+- `AUTH-02` `/verify` success, invalid token, and exception branches set appropriate flash message
+- `AUTH-03` resend verification by email vs username path; invalid user shows correct error prompt
+- `AUTH-04` resend verification for already-enabled account redirects login with info message
+- `AUTH-05` forgot-password denies unknown and non-enabled users
+- `AUTH-06` verify-reset-code stores `RESET_VERIFIED_EMAIL` in session only on valid code
+- `AUTH-07` verify-reset-code handles `TooManyAttemptsException` and redirects to forgot-password
+- `AUTH-08` reset-password GET enforces prior code verification session
+- `AUTH-09` reset-password POST validates empty/mismatch/min-length and session expiry
+- `AUTH-10` reset-password success clears session key and redirects login
+
+## Service Test Cases
+
+### `CompanyService`
+- `COS-01` `registerCompany` sets defaults (`active=true`, `PENDING`, null approval metadata)
+- `COS-02` duplicate company name throws `IllegalArgumentException`
+- `COS-03` `registerCompanyWithAdmin` validates username/email/mobile uniqueness before write
+- `COS-04` `registerCompanyWithAdmin` hashes admin password, sets `ADMIN`, `enabled=false`
+- `COS-05` owner notification skipped when `app.owner.email` missing/blank
+- `COS-06` notification failures do not roll back successful registration/approval/rejection/access-toggle writes
+- `COS-07` `updateCompany` enforces unique name except self and updates bio
+- `COS-08` approve/reject populate `approvedAt`/`approvedBy`; reject also sets inactive
+- `COS-09` deactivate/activate only send corresponding notification on real state transition
+- `COS-10` `canUsersLogin` true only for active + `APPROVED`
+
+### `OrderService`
+- `ORS-01` `createOrder`/`createOrderWithCompany` title-case `productName`
+- `ORS-02` `createOrderWithCompany` throws if company id not found
+- `ORS-03` `createOrderWithCompany` syncs `customerName` from client relation
+- `ORS-04` `patchOrder` updates only non-null fields and preserves unspecified fields
+- `ORS-05` `patchOrder` supports legacy `customerName` update when client absent
+- `ORS-06` `deleteOrder` throws `OrderNotFoundException` when id absent
+- `ORS-07` urgent order query excludes final statuses via `status.isFinal()` and sorts by nearest delivery date
+
+### `ClientService`
+- `CLS-01` save assigns company by id and enforces uppercase client name
+- `CLS-02` save title-cases `contactPerson`
+- `CLS-03` save fails with `IllegalArgumentException` when company id missing
+- `CLS-04` delete throws `ClientHasActiveOrdersException` with `orderCount` when referenced by orders
+
+### `VendorService`
+- `VDS-01` save assigns company by id and enforces uppercase `companyName`
+- `VDS-02` save title-cases `contactPerson`
+- `VDS-03` save fails with `IllegalArgumentException` when company id missing
+
+### `OwnerManagementService`
+- `OMS-01` dashboard metrics compute inactive as `total-active`
+- `OMS-02` summaries sorted by `createdAt` descending with nulls last
+- `OMS-03` user count map handles empty company list and missing company counts as `0`
+
+### `UserService`
+- `USR-01` admin create hashes password, sets company, disables user, triggers verification email
+- `USR-02` admin create rejects duplicate username/email
+- `USR-03` `getUserByIdAndCompany` rejects cross-tenant access
+- `USR-04` delete blocks deleting last admin
+- `USR-05` role update blocks >2 admins and last-admin demotion
+- `USR-06` `isLastAdminInCompany` false for non-admin users
+- `USR-07` `updateUserByAdmin` requires non-blank email/username
+- `USR-08` `updateUserByAdmin` rejects duplicate email/username when changed
+- `USR-09` email change resets `enabled=false` and sends new verification; unchanged email skips resend
+
+### `RegistrationService`
+- `REG-01` existing unexpired token raises `EmailAlreadySentException`
+- `REG-02` existing expired token is rotated (new UUID + expiry)
+- `REG-03` verify token returns false for missing/expired token
+- `REG-04` verify token success enables user and deletes token
+
+### `PasswordResetService`
+- `PRS-01` existing unexpired unverified token raises `EmailAlreadySentException`
+- `PRS-02` expired/verified token is regenerated and failed attempts reset to `0`
+- `PRS-03` verify code returns null for missing/expired token
+- `PRS-04` verify code increments failed attempts on mismatch and throws `TooManyAttemptsException` once max reached
+- `PRS-05` successful code verification consumes token immediately
+- `PRS-06` password reset returns false for unknown email, true for known email and removes lingering token
+
+### `EmailService` and `BrevoEmailService`
+- `EML-01` `EmailService` delegates each email type to `BrevoEmailService`
+- `BVO-01` blank API key throws `BrevoEmailException`
+- `BVO-02` request timeout maps to timeout-specific message
+- `BVO-03` HTTP 4xx/5xx responses map to API rejection message
+- `BVO-04` request payload escapes JSON/HTML-sensitive characters
+
+## Minimum Rule For New Code
+- For every new or changed controller/service method, add or update tests in the same PR.
+- At minimum, include one happy-path test and one edge-case/failure-path test.
+

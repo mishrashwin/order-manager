@@ -1,7 +1,7 @@
 package com.example.ordermanager.user.service;
 
 import com.example.ordermanager.aspect.SkipMethodLogging;
-import com.example.ordermanager.entity.Company;
+import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.user.entity.User;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;

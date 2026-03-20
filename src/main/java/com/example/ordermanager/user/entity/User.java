@@ -1,6 +1,6 @@
 package com.example.ordermanager.user.entity;
 
-import com.example.ordermanager.entity.Company;
+import com.example.ordermanager.company.entity.Company;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;

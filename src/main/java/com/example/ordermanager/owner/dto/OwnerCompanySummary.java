@@ -1,0 +1,10 @@
+package com.example.ordermanager.owner.dto;
+
+import com.example.ordermanager.company.entity.CompanyApprovalStatus;
+import java.time.LocalDateTime;
+
+public record OwnerCompanySummary(Long companyId, String companyName, CompanyApprovalStatus approvalStatus,
+    boolean active, long usersCount, LocalDateTime createdAt, String approvedBy,
+    LocalDateTime approvedAt) {
+}
+

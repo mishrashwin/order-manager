@@ -1,6 +1,6 @@
 package com.example.ordermanager.config;
 
-import com.example.ordermanager.entity.CompanyApprovalStatus;
+import com.example.ordermanager.company.entity.CompanyApprovalStatus;
 import com.example.ordermanager.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
