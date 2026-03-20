@@ -1,7 +1,7 @@
 package com.example.ordermanager.user.service;
 
-import com.example.ordermanager.entity.Company;
-import com.example.ordermanager.repository.CompanyRepository;
+import com.example.ordermanager.company.entity.Company;
+import com.example.ordermanager.company.repository.CompanyRepository;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.repository.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;

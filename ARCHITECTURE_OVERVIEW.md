@@ -234,11 +234,11 @@
 
 | Component | Purpose | Location |
 |-----------|---------|----------|
-| Company Entity | Tenant master | entity/Company.java |
+| Company Entity | Tenant master | company/entity/Company.java |
 | SecurityContextHelper | Extracts company from auth | utils/SecurityContextHelper.java |
-| CompanyService | Company management | service/CompanyService.java |
-| CompanyController | Company endpoints | controller/CompanyController.java |
-| CompanyRepository | Company data access | repository/CompanyRepository.java |
+| CompanyService | Company management | company/service/CompanyService.java |
+| CompanyController | Company endpoints | company/controller/CompanyController.java |
+| CompanyRepository | Company data access | company/repository/CompanyRepository.java |
 
 ---
 
@@ -402,12 +402,12 @@
 **Primary Documentation:**
 - `ARCHITECTURE_OVERVIEW.md` - System architecture, flows, and technical design (this file)
 - `README.md` - Project overview, quick start, and feature summary
-- `GETTING_STARTED.md` - Detailed setup guide and environment configuration
+- `DEPLOYMENT.md` - Deployment setup guide and environment configuration
+- `AGENTS.md` - AI coding-agent guidance and repository conventions
 
 **Feature-Specific Documentation:**
-- `COMPANY_CREATION_GUIDE.md` - Step-by-step company registration
-- `FORGOT_PASSWORD_FIX_SUMMARY.md` - Password reset feature documentation
-- `SECURITY_CREDENTIALS_GUIDE.md` - Security best practices and credential management
+- `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` - Controller/service test-case catalog
+- `docs/testing/TEST_PROGRESS.md` - Session-to-session testing progress tracker
 
 **Update Guidelines:**
 1. **When adding features**: Update `ARCHITECTURE_OVERVIEW.md` "Recent changes" section first

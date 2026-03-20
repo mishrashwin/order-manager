@@ -1,7 +1,7 @@
 package com.example.ordermanager.config;
 
-import com.example.ordermanager.entity.CompanyApprovalStatus;
-import com.example.ordermanager.service.CompanyService;
+import com.example.ordermanager.company.entity.CompanyApprovalStatus;
+import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;

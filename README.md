@@ -172,42 +172,15 @@ mvn spring-boot:run
 ```
 order-manager/
 ├── src/main/java/com/example/ordermanager/
-│   ├── config/                    # Security & configuration
-│   │   ├── SecurityConfig.java    # Spring Security setup
-│   │   └── CustomUserDetailsService.java
-│   ├── controller/                # Web controllers
-│   │   ├── AdminController.java   # Admin panel
-│   │   ├── DashboardController.java
-│   │   ├── OrderController.java
-│   │   ├── ClientController.java
-│   │   ├── VendorController.java
-│   │   └── CompanyController.java
-│   ├── user/controller/           # Authentication controllers
-│   │   └── AuthController.java    # Login, signup, password reset
-│   ├── service/                   # Business logic
-│   │   ├── OrderService.java
-│   │   ├── ClientService.java
-│   │   ├── VendorService.java
-│   │   └── CompanyService.java
-│   ├── user/service/              # User services
-│   │   ├── UserService.java
-│   │   ├── RegistrationService.java
-│   │   ├── PasswordResetService.java
-│   │   └── EmailService.java
-│   ├── entity/                    # Domain models
-│   │   ├── Order.java
-│   │   ├── Client.java
-│   │   ├── Vendor.java
-│   │   └── Company.java
-│   ├── user/entity/               # User entities
-│   │   ├── User.java
-│   │   ├── VerificationToken.java
-│   │   └── PasswordResetToken.java
-│   ├── repository/                # Data access
-│   │   ├── OrderRepository.java
-│   │   ├── ClientRepository.java
-│   │   ├── VendorRepository.java
-│   │   └── CompanyRepository.java
+│   ├── admin/controller/          # AdminController
+│   ├── dashboard/controller/      # DashboardController
+│   ├── error/controller/          # ErrorPageController
+│   ├── company/                   # company/{controller,service,repository,entity,dto}
+│   ├── order/                     # order/{controller,service,repository,entity,exception}
+│   ├── client/                    # client/{controller,service,repository,entity,exception}
+│   ├── vendor/                    # vendor/{controller,service,repository,entity}
+│   ├── owner/                     # owner/{controller,service,dto}
+│   ├── user/                      # user/{controller,service,repository,entity}
 │   └── utils/                     # Utilities
 │       └── SecurityContextHelper.java  # Tenant context extraction
 ├── src/main/resources/
@@ -238,10 +211,8 @@ order-manager/
 | Document | Description |
 |----------|-------------|
 | **[ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md)** | Complete system architecture & flow diagrams |
-| **[GETTING_STARTED.md](GETTING_STARTED.md)** | Detailed setup guide & environment configuration |
-| **[COMPANY_CREATION_GUIDE.md](COMPANY_CREATION_GUIDE.md)** | Step-by-step company registration |
-| **[FORGOT_PASSWORD_FIX_SUMMARY.md](FORGOT_PASSWORD_FIX_SUMMARY.md)** | Password reset feature documentation |
-| **[SECURITY_CREDENTIALS_GUIDE.md](SECURITY_CREDENTIALS_GUIDE.md)** | Security best practices & credential management |
+| **[DEPLOYMENT.md](DEPLOYMENT.md)** | Deployment setup and runtime environment guidance |
+| **[AGENTS.md](AGENTS.md)** | AI coding-agent conventions and project-specific implementation rules |
 
 ---
 
