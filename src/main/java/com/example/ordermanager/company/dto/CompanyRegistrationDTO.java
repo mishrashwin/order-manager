@@ -34,8 +34,8 @@ public class CompanyRegistrationDTO {
   private String ownerEmail;
 
   @NotBlank(message = "Owner mobile number is required")
-  @Pattern(regexp = "^[0-9]{10,15}$",
-      message = "Mobile number must be between 10 and 15 digits and contain only numbers")
+  @Pattern(regexp = "^\\+[1-9][0-9]{6,14}$",
+      message = "Mobile number must be in international format (e.g. +919876543210)")
   private String ownerMobile;
 
   @NotBlank(message = "Username is required")

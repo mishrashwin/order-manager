@@ -34,8 +34,9 @@ public class User {
   private String email;
 
   @NotBlank(message = "Mobile number cannot be empty")
-  @Pattern(regexp = "^[0-9]{10,15}$", message = "Mobile number must be between 10 and 15 digits")
-  @Column(nullable = false, unique = true, length = 15)
+  @Pattern(regexp = "^\\+[1-9][0-9]{6,14}$",
+      message = "Mobile number must be in international format (e.g. +919876543210)")
+  @Column(nullable = false, unique = true, length = 20)
   private String mobileNumber;
 
   @NotBlank(message = "Password cannot be empty")

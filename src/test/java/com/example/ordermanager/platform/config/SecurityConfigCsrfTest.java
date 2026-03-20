@@ -65,7 +65,7 @@ class SecurityConfigCsrfTest {
     mockMvc
         .perform(post("/company/register").param("companyName", "Acme Industries")
             .param("ownerFirstName", "Jane").param("ownerLastName", "Doe")
-            .param("ownerEmail", "jane@example.com").param("ownerMobile", "1234567890")
+            .param("ownerEmail", "jane@example.com").param("ownerMobile", "+911234567890")
             .param("username", "janedoe").param("password", "password123"))
         .andExpect(status().is3xxRedirection())
         .andExpect(redirectedUrl("/access-denied?reason=forbidden"));
@@ -81,7 +81,7 @@ class SecurityConfigCsrfTest {
     mockMvc
         .perform(post("/company/register").with(csrf()).param("companyName", "Acme Industries")
             .param("ownerFirstName", "Jane").param("ownerLastName", "Doe")
-            .param("ownerEmail", "jane@example.com").param("ownerMobile", "1234567890")
+            .param("ownerEmail", "jane@example.com").param("ownerMobile", "+911234567890")
             .param("username", "janedoe").param("password", "password123"))
         .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/login?registered=true"));
   }
