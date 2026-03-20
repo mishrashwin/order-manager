@@ -94,7 +94,7 @@ CREATE DATABASE order_manager_db;
 Run app with `dev` profile:
 
 ```powershell
-cd "F:\AshLabsCompany\order-manager"
+cd order-manager
 $env:SPRING_PROFILES_ACTIVE="dev"
 $env:DB_USERNAME="postgres"
 $env:DB_PASSWORD="postgres"

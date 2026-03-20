@@ -1,6 +1,7 @@
 package com.example.ordermanager.config;
 
 import com.example.ordermanager.utils.SecurityContextHelper;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.ui.Model;
@@ -14,6 +15,9 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 @ControllerAdvice
 public class GlobalModelAttributes {
 
+  private static final String REQ_ATTR_COMPANY_NAME = "cachedCompanyName";
+  private static final String REQ_ATTR_GREETING_NAME = "cachedNavbarGreetingName";
+
   private final SecurityContextHelper securityContextHelper;
 
   public GlobalModelAttributes(SecurityContextHelper securityContextHelper) {
@@ -21,7 +25,7 @@ public class GlobalModelAttributes {
   }
 
   @ModelAttribute
-  public void addCompanyNameToModel(Model model) {
+  public void addCompanyNameToModel(Model model, HttpServletRequest request) {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
     if (authentication == null || !authentication.isAuthenticated()
@@ -31,26 +35,45 @@ public class GlobalModelAttributes {
       return;
     }
 
-    model.addAttribute("navbarGreetingName", authentication.getName());
+    String cachedCompanyName = (String) request.getAttribute(REQ_ATTR_COMPANY_NAME);
+    String cachedGreetingName = (String) request.getAttribute(REQ_ATTR_GREETING_NAME);
+    if (cachedCompanyName != null) {
+      model.addAttribute("companyName", cachedCompanyName);
+      model.addAttribute("navbarGreetingName",
+          cachedGreetingName != null ? cachedGreetingName : authentication.getName());
+      return;
+    }
+
+    String greetingName = authentication.getName();
 
     if (securityContextHelper.isOwnerContext()) {
+      request.setAttribute(REQ_ATTR_COMPANY_NAME, "Owner Console");
+      request.setAttribute(REQ_ATTR_GREETING_NAME, greetingName);
       model.addAttribute("companyName", "Owner Console");
+      model.addAttribute("navbarGreetingName", greetingName);
       return;
     }
 
     try {
       var user = securityContextHelper.getUserFromContext();
       if (user != null && user.getCompany() != null) {
-        model.addAttribute("companyName", user.getCompany().getName());
+        String companyName = user.getCompany().getName();
+        request.setAttribute(REQ_ATTR_COMPANY_NAME, companyName);
+        model.addAttribute("companyName", companyName);
         if (user.getFirstName() != null && !user.getFirstName().isBlank()) {
-          model.addAttribute("navbarGreetingName", user.getFirstName());
+          greetingName = user.getFirstName();
         }
       } else {
+        request.setAttribute(REQ_ATTR_COMPANY_NAME, "Order Manager");
         model.addAttribute("companyName", "Order Manager");
       }
     } catch (Exception e) {
+      request.setAttribute(REQ_ATTR_COMPANY_NAME, "Order Manager");
       model.addAttribute("companyName", "Order Manager");
     }
+
+    request.setAttribute(REQ_ATTR_GREETING_NAME, greetingName);
+    model.addAttribute("navbarGreetingName", greetingName);
   }
 }
 
