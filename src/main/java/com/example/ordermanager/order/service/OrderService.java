@@ -125,7 +125,7 @@ public class OrderService {
 
 
   /**
-   * TENANT-AWARE: Get urgent orders for a company (non-final status + delivery date â‰¤ 7 days from
+   * TENANT-AWARE: Get urgent orders for a company (non-final status + delivery date ≤ 7 days from
    * today). Used for dashboard flash notifications.
    *
    * @param companyId Company ID

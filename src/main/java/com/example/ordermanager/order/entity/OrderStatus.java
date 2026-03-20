@@ -18,22 +18,22 @@ public enum OrderStatus {
     this.badgeColor = badgeColor;
   }
 
-  /** âœ… Whether this status is terminal (order process finished or stopped) */
+  /** ✅ Whether this status is terminal (order process finished or stopped) */
   public boolean isFinal() {
     return isFinal;
   }
 
-  /** âœ… Whether this status represents an active order */
+  /** ✅ Whether this status represents an active order */
   public boolean isActive() {
     return !isFinal;
   }
 
-  /** âœ… Friendly display name for UI */
+  /** ✅ Friendly display name for UI */
   public String getDisplayName() {
     return displayName;
   }
 
-  /** âœ… Bootstrap badge color (used in list and dashboard) */
+  /** ✅ Bootstrap badge color (used in list and dashboard) */
   public String getBadgeColor() {
     return badgeColor;
   }
