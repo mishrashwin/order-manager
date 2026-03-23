@@ -48,13 +48,13 @@ class CompanyServiceTest {
     User admin = new User();
     admin.setUsername("acme-admin");
     admin.setEmail("admin@acme.com");
-    admin.setMobileNumber("9999999999");
+    admin.setMobileNumber("+91 99999 99999");
     admin.setPassword("PlainPass123");
 
     when(companyRepository.findByName("ACME")).thenReturn(Optional.empty());
     when(userService.findByUsername("acme-admin")).thenReturn(null);
     when(userService.findByEmail("admin@acme.com")).thenReturn(null);
-    when(userService.findByMobileNumber("9999999999")).thenReturn(null);
+    when(userService.findByMobileNumber("919999999999")).thenReturn(null);
     when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> {
       Company toSave = invocation.getArgument(0);
       toSave.setId(1L);
@@ -77,6 +77,7 @@ class CompanyServiceTest {
 
     User savedAdmin = userCaptor.getValue();
     assertThat(savedAdmin.getCompany().getId()).isEqualTo(1L);
+    assertThat(savedAdmin.getMobileNumber()).isEqualTo("919999999999");
     assertThat(savedAdmin.getRole()).isEqualTo("ADMIN");
     assertThat(savedAdmin.isEnabled()).isFalse();
     assertThat(savedAdmin.getPassword()).isNotEqualTo("PlainPass123");

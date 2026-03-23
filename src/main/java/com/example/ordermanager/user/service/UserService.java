@@ -4,6 +4,7 @@ import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.company.repository.CompanyRepository;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.repository.UserRepository;
+import com.example.ordermanager.utils.PhoneNumberUtils;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +33,8 @@ public class UserService {
    * @return Registered user
    */
   public User register(User user) {
+    user.setMobileNumber(
+        PhoneNumberUtils.normalizeRequiredInternational(user.getMobileNumber(), "Mobile number"));
     user.setPassword(passwordEncoder.encode(user.getPassword()));
     user.setEnabled(false); // not verified yet
     User saved = userRepository.save(user);
@@ -53,6 +56,9 @@ public class UserService {
     Company company = companyRepository.findById(companyId).orElseThrow(
         () -> new IllegalArgumentException("Company with ID " + companyId + " not found"));
 
+    String normalizedMobile =
+        PhoneNumberUtils.normalizeRequiredInternational(user.getMobileNumber(), "Mobile number");
+
     // Check if username already exists
     if (userRepository.findByUsername(user.getUsername()).isPresent()) {
       throw new IllegalArgumentException("Username already exists!");
@@ -63,8 +69,13 @@ public class UserService {
       throw new IllegalArgumentException("Email already exists!");
     }
 
+    if (userRepository.findByMobileNumber(normalizedMobile).isPresent()) {
+      throw new IllegalArgumentException("Mobile number already exists!");
+    }
+
     // Set company and default values
     user.setCompany(company);
+    user.setMobileNumber(normalizedMobile);
     user.setEnabled(false); // Email verification required
     user.setPassword(passwordEncoder.encode(user.getPassword()));
 
@@ -201,6 +212,9 @@ public class UserService {
    * @return Saved user
    */
   public User saveUserWithCompany(User user) {
+    user.setMobileNumber(
+        PhoneNumberUtils.normalizeRequiredInternational(user.getMobileNumber(), "Mobile number"));
+
     // Save user (password is already hashed, company already set)
     User savedUser = userRepository.save(user);
 
@@ -254,8 +268,11 @@ public class UserService {
 
     String oldEmail = user.getEmail();
     String oldUsername = user.getUsername();
+    String oldMobile = user.getMobileNumber();
     String newEmail = updatedUser.getEmail();
     String newUsername = updatedUser.getUsername();
+    String providedMobile = updatedUser.getMobileNumber();
+    String normalizedNewMobile = null;
 
     // Require non-blank email/username to avoid null-based comparisons and invalid updates.
     if (newEmail == null || newEmail.trim().isEmpty()) {
@@ -268,6 +285,11 @@ public class UserService {
     newEmail = newEmail.trim();
     newUsername = newUsername.trim();
 
+    if (providedMobile != null) {
+      normalizedNewMobile =
+          PhoneNumberUtils.normalizeRequiredInternational(providedMobile, "Mobile number");
+    }
+
     // Check if email is being changed and if new email already exists
     if (!Objects.equals(oldEmail, newEmail) && userRepository.findByEmail(newEmail).isPresent()) {
       throw new IllegalArgumentException("Email already exists!");
@@ -279,14 +301,19 @@ public class UserService {
       throw new IllegalArgumentException("Username already exists!");
     }
 
+    if (normalizedNewMobile != null && !Objects.equals(oldMobile, normalizedNewMobile)
+        && userRepository.findByMobileNumber(normalizedNewMobile).isPresent()) {
+      throw new IllegalArgumentException("Mobile number already exists!");
+    }
+
     // Update allowed fields
     user.setFirstName(
         updatedUser.getFirstName() != null ? updatedUser.getFirstName() : user.getFirstName());
     user.setLastName(
         updatedUser.getLastName() != null ? updatedUser.getLastName() : user.getLastName());
     user.setUsername(newUsername);
-    user.setMobileNumber(updatedUser.getMobileNumber() != null ? updatedUser.getMobileNumber()
-        : user.getMobileNumber());
+    user.setMobileNumber(
+        normalizedNewMobile != null ? normalizedNewMobile : user.getMobileNumber());
     user.setRole(updatedUser.getRole() != null ? updatedUser.getRole() : user.getRole());
 
     // Handle email change - if email changed, reset to pending and send new verification

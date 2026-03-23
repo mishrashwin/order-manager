@@ -181,6 +181,13 @@
       <artifactId>spring-boot-starter-aop</artifactId>
       <groupId>org.springframework.boot</groupId>
     </dependency>
+
+    <!-- Country-aware phone number parsing and validation -->
+    <dependency>
+      <groupId>com.googlecode.libphonenumber</groupId>
+      <artifactId>libphonenumber</artifactId>
+      <version>8.13.55</version>
+    </dependency>
   </dependencies>
   <description>Spring Boot executable application for managing client orders end-to-end
   </description>

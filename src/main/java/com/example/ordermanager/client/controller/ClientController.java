@@ -42,6 +42,14 @@ public class ClientController {
       Long companyId = securityContextHelper.getCompanyIdFromContext();
       clientService.saveClientWithCompany(client, companyId);
       return "redirect:/clients";
+    } catch (IllegalArgumentException e) {
+      String message = e.getMessage();
+      model.addAttribute("error", message);
+      if (isPhoneValidationError(message)) {
+        model.addAttribute("phoneError", message);
+      }
+      model.addAttribute("client", client);
+      return "clients/form";
     } catch (IllegalStateException e) {
       model.addAttribute("error", "You must be logged in to create a client");
       model.addAttribute("client", client);
@@ -51,6 +59,10 @@ public class ClientController {
       model.addAttribute("client", client);
       return "clients/form";
     }
+  }
+
+  private boolean isPhoneValidationError(String message) {
+    return message != null && message.toLowerCase().contains("phone");
   }
 
   @GetMapping("/edit/{id}")

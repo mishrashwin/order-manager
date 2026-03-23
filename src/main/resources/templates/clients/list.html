@@ -99,7 +99,7 @@
                     <td><strong th:text="${client.name}"></strong></td>
                     <td th:text="${client.contactPerson}"></td>
                     <td><i class="bi bi-envelope"></i> <span th:text="${client.email}"></span></td>
-                    <td><i class="bi bi-telephone"></i> <span th:text="${client.phone}"></span></td>
+                    <td><i class="bi bi-telephone"></i> <span th:text="${client.phone != null ? '+' + client.phone : ''}"></span></td>
                     <td th:text="${client.address}"></td>
                     <td class="text-center">
                         <div class="action-buttons justify-content-center">

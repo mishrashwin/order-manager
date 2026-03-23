@@ -42,6 +42,14 @@ public class VendorController {
       Long companyId = securityContextHelper.getCompanyIdFromContext();
       vendorService.saveVendorWithCompany(vendor, companyId);
       return "redirect:/vendors";
+    } catch (IllegalArgumentException e) {
+      String message = e.getMessage();
+      model.addAttribute("error", message);
+      if (isPhoneValidationError(message)) {
+        model.addAttribute("phoneError", message);
+      }
+      model.addAttribute("vendor", vendor);
+      return "vendors/form";
     } catch (IllegalStateException e) {
       model.addAttribute("error", "You must be logged in to create a vendor");
       model.addAttribute("vendor", vendor);
@@ -51,6 +59,10 @@ public class VendorController {
       model.addAttribute("vendor", vendor);
       return "vendors/form";
     }
+  }
+
+  private boolean isPhoneValidationError(String message) {
+    return message != null && message.toLowerCase().contains("phone");
   }
 
   @GetMapping("/edit/{id}")

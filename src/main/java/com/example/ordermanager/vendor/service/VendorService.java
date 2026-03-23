@@ -5,6 +5,7 @@ import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.vendor.repository.VendorRepository;
 import com.example.ordermanager.utils.Helper;
+import com.example.ordermanager.utils.PhoneNumberUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -44,6 +45,9 @@ public class VendorService {
     if (vendor.getContactPerson() != null) {
       vendor.setContactPerson(helper.toTitleCase(vendor.getContactPerson()));
     }
+
+    vendor.setPhone(
+        PhoneNumberUtils.normalizeOptionalInternational(vendor.getPhone(), "Vendor Phone No"));
 
     return vendorRepository.save(vendor);
   }

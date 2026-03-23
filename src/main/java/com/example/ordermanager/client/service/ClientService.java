@@ -7,6 +7,7 @@ import com.example.ordermanager.client.exception.ClientHasActiveOrdersException;
 import com.example.ordermanager.client.repository.ClientRepository;
 import com.example.ordermanager.order.repository.OrderRepository;
 import com.example.ordermanager.utils.Helper;
+import com.example.ordermanager.utils.PhoneNumberUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -48,6 +49,9 @@ public class ClientService {
     if (client.getContactPerson() != null) {
       client.setContactPerson(helper.toTitleCase(client.getContactPerson()));
     }
+
+    client.setPhone(
+        PhoneNumberUtils.normalizeOptionalInternational(client.getPhone(), "Client Phone No"));
 
     clientRepository.save(client);
   }

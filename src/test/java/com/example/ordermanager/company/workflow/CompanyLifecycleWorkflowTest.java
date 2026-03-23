@@ -94,7 +94,7 @@ class CompanyLifecycleWorkflowTest {
     admin.setLastName("Admin");
     admin.setUsername("adminalpha");
     admin.setEmail("admin@alpha.com");
-    admin.setMobileNumber("9999999999");
+    admin.setMobileNumber("+91 99999 99999");
     admin.setPassword("Pass@123");
 
     when(companyRepository.findByName("ALPHA TRADERS")).thenReturn(Optional.empty());
@@ -111,9 +111,10 @@ class CompanyLifecycleWorkflowTest {
 
     when(userRepository.findByUsername("adminalpha")).thenReturn(Optional.empty());
     when(userRepository.findByEmail("admin@alpha.com")).thenReturn(Optional.empty());
-    when(userRepository.findByMobileNumber("9999999999")).thenReturn(Optional.empty());
+    when(userRepository.findByMobileNumber("919999999999")).thenReturn(Optional.empty());
     when(userRepository.findByUsername("manager1")).thenReturn(Optional.empty());
     when(userRepository.findByEmail("manager1@alpha.com")).thenReturn(Optional.empty());
+    when(userRepository.findByMobileNumber("918888888888")).thenReturn(Optional.empty());
 
     when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
       User toSave = invocation.getArgument(0);
@@ -172,7 +173,7 @@ class CompanyLifecycleWorkflowTest {
     manager.setLastName("Manager");
     manager.setUsername("manager1");
     manager.setEmail("manager1@alpha.com");
-    manager.setMobileNumber("8888888888");
+    manager.setMobileNumber("+91 88888 88888");
     manager.setPassword("Pass@456");
     manager.setRole("MANAGER");
 
