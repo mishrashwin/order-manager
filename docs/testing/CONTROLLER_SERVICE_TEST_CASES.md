@@ -114,6 +114,7 @@ This file is the living test inventory for controller and service methods.
 - `COS-08` approve/reject populate `approvedAt`/`approvedBy`; reject also sets inactive
 - `COS-09` deactivate/activate only send corresponding notification on real state transition
 - `COS-10` `canUsersLogin` true only for active + `APPROVED`
+- `COS-11` `registerCompanyWithAdmin` normalizes owner mobile to international canonical digits and validates country-aware format
 
 ### `OrderService`
 - `ORS-01` `createOrder`/`createOrderWithCompany` title-case `productName`
@@ -129,11 +130,15 @@ This file is the living test inventory for controller and service methods.
 - `CLS-02` save title-cases `contactPerson`
 - `CLS-03` save fails with `IllegalArgumentException` when company id missing
 - `CLS-04` delete throws `ClientHasActiveOrdersException` with `orderCount` when referenced by orders
+- `CLS-05` save normalizes optional phone to international canonical digits (country code + mobile)
+- `CLS-06` save rejects invalid international phone input
 
 ### `VendorService`
 - `VDS-01` save assigns company by id and enforces uppercase `companyName`
 - `VDS-02` save title-cases `contactPerson`
 - `VDS-03` save fails with `IllegalArgumentException` when company id missing
+- `VDS-04` save normalizes optional phone to international canonical digits (country code + mobile)
+- `VDS-05` save rejects invalid international phone input
 
 ### `OwnerManagementService`
 - `OMS-01` dashboard metrics compute inactive as `total-active`
@@ -150,6 +155,8 @@ This file is the living test inventory for controller and service methods.
 - `USR-07` `updateUserByAdmin` requires non-blank email/username
 - `USR-08` `updateUserByAdmin` rejects duplicate email/username when changed
 - `USR-09` email change resets `enabled=false` and sends new verification; unchanged email skips resend
+- `USR-10` create/update normalize mobile to international canonical digits and reject invalid input
+- `USR-11` create/update reject duplicate mobile after normalization
 
 ### `RegistrationService`
 - `REG-01` existing unexpired token raises `EmailAlreadySentException`

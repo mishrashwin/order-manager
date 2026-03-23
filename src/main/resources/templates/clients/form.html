@@ -28,6 +28,8 @@
 
     <!-- Form Card -->
     <div class="unified-card">
+        <div class="alert alert-danger" role="alert" th:if="${error}" th:text="${error}"></div>
+
         <form th:action="@{/clients}" th:object="${client}" method="post">
             <input type="hidden" th:field="*{id}">
 
@@ -49,7 +51,13 @@
 
                 <div class="col-md-6 mb-4">
                     <label class="form-label"><i class="bi bi-telephone"></i> Phone</label>
-                    <input type="text" class="form-control form-control-custom" th:field="*{phone}">
+                    <input type="hidden" id="clientPhone" th:field="*{phone}">
+                    <div class="d-flex gap-2">
+                        <select id="clientPhoneCountry" class="form-select form-control-custom" aria-label="Country code"></select>
+                        <input type="tel" id="clientPhoneLocal" class="form-control form-control-custom"
+                               th:classappend="${phoneError} ? ' is-invalid' : ''" placeholder="Phone number">
+                    </div>
+                    <div class="invalid-feedback d-block" th:if="${phoneError}" th:text="${phoneError}"></div>
                 </div>
             </div>
 
@@ -75,5 +83,9 @@
 <div th:replace="~{fragments/footer :: footer}"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/phone-input-widget.js}"></script>
+<script>
+    initPhoneInput('clientPhone', 'clientPhoneCountry', 'clientPhoneLocal');
+</script>
 </body>
 </html>

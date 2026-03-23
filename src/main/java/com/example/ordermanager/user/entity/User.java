@@ -34,7 +34,8 @@ public class User {
   private String email;
 
   @NotBlank(message = "Mobile number cannot be empty")
-  @Pattern(regexp = "^[0-9]{10,15}$", message = "Mobile number must be between 10 and 15 digits")
+  @Pattern(regexp = "^[+0-9()\\-\\s]{8,20}$",
+      message = "Enter mobile number with country code (for example +91 98765 43210)")
   @Column(nullable = false, unique = true, length = 15)
   private String mobileNumber;
 

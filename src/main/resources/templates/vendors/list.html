@@ -88,7 +88,7 @@
                     <td><strong th:text="${vendor.companyName}"></strong></td>
                     <td th:text="${vendor.contactPerson}"></td>
                     <td><i class="bi bi-envelope"></i> <span th:text="${vendor.email}"></span></td>
-                    <td><i class="bi bi-telephone"></i> <span th:text="${vendor.phone}"></span></td>
+                    <td><i class="bi bi-telephone"></i> <span th:text="${vendor.phone != null ? '+' + vendor.phone : ''}"></span></td>
                     <td th:text="${vendor.address}"></td>
                     <td class="text-center">
                         <div class="action-buttons justify-content-center">

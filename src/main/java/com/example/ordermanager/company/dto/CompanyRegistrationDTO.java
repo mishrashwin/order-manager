@@ -34,12 +34,12 @@ public class CompanyRegistrationDTO {
   private String ownerEmail;
 
   @NotBlank(message = "Owner mobile number is required")
-  @Pattern(regexp = "^[0-9]{10,15}$",
-      message = "Mobile number must be between 10 and 15 digits and contain only numbers")
+  @Pattern(regexp = "^[+0-9()\\-\\s]{8,20}$",
+      message = "Enter mobile number with country code (for example +91 98765 43210)")
   private String ownerMobile;
 
   @NotBlank(message = "Username is required")
-  @Size(min = 3, max = 100, message = "Username must be between 3 and 100 characters")
+  @Size(min = 3, max = 20, message = "Username must be between 3 and 20 characters")
   private String username;
 
   @NotBlank(message = "Password is required")

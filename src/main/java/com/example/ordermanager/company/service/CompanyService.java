@@ -6,6 +6,7 @@ import com.example.ordermanager.company.repository.CompanyRepository;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.service.EmailService;
 import com.example.ordermanager.user.service.UserService;
+import com.example.ordermanager.utils.PhoneNumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -76,6 +77,9 @@ public class CompanyService {
    */
   @Transactional
   public Company registerCompanyWithAdmin(Company company, User adminUser) {
+    String normalizedMobile = PhoneNumberUtils
+        .normalizeRequiredInternational(adminUser.getMobileNumber(), "Owner mobile number");
+
     // Step 1: Validate company name is unique
     if (companyRepository.findByName(company.getName()).isPresent()) {
       throw new IllegalArgumentException(
@@ -93,9 +97,9 @@ public class CompanyService {
           "Email '" + adminUser.getEmail() + "' already registered!");
     }
 
-    if (userService.findByMobileNumber(adminUser.getMobileNumber()) != null) {
+    if (userService.findByMobileNumber(normalizedMobile) != null) {
       throw new IllegalArgumentException(
-          "Mobile number '" + adminUser.getMobileNumber() + "' is already registered!");
+          "Mobile number '" + normalizedMobile + "' is already registered!");
     }
 
     // Step 3: Create and save company FIRST
@@ -107,6 +111,7 @@ public class CompanyService {
 
     // Step 4: Prepare admin user
     adminUser.setCompany(savedCompany); // Assign to company (MUST be set BEFORE saving)
+    adminUser.setMobileNumber(normalizedMobile);
     adminUser.setRole("ADMIN"); // First user is admin
     adminUser.setEnabled(false); // Requires email verification
     adminUser.setPassword(passwordEncoder.encode(adminUser.getPassword())); // Hash password
