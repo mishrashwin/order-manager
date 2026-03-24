@@ -28,6 +28,11 @@
 
     <!-- Form Card -->
     <div class="unified-card">
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
         <form th:action="@{/orders}" th:object="${order}" method="post">
             <input type="hidden" th:field="*{id}">
 

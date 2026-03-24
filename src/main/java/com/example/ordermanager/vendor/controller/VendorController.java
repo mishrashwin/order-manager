@@ -7,6 +7,7 @@ import com.example.ordermanager.utils.SecurityContextHelper;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/vendors")
@@ -37,10 +38,14 @@ public class VendorController {
   }
 
   @PostMapping
-  public String saveVendor(@ModelAttribute Vendor vendor, Model model) {
+  public String saveVendor(@ModelAttribute Vendor vendor, Model model,
+      RedirectAttributes redirectAttributes) {
     try {
+      boolean isUpdate = vendor.getId() != null;
       Long companyId = securityContextHelper.getCompanyIdFromContext();
       vendorService.saveVendorWithCompany(vendor, companyId);
+      redirectAttributes.addFlashAttribute("message",
+          isUpdate ? "Vendor updated successfully." : "Vendor added successfully.");
       return "redirect:/vendors";
     } catch (IllegalArgumentException e) {
       String message = e.getMessage();
@@ -72,8 +77,13 @@ public class VendorController {
   }
 
   @GetMapping("/delete/{id}")
-  public String deleteVendor(@PathVariable Long id) {
-    vendorService.deleteVendor(id);
+  public String deleteVendor(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    try {
+      vendorService.deleteVendor(id);
+      redirectAttributes.addFlashAttribute("message", "Vendor deleted successfully.");
+    } catch (Exception e) {
+      redirectAttributes.addFlashAttribute("error", "Error deleting vendor: " + e.getMessage());
+    }
     return "redirect:/vendors";
   }
 }

@@ -37,10 +37,14 @@ public class ClientController {
   }
 
   @PostMapping
-  public String saveClient(@ModelAttribute Client client, Model model) {
+  public String saveClient(@ModelAttribute Client client, Model model,
+      RedirectAttributes redirectAttributes) {
     try {
+      boolean isUpdate = client.getId() != null;
       Long companyId = securityContextHelper.getCompanyIdFromContext();
       clientService.saveClientWithCompany(client, companyId);
+      redirectAttributes.addFlashAttribute("success",
+          isUpdate ? "Client updated successfully" : "Client added successfully");
       return "redirect:/clients";
     } catch (IllegalArgumentException e) {
       String message = e.getMessage();

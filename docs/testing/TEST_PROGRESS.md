@@ -84,4 +84,30 @@ Use this file as the session-to-session handoff log for test implementation.
   3. `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` updated when behavior changes
   4. `docs/testing/TEST_PROGRESS.md` updated with what was completed in this session
 
+## Batch Completed (2026-03-24)
+- Updated `AdminController.addUser()` success path to use `RedirectAttributes.addFlashAttribute("message", ...)` so success feedback survives redirect to `admin/users/list`.
+- Confirmed `AdminController.updateUser()` success path uses flash message only (not model) to avoid lost messages after redirect.
+- Updated `admin/users/list.html` to render flash-backed `message` and `error` alerts.
+- Updated `admin/users/form.html` and `admin/users/form-edit.html` to render generic `error` alerts for non-mobile validation failures.
+- Extended `AdminControllerTest` to assert success flash messages for both add and update flows.
+- Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` to reflect flash-message expectations for ADM-03 and ADM-11.
+- Updated `VendorController.saveVendor()` to set flash `message` on redirect with separate text for add vs update success.
+- Updated `vendors/list.html` to render flash-backed `message` and `error` alerts so vendor add/update feedback is visible.
+- Extended `VendorControllerTest` with add/update success flash assertions and updated method signatures to include `RedirectAttributes`.
+- Updated `VendorController.deleteVendor()` to set flash `message` on success and flash `error` on failure.
+- Extended `VendorControllerTest` with vendor delete happy/failure path assertions for redirect flash messages.
+- Updated `ClientController.saveClient()` to set flash `success` on redirect with separate text for add vs update success.
+- Extended `ClientControllerTest` with add/update success flash assertions and updated method signature to include `RedirectAttributes`.
+- Updated `OrderController.saveOrder()`, `updateOrder()`, and `deleteOrder()` to set flash `message` on redirect for create/update/delete success.
+- Updated `orders/list.html` to render flash-backed `message` and `error` alerts so create/update/delete feedback is visible.
+- Updated `orders/form.html` to render `error` alerts for same-request validation failures.
+- Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` to reflect order flash-message expectations for ORDC-03, ORDC-06, ORDC-07.
+- Added `src/test/java/com/example/ordermanager/order/controller/OrderControllerTest.java` with comprehensive coverage for:
+  - happy path for `saveOrder` (create) redirect success with flash `message`
+  - failure path for `saveOrder` exception handling with error attribute and form reload
+  - unauthenticated state (`IllegalStateException`) redirect to login
+  - happy path for `updateOrder` redirect success with flash `message`
+  - happy path for `deleteOrder` redirect success with flash `message`
+  - edit/duplicate order happy and not-found paths
+
 

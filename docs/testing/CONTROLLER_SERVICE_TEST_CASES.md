@@ -24,7 +24,7 @@ This file is the living test inventory for controller and service methods.
 ### `AdminController`
 - `ADM-01` `GET /admin/dashboard` returns `admin/dashboard` and model contains tenant `companyId`
 - `ADM-02` `GET /admin/users` includes users list, admin count, and current username from security context
-- `ADM-03` `POST /admin/users/add` success redirects `/admin/users`
+- `ADM-03` `POST /admin/users/add` success redirects `/admin/users` with flash `message`
 - `ADM-04` `POST /admin/users/add` mobile validation failure returns form with `mobileError` attribute and `is-invalid` class
 - `ADM-05` `POST /admin/users/add` generic `IllegalArgumentException` sets error attribute and returns form
 - `ADM-06` `GET /admin/users/{id}/edit` success returns `admin/users/form-edit` with role options
@@ -32,7 +32,7 @@ This file is the living test inventory for controller and service methods.
 - `ADM-08` `POST /admin/users/{id}/role` enforces service rule failures via flash error
 - `ADM-09` `POST /admin/users/{id}/delete` blocks self-delete and last-admin self-delete with exact message branches
 - `ADM-10` `POST /admin/users/{id}/delete` non-self delete success message includes deleted username
-- `ADM-11` `POST /admin/users/{id}/update` success redirects `/admin/users`
+- `ADM-11` `POST /admin/users/{id}/update` success redirects `/admin/users` with flash `message`
 - `ADM-12` `POST /admin/users/{id}/update` mobile validation failure returns edit form with `mobileError` and refreshed user data
 - `ADM-13` `POST /admin/users/{id}/update` generic validation failure sets error attribute and returns edit form
 - `ADM-14` company view/edit/update paths load current tenant company and handle missing company
@@ -54,12 +54,13 @@ This file is the living test inventory for controller and service methods.
 - `DASH-04` includes all enum statuses and selected company name fallback
 
 ### `OrderController`
-- `ORDC-01` list endpoint uses tenant id and date range defaults
+- `ORDC-01` list endpoint uses tenant id and date range defaults and shows flash `message`/`error` alerts
 - `ORDC-02` `GET /orders/new` loads clients by company and enum statuses
-- `ORDC-03` `POST /orders` sets default status `CREATED` when missing
-- `ORDC-04` `POST /orders` handles unauthenticated state (`IllegalStateException`) by redirecting `/login`
+- `ORDC-03` `POST /orders` sets default status `CREATED` when missing; success redirects `/orders` with flash `message`
+- `ORDC-04` `POST /orders` handles unauthenticated state (`IllegalStateException`) by redirecting `/login`; error path returns form with error attribute
 - `ORDC-05` `POST /orders` generic failure returns form with clients/statuses restored
-- `ORDC-06` edit/duplicate for missing order redirects to `/orders`
+- `ORDC-06` edit/duplicate for missing order redirects to `/orders`; `POST /orders/update/{id}` success redirects with flash `message`
+- `ORDC-07` `GET /orders/delete/{id}` success redirects with flash `message`
 - `ORDC-07` duplicate order copies fields and resets `orderDate=now`, `status=CREATED`
 
 ### `OrderRestController`
@@ -70,16 +71,16 @@ This file is the living test inventory for controller and service methods.
 
 ### `ClientController`
 - `CLI-01` list endpoint uses tenant-scoped `getClientsByCompanyId`
-- `CLI-02` save success redirects `/clients`
+- `CLI-02` save success (create/update) redirects `/clients` with flash `success`
 - `CLI-03` save unauthenticated path returns form with specific login-required error
 - `CLI-04` `ClientHasActiveOrdersException` renders order count in flash error message
 - `CLI-05` generic delete error returns fallback flash error
 
 ### `VendorController`
 - `VEN-01` list endpoint uses tenant-scoped `getVendorsByCompanyId`
-- `VEN-02` save success redirects `/vendors`
+- `VEN-02` save success (create/update) redirects `/vendors` with flash `message`
 - `VEN-03` save unauthenticated/general error returns form with error
-- `VEN-04` edit/delete route delegates by id and redirects
+- `VEN-04` edit route delegates by id; delete success/failure redirects `/vendors` with flash `message`/`error`
 
 ### `OwnerController`
 - `OWN-01` dashboard model includes owner page markers and metrics/pending lists

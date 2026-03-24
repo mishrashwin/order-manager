@@ -61,11 +61,12 @@ public class AdminController {
   }
 
   @PostMapping("/users/add")
-  public String addUser(@ModelAttribute User user, Model model) {
+  public String addUser(@ModelAttribute User user, Model model,
+      RedirectAttributes redirectAttributes) {
     try {
       Long companyId = securityContextHelper.getCompanyIdFromContext();
       userService.createUserByAdmin(user, companyId);
-      model.addAttribute("message",
+      redirectAttributes.addFlashAttribute("message",
           "User '" + user.getUsername() + "' created successfully. Verification email sent.");
       return "redirect:/admin/users";
     } catch (IllegalArgumentException e) {
@@ -156,11 +157,12 @@ public class AdminController {
   }
 
   @PostMapping("/users/{id}/update")
-  public String updateUser(@PathVariable Long id, @ModelAttribute User user, Model model) {
+  public String updateUser(@PathVariable Long id, @ModelAttribute User user, Model model,
+      RedirectAttributes redirectAttributes) {
     try {
       Long companyId = securityContextHelper.getCompanyIdFromContext();
       userService.updateUserByAdmin(id, user, companyId);
-      model.addAttribute("message", "User updated successfully.");
+      redirectAttributes.addFlashAttribute("message", "User updated successfully.");
       return "redirect:/admin/users";
     } catch (IllegalArgumentException e) {
       String message = e.getMessage();

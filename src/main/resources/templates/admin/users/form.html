@@ -23,6 +23,11 @@
         </a>
     </div>
 
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill"></i> <span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
     <!-- Form Card -->
     <div class="unified-card">
         <form th:action="@{/admin/users/add}" th:object="${user}" method="post" class="row g-3">

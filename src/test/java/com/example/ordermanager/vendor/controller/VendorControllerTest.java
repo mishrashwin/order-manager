@@ -16,6 +16,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ui.ConcurrentModel;
 import org.springframework.ui.Model;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap;
 
 @ExtendWith(MockitoExtension.class)
 class VendorControllerTest {
@@ -35,16 +37,37 @@ class VendorControllerTest {
   }
 
   @Test
-  void saveVendor_success_redirectsToVendorList() {
+  void saveVendor_addSuccess_redirectsToVendorListWithMessage() {
     Vendor vendor = new Vendor();
     vendor.setCompanyName("Acme Supplies");
     Model model = new ConcurrentModel();
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(7L);
 
-    String view = vendorController.saveVendor(vendor, model);
+    String view = vendorController.saveVendor(vendor, model, redirectAttributes);
 
     assertThat(view).isEqualTo("redirect:/vendors");
+    assertThat(redirectAttributes.getFlashAttributes().get("message"))
+        .isEqualTo("Vendor added successfully.");
+    verify(vendorService).saveVendorWithCompany(vendor, 7L);
+  }
+
+  @Test
+  void saveVendor_updateSuccess_redirectsToVendorListWithMessage() {
+    Vendor vendor = new Vendor();
+    vendor.setId(11L);
+    vendor.setCompanyName("Acme Supplies");
+    Model model = new ConcurrentModel();
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(7L);
+
+    String view = vendorController.saveVendor(vendor, model, redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/vendors");
+    assertThat(redirectAttributes.getFlashAttributes().get("message"))
+        .isEqualTo("Vendor updated successfully.");
     verify(vendorService).saveVendorWithCompany(vendor, 7L);
   }
 
@@ -53,13 +76,14 @@ class VendorControllerTest {
     Vendor vendor = new Vendor();
     vendor.setPhone("+9777894561230");
     Model model = new ConcurrentModel();
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(7L);
     doThrow(new IllegalArgumentException(
         "Vendor Phone No is invalid. Use country code + mobile number (for example +919876543210)."))
         .when(vendorService).saveVendorWithCompany(vendor, 7L);
 
-    String view = vendorController.saveVendor(vendor, model);
+    String view = vendorController.saveVendor(vendor, model, redirectAttributes);
 
     assertThat(view).isEqualTo("vendors/form");
     assertThat(model.getAttribute("error")).isEqualTo(
@@ -67,6 +91,32 @@ class VendorControllerTest {
     assertThat(model.getAttribute("phoneError")).isEqualTo(
         "Vendor Phone No is invalid. Use country code + mobile number (for example +919876543210).");
     assertThat(model.getAttribute("vendor")).isEqualTo(vendor);
+  }
+
+  @Test
+  void deleteVendor_success_redirectsToVendorListWithMessage() {
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+
+    String view = vendorController.deleteVendor(21L, redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/vendors");
+    assertThat(redirectAttributes.getFlashAttributes().get("message"))
+        .isEqualTo("Vendor deleted successfully.");
+    verify(vendorService).deleteVendor(21L);
+  }
+
+  @Test
+  void deleteVendor_failure_redirectsToVendorListWithError() {
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+    doThrow(new IllegalArgumentException("Vendor not found")).when(vendorService)
+        .deleteVendor(999L);
+
+    String view = vendorController.deleteVendor(999L, redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/vendors");
+    assertThat(redirectAttributes.getFlashAttributes().get("error"))
+        .isEqualTo("Error deleting vendor: Vendor not found");
+    verify(vendorService).deleteVendor(999L);
   }
 }
 

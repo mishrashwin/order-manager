@@ -9,6 +9,7 @@ import com.example.ordermanager.utils.SecurityContextHelper;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -56,13 +57,15 @@ public class OrderController {
   }
 
   @PostMapping
-  public String saveOrder(@ModelAttribute("order") Order order, Model model) {
+  public String saveOrder(@ModelAttribute("order") Order order, Model model,
+      RedirectAttributes redirectAttributes) {
     try {
       if (order.getStatus() == null) {
         order.setStatus(OrderStatus.CREATED);
       }
       Long companyId = securityContextHelper.getCompanyIdFromContext();
       orderService.createOrderWithCompany(order, companyId);
+      redirectAttributes.addFlashAttribute("message", "Order created successfully");
       return "redirect:/orders";
     } catch (IllegalStateException e) {
       return "redirect:/login";
@@ -90,14 +93,17 @@ public class OrderController {
   }
 
   @PostMapping("/update/{id}")
-  public String updateOrder(@PathVariable Long id, @ModelAttribute("order") Order updatedOrder) {
+  public String updateOrder(@PathVariable Long id, @ModelAttribute("order") Order updatedOrder,
+      RedirectAttributes redirectAttributes) {
     orderService.patchOrder(id, updatedOrder);
+    redirectAttributes.addFlashAttribute("message", "Order updated successfully");
     return "redirect:/orders";
   }
 
   @GetMapping("/delete/{id}")
-  public String deleteOrder(@PathVariable Long id) {
+  public String deleteOrder(@PathVariable Long id, RedirectAttributes redirectAttributes) {
     orderService.deleteOrder(id);
+    redirectAttributes.addFlashAttribute("message", "Order deleted successfully");
     return "redirect:/orders";
   }
 
