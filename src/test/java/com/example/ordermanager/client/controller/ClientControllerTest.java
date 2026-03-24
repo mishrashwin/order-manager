@@ -52,17 +52,17 @@ class ClientControllerTest {
     Model model = new ConcurrentModel();
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(7L);
-    doThrow(
-        new IllegalArgumentException("Client phone is invalid. Use country code + mobile number."))
-        .when(clientService).saveClientWithCompany(client, 7L);
+    doThrow(new IllegalArgumentException(
+        "Client Phone No is invalid. Use country code + mobile number.")).when(clientService)
+        .saveClientWithCompany(client, 7L);
 
     String view = clientController.saveClient(client, model);
 
     assertThat(view).isEqualTo("clients/form");
     assertThat(model.getAttribute("error"))
-        .isEqualTo("Client phone is invalid. Use country code + mobile number.");
+        .isEqualTo("Client Phone No is invalid. Use country code + mobile number.");
     assertThat(model.getAttribute("phoneError"))
-        .isEqualTo("Client phone is invalid. Use country code + mobile number.");
+        .isEqualTo("Client Phone No is invalid. Use country code + mobile number.");
     assertThat(model.getAttribute("client")).isEqualTo(client);
   }
 }

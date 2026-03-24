@@ -67,6 +67,14 @@ Use this file as the session-to-session handoff log for test implementation.
   - happy path for `saveVendor` redirect success
   - failure path for phone-validation exception mapping to `error` and `phoneError` model attributes
 - Updated `vendors/form.html` and `VendorController` to show backend `error` alert and inline phone error under the vendor phone widget for both create and edit submissions.
+- Added `src/test/java/com/example/ordermanager/admin/controller/AdminControllerTest.java` with:
+  - happy path for `addUser` redirect success
+  - failure path for mobile-validation exception mapping to `error` and `mobileError` model attributes in add form
+  - happy path for `updateUser` redirect success
+  - failure path for mobile-validation exception mapping to `error` and `mobileError` model attributes with refreshed user data in edit form
+- Updated `AdminController.addUser()` and `updateUser()` to return form view on `IllegalArgumentException` (instead of redirect) with inline `mobileError` attribute for UX consistency with ClientController and VendorController
+- Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with new test case IDs for mobile validation error handling (ADM-04, ADM-12)
+
 
 ## Rule For Every Development Cycle
 - Mandatory: each new or modified controller/service method must ship with dedicated automated tests.

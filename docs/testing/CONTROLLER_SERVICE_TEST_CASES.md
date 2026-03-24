@@ -24,15 +24,18 @@ This file is the living test inventory for controller and service methods.
 ### `AdminController`
 - `ADM-01` `GET /admin/dashboard` returns `admin/dashboard` and model contains tenant `companyId`
 - `ADM-02` `GET /admin/users` includes users list, admin count, and current username from security context
-- `ADM-03` `POST /admin/users/add` success sets flash success message and redirects `/admin/users`
-- `ADM-04` `POST /admin/users/add` `IllegalArgumentException` sets flash error and redirects `/admin/users/add`
-- `ADM-05` `GET /admin/users/{id}/edit` success returns `admin/users/form-edit` with role options
-- `ADM-06` `GET /admin/users/{id}/edit` invalid id/company mismatch redirects with query error
-- `ADM-07` `POST /admin/users/{id}/role` enforces service rule failures via flash error
-- `ADM-08` `POST /admin/users/{id}/delete` blocks self-delete and last-admin self-delete with exact message branches
-- `ADM-09` `POST /admin/users/{id}/delete` non-self delete success message includes deleted username
-- `ADM-10` `POST /admin/users/{id}/update` validation failure redirects back to edit page
-- `ADM-11` company view/edit/update paths load current tenant company and handle missing company
+- `ADM-03` `POST /admin/users/add` success redirects `/admin/users`
+- `ADM-04` `POST /admin/users/add` mobile validation failure returns form with `mobileError` attribute and `is-invalid` class
+- `ADM-05` `POST /admin/users/add` generic `IllegalArgumentException` sets error attribute and returns form
+- `ADM-06` `GET /admin/users/{id}/edit` success returns `admin/users/form-edit` with role options
+- `ADM-07` `GET /admin/users/{id}/edit` invalid id/company mismatch redirects with query error
+- `ADM-08` `POST /admin/users/{id}/role` enforces service rule failures via flash error
+- `ADM-09` `POST /admin/users/{id}/delete` blocks self-delete and last-admin self-delete with exact message branches
+- `ADM-10` `POST /admin/users/{id}/delete` non-self delete success message includes deleted username
+- `ADM-11` `POST /admin/users/{id}/update` success redirects `/admin/users`
+- `ADM-12` `POST /admin/users/{id}/update` mobile validation failure returns edit form with `mobileError` and refreshed user data
+- `ADM-13` `POST /admin/users/{id}/update` generic validation failure sets error attribute and returns edit form
+- `ADM-14` company view/edit/update paths load current tenant company and handle missing company
 
 ### `CompanyController`
 - `COM-01` `GET /company/register` initializes `registrationData`

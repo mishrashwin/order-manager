@@ -55,17 +55,17 @@ class VendorControllerTest {
     Model model = new ConcurrentModel();
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(7L);
-    doThrow(
-        new IllegalArgumentException("Vendor phone is invalid. Use country code + mobile number."))
+    doThrow(new IllegalArgumentException(
+        "Vendor Phone No is invalid. Use country code + mobile number (for example +919876543210)."))
         .when(vendorService).saveVendorWithCompany(vendor, 7L);
 
     String view = vendorController.saveVendor(vendor, model);
 
     assertThat(view).isEqualTo("vendors/form");
-    assertThat(model.getAttribute("error"))
-        .isEqualTo("Vendor phone is invalid. Use country code + mobile number.");
-    assertThat(model.getAttribute("phoneError"))
-        .isEqualTo("Vendor phone is invalid. Use country code + mobile number.");
+    assertThat(model.getAttribute("error")).isEqualTo(
+        "Vendor Phone No is invalid. Use country code + mobile number (for example +919876543210).");
+    assertThat(model.getAttribute("phoneError")).isEqualTo(
+        "Vendor Phone No is invalid. Use country code + mobile number (for example +919876543210).");
     assertThat(model.getAttribute("vendor")).isEqualTo(vendor);
   }
 }

@@ -56,8 +56,10 @@
                 <input type="hidden" id="mobileNumber" th:field="*{mobileNumber}">
                 <div class="d-flex gap-2">
                     <select id="mobileNumberCountry" class="form-select form-control-custom" aria-label="Country code"></select>
-                    <input type="tel" id="mobileNumberLocal" class="form-control form-control-custom" placeholder="Mobile number" required>
+                    <input type="tel" id="mobileNumberLocal" class="form-control form-control-custom"
+                           th:classappend="${mobileError} ? ' is-invalid' : ''" placeholder="Mobile number" required>
                 </div>
+                <div class="invalid-feedback d-block" th:if="${mobileError}" th:text="${mobileError}"></div>
                 <div class="form-text">Select country code and enter local mobile number</div>
             </div>
 
