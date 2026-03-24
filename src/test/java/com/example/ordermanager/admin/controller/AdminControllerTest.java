@@ -19,6 +19,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ui.Model;
 import org.springframework.ui.ConcurrentModel;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap;
 
 /**
  * Admin Controller Test - verifies user management endpoints and error handling
@@ -48,12 +50,15 @@ class AdminControllerTest {
     user.setMobileNumber("+919876543210");
     user.setPassword("SecurePass123");
     Model model = new ConcurrentModel();
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
 
-    String view = adminController.addUser(user, model);
+    String view = adminController.addUser(user, model, redirectAttributes);
 
     assertThat(view).isEqualTo("redirect:/admin/users");
+    assertThat(redirectAttributes.getFlashAttributes().get("message"))
+        .isEqualTo("User 'newuser' created successfully. Verification email sent.");
   }
 
   @Test
@@ -64,13 +69,14 @@ class AdminControllerTest {
     user.setMobileNumber("12345");
     user.setPassword("SecurePass123");
     Model model = new ConcurrentModel();
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
     doThrow(new IllegalArgumentException(
         "Mobile number is invalid. Use country code + mobile number (for example +919876543210)."))
         .when(userService).createUserByAdmin(user, 5L);
 
-    String view = adminController.addUser(user, model);
+    String view = adminController.addUser(user, model, redirectAttributes);
 
     assertThat(view).isEqualTo("admin/users/form");
     assertThat(model.getAttribute("error")).isEqualTo(
@@ -89,12 +95,15 @@ class AdminControllerTest {
     user.setEmail("existing@acme.com");
     user.setMobileNumber("+919876543210");
     Model model = new ConcurrentModel();
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
 
-    String view = adminController.updateUser(20L, user, model);
+    String view = adminController.updateUser(20L, user, model, redirectAttributes);
 
     assertThat(view).isEqualTo("redirect:/admin/users");
+    assertThat(redirectAttributes.getFlashAttributes().get("message"))
+        .isEqualTo("User updated successfully.");
   }
 
   @Test
@@ -118,7 +127,8 @@ class AdminControllerTest {
         .updateUserByAdmin(20L, submittedUser, 5L);
     when(userService.getUserByIdAndCompany(20L, 5L)).thenReturn(existingUser);
 
-    String view = adminController.updateUser(20L, submittedUser, model);
+    String view =
+        adminController.updateUser(20L, submittedUser, model, new RedirectAttributesModelMap());
 
     assertThat(view).isEqualTo("admin/users/form-edit");
     assertThat(model.getAttribute("error"))
