@@ -61,17 +61,27 @@ public class AdminController {
   }
 
   @PostMapping("/users/add")
-  public String addUser(@ModelAttribute User user, RedirectAttributes redirectAttributes) {
+  public String addUser(@ModelAttribute User user, Model model) {
     try {
       Long companyId = securityContextHelper.getCompanyIdFromContext();
       userService.createUserByAdmin(user, companyId);
-      redirectAttributes.addFlashAttribute("message",
+      model.addAttribute("message",
           "User '" + user.getUsername() + "' created successfully. Verification email sent.");
       return "redirect:/admin/users";
     } catch (IllegalArgumentException e) {
-      redirectAttributes.addFlashAttribute("error", e.getMessage());
-      return "redirect:/admin/users/add";
+      String message = e.getMessage();
+      model.addAttribute("error", message);
+      if (isMobileValidationError(message)) {
+        model.addAttribute("mobileError", message);
+      }
+      model.addAttribute("user", user);
+      model.addAttribute("roles", new String[] {"USER", "MANAGER", "ADMIN"});
+      return "admin/users/form";
     }
+  }
+
+  private boolean isMobileValidationError(String message) {
+    return message != null && message.toLowerCase().contains("mobile");
   }
 
   @GetMapping("/users/{id}/edit")
@@ -146,16 +156,29 @@ public class AdminController {
   }
 
   @PostMapping("/users/{id}/update")
-  public String updateUser(@PathVariable Long id, @ModelAttribute User user,
-      RedirectAttributes redirectAttributes) {
+  public String updateUser(@PathVariable Long id, @ModelAttribute User user, Model model) {
     try {
       Long companyId = securityContextHelper.getCompanyIdFromContext();
       userService.updateUserByAdmin(id, user, companyId);
-      redirectAttributes.addFlashAttribute("message", "User updated successfully.");
+      model.addAttribute("message", "User updated successfully.");
       return "redirect:/admin/users";
     } catch (IllegalArgumentException e) {
-      redirectAttributes.addFlashAttribute("error", e.getMessage());
-      return "redirect:/admin/users/{id}/edit";
+      String message = e.getMessage();
+      model.addAttribute("error", message);
+      if (isMobileValidationError(message)) {
+        model.addAttribute("mobileError", message);
+      }
+      // Fetch fresh user data for the form
+      try {
+        Long companyId = securityContextHelper.getCompanyIdFromContext();
+        User refreshedUser = userService.getUserByIdAndCompany(id, companyId);
+        model.addAttribute("user", refreshedUser);
+      } catch (Exception ex) {
+        // Fallback to submitted user if fetch fails
+        model.addAttribute("user", user);
+      }
+      model.addAttribute("roles", new String[] {"USER", "MANAGER", "ADMIN"});
+      return "admin/users/form-edit";
     }
   }
 

@@ -73,7 +73,7 @@ class ClientServiceTest {
 
     assertThatThrownBy(() -> clientService.saveClientWithCompany(client, 9L))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Client phone is invalid");
+        .hasMessageContaining("Client Phone No is invalid. Please provide valid mobile number.");
 
     verify(clientRepository, never()).save(any(Client.class));
   }

@@ -68,8 +68,8 @@ class VendorServiceTest {
     when(companyService.getCompanyById(5L)).thenReturn(Optional.of(company));
 
     assertThatThrownBy(() -> vendorService.saveVendorWithCompany(vendor, 5L))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Vendor phone is invalid");
+        .isInstanceOf(IllegalArgumentException.class).hasMessageContaining(
+            "Vendor Phone No is invalid. Use country code + mobile number (for example +919876543210)");
 
     verify(vendorRepository, never()).save(any(Vendor.class));
   }
