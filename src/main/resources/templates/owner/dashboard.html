@@ -89,7 +89,7 @@
                     <tr th:each="company : ${pendingCompanies}">
                         <td th:text="${company.companyName}">ACME</td>
                         <td th:text="${#temporals.format(company.createdAt, 'dd MMM yyyy HH:mm')}">-</td>
-                        <td th:text="${company.usersCount}">0</td>
+                        <td th:text="${company.userCount}">0</td>
                         <td class="d-flex gap-2">
                             <form th:action="@{/owner/companies/{id}/approve(id=${company.companyId})}" method="post">
                                 <button type="submit" class="btn btn-success btn-sm">Approve</button>

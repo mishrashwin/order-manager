@@ -34,8 +34,7 @@ public class AdminController {
   private final PasswordVerificationService passwordVerificationService;
 
   public AdminController(UserService userService, CompanyService companyService,
-      SecurityContextHelper securityContextHelper, OrderService orderService) {
-      SecurityContextHelper securityContextHelper,
+      SecurityContextHelper securityContextHelper, OrderService orderService,
       PasswordVerificationService passwordVerificationService) {
     this.userService = userService;
     this.companyService = companyService;

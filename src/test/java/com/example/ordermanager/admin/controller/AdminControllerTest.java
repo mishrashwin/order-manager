@@ -1,16 +1,13 @@
 package com.example.ordermanager.admin.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import com.example.ordermanager.admin.dto.ClientOrderStatDTO;
-import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.entity.OrderStatus;
@@ -21,7 +18,6 @@ import com.example.ordermanager.utils.PasswordVerificationService;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,8 +49,8 @@ class AdminControllerTest {
 
   @BeforeEach
   void setUp() {
-    adminController = new AdminController(userService, companyService, securityContextHelper, orderService,
-        passwordVerificationService);
+    adminController = new AdminController(userService, companyService, securityContextHelper,
+        orderService, passwordVerificationService);
   }
 
   @Test
@@ -229,7 +225,6 @@ class AdminControllerTest {
     assertThat(redirectAttributes.getFlashAttributes().get("error"))
         .isEqualTo("User not found or does not belong to your company");
   }
-}
 
   // ── Order Statistics endpoint tests ──────────────────────────────────────────
 

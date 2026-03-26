@@ -105,15 +105,6 @@
                                     <span th:text="${user.accountActive ? 'Active' : 'Inactive'}"></span>
                                 </button>
                             </form>
-                            <form th:action="@{|/admin/users/${user.id}/delete|}" method="post" class="om-inline-form">
-                                <button type="submit"
-                                        class="btn btn-sm btn-outline-danger om-btn-icon"
-                                        th:disabled="${user.username == currentUsername && user.role == 'ADMIN' && adminCount <= 1}"
-                                        title="Delete user"
-                                        onclick="return confirm('Are you sure you want to delete this user?');">
-                                    <i class="bi bi-trash"></i> Delete
-                                </button>
-                            </form>
                             <button type="button"
                                     class="btn btn-sm btn-outline-danger om-btn-icon"
                                     th:disabled="${user.username == currentUsername}"
