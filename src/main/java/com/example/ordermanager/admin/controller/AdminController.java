@@ -5,18 +5,25 @@ import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.service.OrderService;
+import com.example.ordermanager.payment.entity.Payment;
+import com.example.ordermanager.payment.service.PaymentService;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.service.UserService;
 import com.example.ordermanager.utils.PasswordVerificationService;
 import com.example.ordermanager.utils.SecurityContextHelper;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import java.time.LocalDate;
-import java.util.List;
 
 /**
  * Admin Controller - manages users within their company. All endpoints are protected
@@ -32,15 +39,20 @@ public class AdminController {
   private final SecurityContextHelper securityContextHelper;
   private final OrderService orderService;
   private final PasswordVerificationService passwordVerificationService;
+  private final PaymentService paymentService;
+  private final String paymentUpiId;
 
   public AdminController(UserService userService, CompanyService companyService,
       SecurityContextHelper securityContextHelper, OrderService orderService,
-      PasswordVerificationService passwordVerificationService) {
+      PasswordVerificationService passwordVerificationService, PaymentService paymentService,
+      @Value("${app.payment.upi-id:}") String paymentUpiId) {
     this.userService = userService;
     this.companyService = companyService;
     this.securityContextHelper = securityContextHelper;
     this.orderService = orderService;
     this.passwordVerificationService = passwordVerificationService;
+    this.paymentService = paymentService;
+    this.paymentUpiId = paymentUpiId;
   }
 
   @GetMapping("/dashboard")
@@ -295,6 +307,53 @@ public class AdminController {
       redirectAttributes.addFlashAttribute("error", e.getMessage());
       return "redirect:/admin/company/edit";
     }
+  }
+
+  @GetMapping("/payments")
+  public String listPayments(Model model) {
+    Long companyId = securityContextHelper.getCompanyIdFromContext();
+    List<Payment> payments = paymentService.getPaymentsByCompany(companyId);
+    model.addAttribute("payments", payments);
+    model.addAttribute("upiId", paymentUpiId);
+    return "admin/payments";
+  }
+
+  @PostMapping("/payments/add")
+  public String addPayment(@RequestParam int paymentMonth, @RequestParam int paymentYear,
+      @RequestParam(required = false) String paymentMsg,
+      @RequestParam(value = "screenshot", required = false) MultipartFile screenshot,
+      RedirectAttributes redirectAttributes) {
+    try {
+      Long companyId = securityContextHelper.getCompanyIdFromContext();
+      paymentService.addPayment(companyId, paymentMonth, paymentYear, paymentMsg, screenshot);
+      redirectAttributes.addFlashAttribute("message", "Payment record added successfully.");
+    } catch (IOException e) {
+      redirectAttributes.addFlashAttribute("error",
+          "Failed to upload screenshot: " + e.getMessage());
+    } catch (IllegalArgumentException e) {
+      redirectAttributes.addFlashAttribute("error", e.getMessage());
+    }
+    return "redirect:/admin/payments";
+  }
+
+  @GetMapping("/payments/{id}/download")
+  public ResponseEntity<byte[]> downloadPaymentScreenshot(@PathVariable Long id) {
+    Long companyId = securityContextHelper.getCompanyIdFromContext();
+    Payment payment = paymentService.getPaymentByIdAndCompany(id, companyId);
+
+    if (payment.getPaymentSsData() == null) {
+      return ResponseEntity.notFound().build();
+    }
+
+    String contentType =
+        payment.getPaymentSsContentType() != null ? payment.getPaymentSsContentType()
+            : "application/octet-stream";
+    String filename =
+        payment.getPaymentSsFilename() != null ? payment.getPaymentSsFilename() : "screenshot";
+
+    return ResponseEntity.ok()
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+        .contentType(MediaType.parseMediaType(contentType)).body(payment.getPaymentSsData());
   }
 }
 
