@@ -1,6 +1,8 @@
 package com.example.ordermanager.order.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import com.example.ordermanager.admin.dto.ClientOrderStatDTO;
@@ -19,7 +21,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Tests for OrderService statistics methods introduced for the Admin Order Statistics page.
+ * Tests for OrderService statistics methods introduced for the Admin Order Statistics page, and
+ * urgent order notification logic.
  */
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
@@ -59,11 +62,17 @@ class OrderServiceTest {
     return o;
   }
 
+  /** Build an Object[] row as returned by the aggregate repository query. */
+  private Object[] statsRow(Long clientId, String clientName, String customerName, long count,
+      double amount) {
+    return new Object[] {clientId, clientName, customerName, count, amount};
+  }
+
   // ── getClientOrderStats ───────────────────────────────────────────────────────
 
   @Test
   void getClientOrderStats_noOrders_returnsEmptyList() {
-    when(orderRepository.findByCompanyIdAndOrderDateBetween(1L, START, END))
+    when(orderRepository.findClientOrderStats(eq(1L), eq(START), eq(END), anyCollection()))
         .thenReturn(List.of());
 
     List<ClientOrderStatDTO> stats = orderService.getClientOrderStats(1L, START, END, "ALL");
@@ -73,11 +82,8 @@ class OrderServiceTest {
 
   @Test
   void getClientOrderStats_singleClient_returns100Percent() {
-    Client acme = client(10L, "ACME");
-    List<Order> orders =
-        List.of(order(acme, OrderStatus.CREATED, 200.0), order(acme, OrderStatus.DELIVERED, 300.0));
-
-    when(orderRepository.findByCompanyIdAndOrderDateBetween(1L, START, END)).thenReturn(orders);
+    when(orderRepository.findClientOrderStats(eq(1L), eq(START), eq(END), anyCollection()))
+        .thenReturn(List.<Object[]>of(statsRow(10L, "ACME", "ACME", 2L, 500.0)));
 
     List<ClientOrderStatDTO> stats = orderService.getClientOrderStats(1L, START, END, "ALL");
 
@@ -92,15 +98,10 @@ class OrderServiceTest {
 
   @Test
   void getClientOrderStats_multipleClients_sumsToApproximately100() {
-    Client a = client(1L, "ALPHA");
-    Client b = client(2L, "BETA");
-    Client c = client(3L, "GAMMA");
-
-    List<Order> orders =
-        List.of(order(a, OrderStatus.CREATED, 100.0), order(a, OrderStatus.CREATED, 100.0),
-            order(b, OrderStatus.CREATED, 50.0), order(c, OrderStatus.CREATED, 50.0));
-
-    when(orderRepository.findByCompanyIdAndOrderDateBetween(1L, START, END)).thenReturn(orders);
+    when(orderRepository.findClientOrderStats(eq(1L), eq(START), eq(END), anyCollection()))
+        .thenReturn(List.<Object[]>of(statsRow(1L, "ALPHA", "ALPHA", 2L, 200.0),
+            statsRow(2L, "BETA", "BETA", 1L, 50.0),
+            statsRow(3L, "GAMMA", "GAMMA", 1L, 50.0)));
 
     List<ClientOrderStatDTO> stats = orderService.getClientOrderStats(1L, START, END, "ALL");
 
@@ -116,13 +117,10 @@ class OrderServiceTest {
   }
 
   @Test
-  void getClientOrderStats_statusFilterActive_excludesFinalOrders() {
-    Client a = client(1L, "ALPHA");
-    Order activeOrder = order(a, OrderStatus.CREATED, 100.0);
-    Order finalOrder = order(a, OrderStatus.DELIVERED, 200.0);
-
-    when(orderRepository.findByCompanyIdAndOrderDateBetween(1L, START, END))
-        .thenReturn(List.of(activeOrder, finalOrder));
+  void getClientOrderStats_statusFilterActive_passesOnlyActiveStatuses() {
+    // The repository is called with active-only statuses; returns pre-filtered rows
+    when(orderRepository.findClientOrderStats(eq(1L), eq(START), eq(END), anyCollection()))
+        .thenReturn(List.<Object[]>of(statsRow(1L, "ALPHA", "ALPHA", 1L, 100.0)));
 
     List<ClientOrderStatDTO> stats = orderService.getClientOrderStats(1L, START, END, "ACTIVE");
 
@@ -132,13 +130,10 @@ class OrderServiceTest {
   }
 
   @Test
-  void getClientOrderStats_statusFilterCompleted_excludesActiveOrders() {
-    Client a = client(1L, "ALPHA");
-    Order activeOrder = order(a, OrderStatus.CREATED, 100.0);
-    Order finalOrder = order(a, OrderStatus.COMPLETED, 200.0);
-
-    when(orderRepository.findByCompanyIdAndOrderDateBetween(1L, START, END))
-        .thenReturn(List.of(activeOrder, finalOrder));
+  void getClientOrderStats_statusFilterCompleted_passesOnlyFinalStatuses() {
+    // The repository is called with final-only statuses; returns pre-filtered rows
+    when(orderRepository.findClientOrderStats(eq(1L), eq(START), eq(END), anyCollection()))
+        .thenReturn(List.<Object[]>of(statsRow(1L, "ALPHA", "ALPHA", 1L, 200.0)));
 
     List<ClientOrderStatDTO> stats = orderService.getClientOrderStats(1L, START, END, "COMPLETED");
 
@@ -149,15 +144,10 @@ class OrderServiceTest {
 
   @Test
   void getClientOrderStats_sortedByOrderCountDescending() {
-    Client a = client(1L, "ALPHA");
-    Client b = client(2L, "BETA");
-
-    // BETA has 3, ALPHA has 1
-    List<Order> orders =
-        List.of(order(b, OrderStatus.CREATED, 50.0), order(b, OrderStatus.CREATED, 50.0),
-            order(b, OrderStatus.CREATED, 50.0), order(a, OrderStatus.CREATED, 100.0));
-
-    when(orderRepository.findByCompanyIdAndOrderDateBetween(1L, START, END)).thenReturn(orders);
+    // DB already returns rows sorted by count DESC; service preserves that order
+    when(orderRepository.findClientOrderStats(eq(1L), eq(START), eq(END), anyCollection()))
+        .thenReturn(List.<Object[]>of(statsRow(2L, "BETA", "BETA", 3L, 150.0),
+            statsRow(1L, "ALPHA", "ALPHA", 1L, 100.0)));
 
     List<ClientOrderStatDTO> stats = orderService.getClientOrderStats(1L, START, END, "ALL");
 
@@ -165,17 +155,28 @@ class OrderServiceTest {
     assertThat(stats.get(1).getClientName()).isEqualTo("ALPHA");
   }
 
+  @Test
+  void getClientOrderStats_legacyOrder_usesCustomerNameWhenClientNameNull() {
+    // Row where client is null (legacy order): r[0]=null, r[1]=null, r[2]=customerName
+    when(orderRepository.findClientOrderStats(eq(1L), eq(START), eq(END), anyCollection()))
+        .thenReturn(List.<Object[]>of(statsRow(null, null, "Legacy Customer", 1L, 50.0)));
+
+    List<ClientOrderStatDTO> stats = orderService.getClientOrderStats(1L, START, END, "ALL");
+
+    assertThat(stats).hasSize(1);
+    assertThat(stats.get(0).getClientId()).isNull();
+    assertThat(stats.get(0).getClientName()).isEqualTo("Legacy Customer");
+  }
+
   // ── getOrdersByClientAndDateRange ─────────────────────────────────────────────
 
   @Test
   void getOrdersByClientAndDateRange_filtersByClientId() {
     Client a = client(1L, "ALPHA");
-    Client b = client(2L, "BETA");
     Order oA = order(a, OrderStatus.CREATED, 100.0);
-    Order oB = order(b, OrderStatus.CREATED, 200.0);
 
-    when(orderRepository.findByCompanyIdAndOrderDateBetween(1L, START, END))
-        .thenReturn(List.of(oA, oB));
+    when(orderRepository.findByCompanyAndDateRangeAndClientId(eq(1L), eq(START), eq(END), eq(1L),
+        anyCollection())).thenReturn(List.of(oA));
 
     List<Order> result =
         orderService.getOrdersByClientAndDateRange(1L, 1L, "ALPHA", START, END, "ALL");
@@ -188,10 +189,10 @@ class OrderServiceTest {
   void getOrdersByClientAndDateRange_statusFilter_active_excludesFinalOrders() {
     Client a = client(1L, "ALPHA");
     Order active = order(a, OrderStatus.CREATED, 100.0);
-    Order done = order(a, OrderStatus.COMPLETED, 200.0);
 
-    when(orderRepository.findByCompanyIdAndOrderDateBetween(1L, START, END))
-        .thenReturn(List.of(active, done));
+    // Repository returns only active orders (DB filtering)
+    when(orderRepository.findByCompanyAndDateRangeAndClientId(eq(1L), eq(START), eq(END), eq(1L),
+        anyCollection())).thenReturn(List.of(active));
 
     List<Order> result =
         orderService.getOrdersByClientAndDateRange(1L, 1L, "ALPHA", START, END, "ACTIVE");
@@ -202,11 +203,8 @@ class OrderServiceTest {
 
   @Test
   void getOrdersByClientAndDateRange_noMatchingClient_returnsEmpty() {
-    Client b = client(2L, "BETA");
-    Order oB = order(b, OrderStatus.CREATED, 200.0);
-
-    when(orderRepository.findByCompanyIdAndOrderDateBetween(1L, START, END))
-        .thenReturn(List.of(oB));
+    when(orderRepository.findByCompanyAndDateRangeAndClientId(eq(1L), eq(START), eq(END), eq(99L),
+        anyCollection())).thenReturn(List.of());
 
     List<Order> result =
         orderService.getOrdersByClientAndDateRange(1L, 99L, "NONEXISTENT", START, END, "ALL");
@@ -224,13 +222,39 @@ class OrderServiceTest {
     Order o2 = order(a, OrderStatus.CREATED, 200.0);
     o2.setOrderDate(LocalDate.of(2025, 1, 20));
 
-    when(orderRepository.findByCompanyIdAndOrderDateBetween(1L, START, END))
-        .thenReturn(List.of(o1, o2));
+    // DB returns already sorted by orderDate DESC
+    when(orderRepository.findByCompanyAndDateRangeAndClientId(eq(1L), eq(START), eq(END), eq(1L),
+        anyCollection())).thenReturn(List.of(o2, o1));
 
     List<Order> result =
         orderService.getOrdersByClientAndDateRange(1L, 1L, "ALPHA", START, END, "ALL");
 
     assertThat(result.get(0).getOrderDate()).isEqualTo(LocalDate.of(2025, 1, 20));
     assertThat(result.get(1).getOrderDate()).isEqualTo(LocalDate.of(2025, 1, 5));
+  }
+
+  @Test
+  void getOrdersByClientAndDateRange_legacyOrder_usesCustomerNameQuery() {
+    Order legacy = new Order();
+    legacy.setStatus(OrderStatus.CREATED);
+    legacy.setTotalAmount(75.0);
+    legacy.setOrderDate(LocalDate.of(2025, 1, 15));
+
+    when(orderRepository.findByCompanyAndDateRangeAndCustomerName(eq(1L), eq(START), eq(END),
+        eq("OLD CUSTOMER"), anyCollection())).thenReturn(List.of(legacy));
+
+    List<Order> result =
+        orderService.getOrdersByClientAndDateRange(1L, null, "OLD CUSTOMER", START, END, "ALL");
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0)).isEqualTo(legacy);
+  }
+
+  @Test
+  void getOrdersByClientAndDateRange_nullClientIdAndNullName_returnsEmpty() {
+    List<Order> result =
+        orderService.getOrdersByClientAndDateRange(1L, null, null, START, END, "ALL");
+
+    assertThat(result).isEmpty();
   }
 }

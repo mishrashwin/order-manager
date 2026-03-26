@@ -11,11 +11,8 @@ import com.example.ordermanager.utils.Helper;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class OrderService {
@@ -133,7 +130,8 @@ public class OrderService {
   /**
    * TENANT-AWARE: Get aggregated order statistics per client for the admin Order Statistics page.
    * Orders are grouped by client (name), counted, totalled, and ranked by order count descending.
-   * The "statusFilter" parameter accepts "ACTIVE", "COMPLETED", or "ALL" (default).
+   * The "statusFilter" parameter accepts "ACTIVE", "COMPLETED", or "ALL" (default). Aggregation and
+   * filtering are pushed to the database via a JPQL GROUP BY query.
    *
    * @param companyId Company ID
    * @param startDate Start of order date range (inclusive)
@@ -143,46 +141,29 @@ public class OrderService {
    */
   public List<ClientOrderStatDTO> getClientOrderStats(Long companyId, LocalDate startDate,
       LocalDate endDate, String statusFilter) {
-    List<Order> orders =
-        orderRepository.findByCompanyIdAndOrderDateBetween(companyId, startDate, endDate);
+    List<OrderStatus> statuses = resolveStatuses(statusFilter);
+    List<Object[]> rows =
+        orderRepository.findClientOrderStats(companyId, startDate, endDate, statuses);
 
-    if ("ACTIVE".equals(statusFilter)) {
-      orders = orders.stream().filter(o -> !o.getStatus().isFinal()).toList();
-    } else if ("COMPLETED".equals(statusFilter)) {
-      orders = orders.stream().filter(o -> o.getStatus().isFinal()).toList();
-    }
-
-    long total = orders.size();
-    if (total == 0) {
+    if (rows.isEmpty()) {
       return List.of();
     }
 
-    // Group by a type-safe key: (clientId, effectiveClientName)
-    // Use a record to avoid any string-prefix collision risks
-    record ClientKey(Long clientId, String name) {}
+    long total = rows.stream().mapToLong(r -> (Long) r[3]).sum();
 
-    Map<ClientKey, List<Order>> grouped = orders.stream().collect(Collectors.groupingBy(o -> {
-      if (o.getClient() != null) {
-        return new ClientKey(o.getClient().getId(), o.getClient().getName());
-      }
-      String name = (o.getCustomerName() != null) ? o.getCustomerName() : "Unknown";
-      return new ClientKey(null, name);
-    }, LinkedHashMap::new, Collectors.toList()));
-
-    return grouped.entrySet().stream().map(entry -> {
-      ClientKey key = entry.getKey();
-      List<Order> clientOrders = entry.getValue();
-      long count = clientOrders.size();
-      double amount = clientOrders.stream()
-          .mapToDouble(o -> o.getTotalAmount() != null ? o.getTotalAmount() : 0).sum();
+    return rows.stream().map(r -> {
+      Long clientId = (Long) r[0];
+      String clientName = r[1] != null ? (String) r[1] : (r[2] != null ? (String) r[2] : "Unknown");
+      long count = (Long) r[3];
+      double amount = ((Number) r[4]).doubleValue();
       double pct = Math.round((count * 10000.0 / total)) / 100.0;
-      return new ClientOrderStatDTO(key.clientId(), key.name(), count, amount, pct);
-    }).sorted(Comparator.comparingLong(ClientOrderStatDTO::getOrderCount).reversed()).toList();
+      return new ClientOrderStatDTO(clientId, clientName, count, amount, pct);
+    }).toList();
   }
 
   /**
    * TENANT-AWARE: Get orders for a specific client within a date range, with optional status
-   * filter. Used for the Order Statistics drill-down table.
+   * filter. Used for the Order Statistics drill-down table. Filtering is pushed to the database.
    *
    * @param companyId Company ID
    * @param clientId Client ID (may be null for legacy orders without client relationship)
@@ -194,45 +175,51 @@ public class OrderService {
    */
   public List<Order> getOrdersByClientAndDateRange(Long companyId, Long clientId, String clientName,
       LocalDate startDate, LocalDate endDate, String statusFilter) {
-    List<Order> orders =
-        orderRepository.findByCompanyIdAndOrderDateBetween(companyId, startDate, endDate);
-
-    orders = orders.stream().filter(o -> {
-      if (clientId != null) {
-        return o.getClient() != null && clientId.equals(o.getClient().getId());
-      }
-      String name = o.getCustomerName();
-      return clientName != null && clientName.equalsIgnoreCase(name);
-    }).toList();
-
-    if ("ACTIVE".equals(statusFilter)) {
-      orders = orders.stream().filter(o -> !o.getStatus().isFinal()).toList();
-    } else if ("COMPLETED".equals(statusFilter)) {
-      orders = orders.stream().filter(o -> o.getStatus().isFinal()).toList();
+    List<OrderStatus> statuses = resolveStatuses(statusFilter);
+    if (clientId != null) {
+      return orderRepository.findByCompanyAndDateRangeAndClientId(companyId, startDate, endDate,
+          clientId, statuses);
     }
-
-    return orders.stream().sorted(
-        Comparator.comparing(Order::getOrderDate, Comparator.nullsLast(Comparator.reverseOrder())))
-        .toList();
+    if (clientName == null) {
+      return List.of();
+    }
+    return orderRepository.findByCompanyAndDateRangeAndCustomerName(companyId, startDate, endDate,
+        clientName, statuses);
   }
 
   /**
-   * TENANT-AWARE: Get urgent orders for a company (non-final status + delivery date ≤ 7 days from
-   * today). Used for dashboard flash notifications.
+   * Maps a status filter string to the corresponding list of OrderStatus enum values.
+   *
+   * @param statusFilter "ACTIVE" | "COMPLETED" | anything else (treated as "ALL")
+   * @return List of matching OrderStatus values
+   */
+  private List<OrderStatus> resolveStatuses(String statusFilter) {
+    if ("ACTIVE".equals(statusFilter)) {
+      return Arrays.stream(OrderStatus.values()).filter(s -> !s.isFinal()).toList();
+    }
+    if ("COMPLETED".equals(statusFilter)) {
+      return Arrays.stream(OrderStatus.values()).filter(OrderStatus::isFinal).toList();
+    }
+    return List.of(OrderStatus.values());
+  }
+
+  /**
+   * TENANT-AWARE: Get urgent orders for a company (non-final status + delivery date either in the
+   * next 7 days OR already past due). Overdue orders continue to appear until delivered or their
+   * status becomes final. Used for dashboard flash notifications.
    *
    * @param companyId Company ID
-   * @return List of urgent orders sorted by delivery date ascending
+   * @return List of urgent orders sorted by delivery date ascending (overdue first)
    */
   public List<Order> getUrgentOrdersByCompanyId(Long companyId) {
-    LocalDate today = LocalDate.now();
-    LocalDate sevenDaysFromNow = today.plusDays(7);
+    LocalDate sevenDaysFromNow = LocalDate.now().plusDays(7);
 
-    return orderRepository.findByCompanyIdAndDeliveryDateBetween(companyId, today, sevenDaysFromNow)
+    return orderRepository.findByCompanyIdAndDeliveryDateLessThanEqual(companyId, sevenDaysFromNow)
         .stream().filter(order -> !order.getStatus().isFinal()) // Exclude final status orders
                                                                 // (DELIVERED, COMPLETED, RETURNED,
                                                                 // CANCELLED, PENDING_PAYMENT)
         .sorted((o1, o2) -> {
-          // Sort by delivery date ascending (earliest first)
+          // Sort by delivery date ascending (overdue first, then nearest upcoming)
           if (o1.getDeliveryDate() == null && o2.getDeliveryDate() == null)
             return 0;
           if (o1.getDeliveryDate() == null)

@@ -3,7 +3,9 @@ package com.example.ordermanager.client.controller;
 import com.example.ordermanager.client.entity.Client;
 import com.example.ordermanager.client.exception.ClientHasActiveOrdersException;
 import com.example.ordermanager.client.service.ClientService;
+import com.example.ordermanager.utils.PasswordVerificationService;
 import com.example.ordermanager.utils.SecurityContextHelper;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -15,11 +17,13 @@ public class ClientController {
 
   private final ClientService clientService;
   private final SecurityContextHelper securityContextHelper;
+  private final PasswordVerificationService passwordVerificationService;
 
-  public ClientController(ClientService clientService,
-      SecurityContextHelper securityContextHelper) {
+  public ClientController(ClientService clientService, SecurityContextHelper securityContextHelper,
+      PasswordVerificationService passwordVerificationService) {
     this.clientService = clientService;
     this.securityContextHelper = securityContextHelper;
+    this.passwordVerificationService = passwordVerificationService;
   }
 
   @GetMapping
@@ -75,8 +79,14 @@ public class ClientController {
     return "clients/form";
   }
 
-  @GetMapping("/delete/{id}")
-  public String deleteClient(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+  @PostMapping("/delete/{id}")
+  @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+  public String deleteClient(@PathVariable Long id, @RequestParam String password,
+      RedirectAttributes redirectAttributes) {
+    if (!passwordVerificationService.verifyCurrentUserPassword(password)) {
+      redirectAttributes.addFlashAttribute("error", "Incorrect password. Client was not deleted.");
+      return "redirect:/clients";
+    }
     try {
       clientService.deleteClient(id);
       redirectAttributes.addFlashAttribute("success", "Client deleted successfully");

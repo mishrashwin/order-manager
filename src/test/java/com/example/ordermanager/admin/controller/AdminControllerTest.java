@@ -15,6 +15,7 @@ import com.example.ordermanager.order.service.OrderService;
 import com.example.ordermanager.payment.service.PaymentService;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.service.UserService;
+import com.example.ordermanager.utils.PasswordVerificationService;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import java.time.LocalDate;
 import java.util.List;
@@ -44,13 +45,14 @@ class AdminControllerTest {
   private OrderService orderService;
   @Mock
   private PaymentService paymentService;
+  private PasswordVerificationService passwordVerificationService;
 
   private AdminController adminController;
 
   @BeforeEach
   void setUp() {
     adminController = new AdminController(userService, companyService, securityContextHelper,
-        orderService, paymentService, "test-upi-id");
+        orderService,passwordVerificationService, paymentService, "test-upi-id");
   }
 
   @Test

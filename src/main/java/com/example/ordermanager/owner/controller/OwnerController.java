@@ -4,8 +4,12 @@ import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.company.entity.CompanyApprovalStatus;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.owner.service.OwnerManagementService;
+<<<<<<< copilot/add-payment-tab-admin-panel
 import com.example.ordermanager.payment.entity.Payment;
 import com.example.ordermanager.payment.service.PaymentService;
+=======
+import com.example.ordermanager.utils.PasswordVerificationService;
+>>>>>>> Dashboard-Updates
 import java.security.Principal;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -17,6 +21,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
@@ -26,6 +31,7 @@ public class OwnerController {
 
   private final OwnerManagementService ownerManagementService;
   private final CompanyService companyService;
+<<<<<<< copilot/add-payment-tab-admin-panel
   private final PaymentService paymentService;
 
   public OwnerController(OwnerManagementService ownerManagementService,
@@ -33,6 +39,15 @@ public class OwnerController {
     this.ownerManagementService = ownerManagementService;
     this.companyService = companyService;
     this.paymentService = paymentService;
+=======
+  private final PasswordVerificationService passwordVerificationService;
+
+  public OwnerController(OwnerManagementService ownerManagementService,
+      CompanyService companyService, PasswordVerificationService passwordVerificationService) {
+    this.ownerManagementService = ownerManagementService;
+    this.companyService = companyService;
+    this.passwordVerificationService = passwordVerificationService;
+>>>>>>> Dashboard-Updates
   }
 
   @GetMapping("/dashboard")
@@ -127,6 +142,24 @@ public class OwnerController {
     return "redirect:/owner/companies";
   }
 
+<<<<<<< copilot/add-payment-tab-admin-panel
+=======
+  @PostMapping("/companies/{id}/delete")
+  public String deleteCompany(@PathVariable Long id, @RequestParam String password,
+      RedirectAttributes redirectAttributes) {
+    if (!passwordVerificationService.verifyCurrentUserPassword(password)) {
+      redirectAttributes.addFlashAttribute("error", "Incorrect password. Company was not deleted.");
+      return "redirect:/owner/companies";
+    }
+    try {
+      companyService.deleteCompany(id);
+      redirectAttributes.addFlashAttribute("message", "Company deleted successfully.");
+    } catch (IllegalArgumentException ex) {
+      redirectAttributes.addFlashAttribute("error", ex.getMessage());
+    }
+    return "redirect:/owner/companies";
+  }
+>>>>>>> Dashboard-Updates
 }
 
 

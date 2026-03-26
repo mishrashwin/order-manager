@@ -9,6 +9,7 @@ import com.example.ordermanager.payment.entity.Payment;
 import com.example.ordermanager.payment.service.PaymentService;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.service.UserService;
+import com.example.ordermanager.utils.PasswordVerificationService;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import java.io.IOException;
 import java.time.LocalDate;
@@ -37,18 +38,30 @@ public class AdminController {
   private final CompanyService companyService;
   private final SecurityContextHelper securityContextHelper;
   private final OrderService orderService;
+<<<<<<< copilot/add-payment-tab-admin-panel
   private final PaymentService paymentService;
   private final String paymentUpiId;
 
   public AdminController(UserService userService, CompanyService companyService,
       SecurityContextHelper securityContextHelper, OrderService orderService,
       PaymentService paymentService, @Value("${app.payment.upi-id:}") String paymentUpiId) {
+=======
+  private final PasswordVerificationService passwordVerificationService;
+
+  public AdminController(UserService userService, CompanyService companyService,
+      SecurityContextHelper securityContextHelper, OrderService orderService,
+      PasswordVerificationService passwordVerificationService) {
+>>>>>>> Dashboard-Updates
     this.userService = userService;
     this.companyService = companyService;
     this.securityContextHelper = securityContextHelper;
     this.orderService = orderService;
+<<<<<<< copilot/add-payment-tab-admin-panel
     this.paymentService = paymentService;
     this.paymentUpiId = paymentUpiId;
+=======
+    this.passwordVerificationService = passwordVerificationService;
+>>>>>>> Dashboard-Updates
   }
 
   @GetMapping("/dashboard")
@@ -131,7 +144,12 @@ public class AdminController {
   }
 
   @PostMapping("/users/{id}/delete")
-  public String deleteUser(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+  public String deleteUser(@PathVariable Long id, @RequestParam String password,
+      RedirectAttributes redirectAttributes) {
+    if (!passwordVerificationService.verifyCurrentUserPassword(password)) {
+      redirectAttributes.addFlashAttribute("error", "Incorrect password. User was not deleted.");
+      return "redirect:/admin/users";
+    }
     try {
       Long companyId = securityContextHelper.getCompanyIdFromContext();
       String currentUsername = securityContextHelper.getCurrentUsername();

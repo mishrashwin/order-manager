@@ -66,16 +66,20 @@ class OwnerManagementServiceTest {
     second.setCreatedAt(LocalDateTime.now().minusDays(2));
 
     when(companyRepository.findAll()).thenReturn(List.of(first, second));
-    when(userRepository.countByCompanyIdIn(List.of(1L, 2L))).thenReturn(List.of(countRow(1L, 2L),
-        countRow(1L, 3L), countRow(2L, 1L), countRow(null, 9L), countRow(2L, null)));
+    when(userRepository.countByCompanyIdInAndRole(List.of(1L, 2L), "ADMIN"))
+        .thenReturn(List.of(countRow(1L, 1L), countRow(2L, 1L)));
+    when(userRepository.countByCompanyIdInAndRole(List.of(1L, 2L), "USER"))
+        .thenReturn(List.of(countRow(1L, 4L), countRow(2L, 0L)));
 
     var summaries = ownerManagementService.getAllCompanySummaries();
 
     assertThat(summaries).hasSize(2);
     assertThat(summaries.get(0).companyId()).isEqualTo(1L);
-    assertThat(summaries.get(0).usersCount()).isEqualTo(5L);
+    assertThat(summaries.get(0).adminCount()).isEqualTo(1L);
+    assertThat(summaries.get(0).userCount()).isEqualTo(4L);
     assertThat(summaries.get(1).companyId()).isEqualTo(2L);
-    assertThat(summaries.get(1).usersCount()).isEqualTo(1L);
+    assertThat(summaries.get(1).adminCount()).isEqualTo(1L);
+    assertThat(summaries.get(1).userCount()).isEqualTo(0L);
   }
 
   private CompanyUserCount countRow(Long companyId, Long userCount) {
