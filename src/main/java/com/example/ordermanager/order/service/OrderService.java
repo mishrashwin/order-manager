@@ -204,22 +204,22 @@ public class OrderService {
   }
 
   /**
-   * TENANT-AWARE: Get urgent orders for a company (non-final status + delivery date ≤ 7 days from
-   * today). Used for dashboard flash notifications.
+   * TENANT-AWARE: Get urgent orders for a company (non-final status + delivery date either in the
+   * next 7 days OR already past due). Overdue orders continue to appear until delivered or their
+   * status becomes final. Used for dashboard flash notifications.
    *
    * @param companyId Company ID
-   * @return List of urgent orders sorted by delivery date ascending
+   * @return List of urgent orders sorted by delivery date ascending (overdue first)
    */
   public List<Order> getUrgentOrdersByCompanyId(Long companyId) {
-    LocalDate today = LocalDate.now();
-    LocalDate sevenDaysFromNow = today.plusDays(7);
+    LocalDate sevenDaysFromNow = LocalDate.now().plusDays(7);
 
-    return orderRepository.findByCompanyIdAndDeliveryDateBetween(companyId, today, sevenDaysFromNow)
+    return orderRepository.findByCompanyIdAndDeliveryDateLessThanEqual(companyId, sevenDaysFromNow)
         .stream().filter(order -> !order.getStatus().isFinal()) // Exclude final status orders
                                                                 // (DELIVERED, COMPLETED, RETURNED,
                                                                 // CANCELLED, PENDING_PAYMENT)
         .sorted((o1, o2) -> {
-          // Sort by delivery date ascending (earliest first)
+          // Sort by delivery date ascending (overdue first, then nearest upcoming)
           if (o1.getDeliveryDate() == null && o2.getDeliveryDate() == null)
             return 0;
           if (o1.getDeliveryDate() == null)

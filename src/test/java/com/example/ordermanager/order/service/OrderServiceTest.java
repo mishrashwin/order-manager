@@ -21,7 +21,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Tests for OrderService statistics methods introduced for the Admin Order Statistics page.
+ * Tests for OrderService statistics methods introduced for the Admin Order Statistics page, and
+ * urgent order notification logic.
  */
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
