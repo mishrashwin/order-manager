@@ -39,6 +39,17 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
       LocalDate toDate);
 
   /**
+   * TENANT-AWARE: Get orders by company with delivery date on or before a given date. Used for
+   * fetching overdue and upcoming urgent orders for dashboard notifications.
+   *
+   * @param companyId Company ID
+   * @param toDate Upper bound for delivery date (inclusive); orders with null delivery date are
+   *        excluded by JPA
+   * @return List of orders with delivery date less than or equal to the cutoff
+   */
+  List<Order> findByCompanyIdAndDeliveryDateLessThanEqual(Long companyId, LocalDate toDate);
+
+  /**
    * Aggregate order statistics per client for a company within a date range. Returns one row per
    * (client.id, client.name, customerName) group with order count and total amount. A LEFT JOIN is
    * used so that legacy orders without a client relationship are included as a separate group.
