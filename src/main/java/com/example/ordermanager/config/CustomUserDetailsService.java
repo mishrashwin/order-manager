@@ -112,6 +112,10 @@ public class CustomUserDetailsService implements UserDetailsService {
           "Company access is currently paused due to account status. Please contact support.");
     }
 
+    if (!user.isAccountActive()) {
+      throw new DisabledException("User is inactive. Contact Admin for account activation.");
+    }
+
     // Keep unverified-user message explicit so login page can show resend verification guidance.
     if (!user.isEnabled()) {
       throw new DisabledException("User is not verified.");

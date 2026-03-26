@@ -144,7 +144,7 @@ class AdminControllerTest {
     User user = new User();
     user.setId(30L);
     user.setUsername("targetuser");
-    user.setEnabled(false);
+    user.setAccountActive(false);
 
     RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
 
@@ -164,7 +164,7 @@ class AdminControllerTest {
     User user = new User();
     user.setId(31L);
     user.setUsername("targetuser");
-    user.setEnabled(true);
+    user.setAccountActive(true);
 
     RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
 
@@ -184,7 +184,7 @@ class AdminControllerTest {
     User user = new User();
     user.setId(32L);
     user.setUsername("adminuser");
-    user.setEnabled(true);
+    user.setAccountActive(true);
 
     RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
 

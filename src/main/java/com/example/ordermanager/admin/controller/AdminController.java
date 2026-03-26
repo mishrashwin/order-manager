@@ -154,8 +154,8 @@ public class AdminController {
         return "redirect:/admin/users";
       }
 
-      boolean newStatus = !user.isEnabled();
-      userService.setUserEnabled(id, newStatus, companyId);
+      boolean newStatus = !user.isAccountActive();
+      userService.setUserActive(id, newStatus, companyId);
       String statusLabel = newStatus ? "activated" : "deactivated";
       redirectAttributes.addFlashAttribute("message",
           "User '" + user.getUsername() + "' has been " + statusLabel + " successfully.");

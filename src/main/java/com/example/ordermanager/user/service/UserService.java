@@ -37,6 +37,7 @@ public class UserService {
         PhoneNumberUtils.normalizeRequiredInternational(user.getMobileNumber(), "Mobile number"));
     user.setPassword(passwordEncoder.encode(user.getPassword()));
     user.setEnabled(false); // not verified yet
+    user.setAccountActive(true); // admin-controlled activation defaults to active on create
     User saved = userRepository.save(user);
 
     registrationService.sendVerificationEmail(saved);
@@ -77,6 +78,7 @@ public class UserService {
     user.setCompany(company);
     user.setMobileNumber(normalizedMobile);
     user.setEnabled(false); // Email verification required
+    user.setAccountActive(true); // newly created users start active unless admin deactivates later
     user.setPassword(passwordEncoder.encode(user.getPassword()));
 
     // Save user
@@ -253,15 +255,16 @@ public class UserService {
   }
 
   /**
-   * Activate or deactivate a user by admin. Sets the user's enabled status directly.
+   * Activate or deactivate a user by admin. Uses accountActive so verification status remains
+   * intact.
    *
    * @param userId User ID to update
-   * @param enabled New enabled state
+   * @param active New activation state
    * @param companyId Admin's company ID (for tenant verification)
    */
-  public void setUserEnabled(Long userId, boolean enabled, Long companyId) {
+  public void setUserActive(Long userId, boolean active, Long companyId) {
     User user = getUserByIdAndCompany(userId, companyId);
-    user.setEnabled(enabled);
+    user.setAccountActive(active);
     userRepository.save(user);
   }
 

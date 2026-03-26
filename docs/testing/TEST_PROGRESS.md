@@ -110,4 +110,18 @@ Use this file as the session-to-session handoff log for test implementation.
   - happy path for `deleteOrder` redirect success with flash `message`
   - edit/duplicate order happy and not-found paths
 
+## Batch Completed (2026-03-26)
+- Added `account_active` separation from email verification:
+  - `enabled` now remains verification-only
+  - admin activate/deactivate flow now updates `accountActive`
+- Updated login gating in `CustomUserDetailsService` to block inactive users with:
+  - `User is inactive. Contact Admin for account activation.`
+- Updated admin users list toggle in `admin/users/list.html` to use `user.accountActive` for Active/Inactive action state.
+- Added migration `src/main/resources/db/migration/V11__add_user_account_active_flag.sql` with safe backfill + not-null default.
+- Updated tests:
+  - `src/test/java/com/example/ordermanager/user/service/UserServiceTest.java` (`setUserActive` + defaults)
+  - `src/test/java/com/example/ordermanager/admin/controller/AdminControllerTest.java` (toggle status uses accountActive)
+  - `src/test/java/com/example/ordermanager/company/workflow/CompanyLifecycleWorkflowTest.java` (new users default active)
+  - `src/test/java/com/example/ordermanager/config/CustomUserDetailsServiceTest.java` (inactive vs unverified vs success paths)
+
 

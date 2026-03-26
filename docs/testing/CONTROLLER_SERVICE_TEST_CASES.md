@@ -36,8 +36,8 @@ This file is the living test inventory for controller and service methods.
 - `ADM-12` `POST /admin/users/{id}/update` mobile validation failure returns edit form with `mobileError` and refreshed user data
 - `ADM-13` `POST /admin/users/{id}/update` generic validation failure sets error attribute and returns edit form
 - `ADM-14` company view/edit/update paths load current tenant company and handle missing company
-- `ADM-15` `POST /admin/users/{id}/toggle-status` activates inactive user and sets flash `message` with "activated"
-- `ADM-16` `POST /admin/users/{id}/toggle-status` deactivates active user and sets flash `message` with "deactivated"
+- `ADM-15` `POST /admin/users/{id}/toggle-status` activates inactive user by setting `accountActive=true` and sets flash `message` with "activated"
+- `ADM-16` `POST /admin/users/{id}/toggle-status` deactivates active user by setting `accountActive=false` and sets flash `message` with "deactivated"
 - `ADM-17` `POST /admin/users/{id}/toggle-status` blocks self-toggle with flash `error`
 - `ADM-18` `POST /admin/users/{id}/toggle-status` user not in company sets flash `error`
 
@@ -165,15 +165,20 @@ This file is the living test inventory for controller and service methods.
 - `USR-09` email change resets `enabled=false` and sends new verification; unchanged email skips resend
 - `USR-10` create/update normalize mobile to international canonical digits and reject invalid input
 - `USR-11` create/update reject duplicate mobile after normalization
-- `USR-12` `setUserEnabled` activates disabled user and persists change
-- `USR-13` `setUserEnabled` deactivates enabled user and persists change
-- `USR-14` `setUserEnabled` throws when user does not belong to the given company
+- `USR-12` `setUserActive` activates user (`accountActive=true`) and persists change without altering verification state
+- `USR-13` `setUserActive` deactivates user (`accountActive=false`) and persists change without altering verification state
+- `USR-14` `setUserActive` throws when user does not belong to the given company
 
 ### `RegistrationService`
 - `REG-01` existing unexpired token raises `EmailAlreadySentException`
 - `REG-02` existing expired token is rotated (new UUID + expiry)
 - `REG-03` verify token returns false for missing/expired token
-- `REG-04` verify token success enables user and deletes token
+- `REG-04` verify token success sets `enabled=true` only and deletes token (must not override admin activation state)
+
+### `CustomUserDetailsService`
+- `CUD-01` login rejects `accountActive=false` users with admin-contact message
+- `CUD-02` login rejects unverified users with resend-verification message path
+- `CUD-03` login succeeds only when company access is allowed and user is both verified and active
 
 ### `PasswordResetService`
 - `PRS-01` existing unexpired unverified token raises `EmailAlreadySentException`
