@@ -4,12 +4,9 @@ import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.company.entity.CompanyApprovalStatus;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.owner.service.OwnerManagementService;
-<<<<<<< copilot/add-payment-tab-admin-panel
 import com.example.ordermanager.payment.entity.Payment;
 import com.example.ordermanager.payment.service.PaymentService;
-=======
 import com.example.ordermanager.utils.PasswordVerificationService;
->>>>>>> Dashboard-Updates
 import java.security.Principal;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -31,23 +28,16 @@ public class OwnerController {
 
   private final OwnerManagementService ownerManagementService;
   private final CompanyService companyService;
-<<<<<<< copilot/add-payment-tab-admin-panel
+  private final PasswordVerificationService passwordVerificationService;
   private final PaymentService paymentService;
 
   public OwnerController(OwnerManagementService ownerManagementService,
-      CompanyService companyService, PaymentService paymentService) {
-    this.ownerManagementService = ownerManagementService;
-    this.companyService = companyService;
-    this.paymentService = paymentService;
-=======
-  private final PasswordVerificationService passwordVerificationService;
-
-  public OwnerController(OwnerManagementService ownerManagementService,
-      CompanyService companyService, PasswordVerificationService passwordVerificationService) {
+      CompanyService companyService, PasswordVerificationService passwordVerificationService,
+      PaymentService paymentService) {
     this.ownerManagementService = ownerManagementService;
     this.companyService = companyService;
     this.passwordVerificationService = passwordVerificationService;
->>>>>>> Dashboard-Updates
+    this.paymentService = paymentService;
   }
 
   @GetMapping("/dashboard")
@@ -142,8 +132,6 @@ public class OwnerController {
     return "redirect:/owner/companies";
   }
 
-<<<<<<< copilot/add-payment-tab-admin-panel
-=======
   @PostMapping("/companies/{id}/delete")
   public String deleteCompany(@PathVariable Long id, @RequestParam String password,
       RedirectAttributes redirectAttributes) {
@@ -159,7 +147,6 @@ public class OwnerController {
     }
     return "redirect:/owner/companies";
   }
->>>>>>> Dashboard-Updates
 }
 
 

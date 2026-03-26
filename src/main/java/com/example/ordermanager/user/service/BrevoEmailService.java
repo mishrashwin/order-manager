@@ -165,7 +165,6 @@ public class BrevoEmailService {
 
   private void sendEmail(String to, String subject, String htmlContent) {
     if (brevoApiKey == null || brevoApiKey.isEmpty()) {
-      log.error("Brevo API key not configured. Email not sent to: {}", to);
       throw new BrevoEmailException("Brevo API key is not configured");
     }
 
@@ -178,11 +177,9 @@ public class BrevoEmailService {
           // Ensure a slow Brevo response cannot block request threads indefinitely.
           .timeout(requestTimeout).block();
 
-      log.info("Email sent successfully via Brevo to: {}", to);
-
     } catch (WebClientResponseException e) {
       log.error("Brevo API rejected email request. status={}, to={}, response={}",
-          e.getRawStatusCode(), to, e.getResponseBodyAsString(), e);
+          e.getStatusCode(), to, e.getResponseBodyAsString(), e);
       throw new BrevoEmailException("Brevo API returned an error while sending email", e);
     } catch (WebClientRequestException e) {
       log.error("Brevo is unreachable while sending email to: {}", to, e);

@@ -52,7 +52,7 @@ class AdminControllerTest {
   @BeforeEach
   void setUp() {
     adminController = new AdminController(userService, companyService, securityContextHelper,
-        orderService,passwordVerificationService, paymentService, "test-upi-id");
+        orderService, passwordVerificationService, paymentService, "test-upi-id");
   }
 
   @Test

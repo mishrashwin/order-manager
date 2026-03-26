@@ -38,30 +38,21 @@ public class AdminController {
   private final CompanyService companyService;
   private final SecurityContextHelper securityContextHelper;
   private final OrderService orderService;
-<<<<<<< copilot/add-payment-tab-admin-panel
+  private final PasswordVerificationService passwordVerificationService;
   private final PaymentService paymentService;
   private final String paymentUpiId;
 
   public AdminController(UserService userService, CompanyService companyService,
       SecurityContextHelper securityContextHelper, OrderService orderService,
-      PaymentService paymentService, @Value("${app.payment.upi-id:}") String paymentUpiId) {
-=======
-  private final PasswordVerificationService passwordVerificationService;
-
-  public AdminController(UserService userService, CompanyService companyService,
-      SecurityContextHelper securityContextHelper, OrderService orderService,
-      PasswordVerificationService passwordVerificationService) {
->>>>>>> Dashboard-Updates
+      PasswordVerificationService passwordVerificationService, PaymentService paymentService,
+      @Value("${app.payment.upi-id:}") String paymentUpiId) {
     this.userService = userService;
     this.companyService = companyService;
     this.securityContextHelper = securityContextHelper;
     this.orderService = orderService;
-<<<<<<< copilot/add-payment-tab-admin-panel
+    this.passwordVerificationService = passwordVerificationService;
     this.paymentService = paymentService;
     this.paymentUpiId = paymentUpiId;
-=======
-    this.passwordVerificationService = passwordVerificationService;
->>>>>>> Dashboard-Updates
   }
 
   @GetMapping("/dashboard")
