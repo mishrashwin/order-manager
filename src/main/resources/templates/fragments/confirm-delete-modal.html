@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  Reusable password-confirmation delete modal.
+
+  Usage — include once per page just before </body>:
+    <div th:replace="~{fragments/confirm-delete-modal :: confirmDeleteModal}"></div>
+
+  Trigger a delete from a button:
+    <button type="button"
+            class="btn btn-sm btn-outline-danger om-btn-icon"
+            data-bs-toggle="modal"
+            data-bs-target="#confirmDeleteModal"
+            th:data-delete-url="@{|/orders/delete/${order.id}|}"
+            th:data-entity-label="${order.productName}">
+      <i class="bi bi-trash"></i> Delete
+    </button>
+-->
+<div th:fragment="confirmDeleteModal">
+
+  <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="confirmDeleteModalLabel">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>Confirm Deletion
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="confirmDeleteForm" method="post">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <div class="modal-body">
+            <p class="mb-3">
+              You are about to permanently delete
+              <strong id="confirmDeleteEntityLabel"></strong>.
+              This action <strong>cannot be undone</strong>.
+            </p>
+            <div class="mb-3">
+              <label for="confirmDeletePassword" class="form-label fw-semibold">
+                Enter your password to confirm:
+              </label>
+              <input type="password" class="form-control" id="confirmDeletePassword"
+                     name="password" placeholder="Your password" required autocomplete="current-password"
+                     aria-describedby="confirmDeletePasswordFeedback"/>
+              <div id="confirmDeletePasswordFeedback" class="invalid-feedback">
+                Password is required.
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              <i class="bi bi-x-circle"></i> Cancel
+            </button>
+            <button type="submit" class="btn btn-danger">
+              <i class="bi bi-trash"></i> Delete
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var modal = document.getElementById('confirmDeleteModal');
+      if (!modal) return;
+
+      modal.addEventListener('show.bs.modal', function (event) {
+        var trigger = event.relatedTarget;
+        var deleteUrl = trigger ? trigger.getAttribute('data-delete-url') : null;
+        var entityLabel = trigger ? trigger.getAttribute('data-entity-label') : null;
+
+        var form = document.getElementById('confirmDeleteForm');
+        var labelEl = document.getElementById('confirmDeleteEntityLabel');
+        var passwordInput = document.getElementById('confirmDeletePassword');
+
+        if (form && deleteUrl) {
+          form.action = deleteUrl;
+        }
+        if (labelEl) {
+          labelEl.textContent = entityLabel || 'this record';
+        }
+        if (passwordInput) {
+          passwordInput.value = '';
+          passwordInput.classList.remove('is-invalid');
+        }
+      });
+
+      var form = document.getElementById('confirmDeleteForm');
+      if (form) {
+        form.addEventListener('submit', function (e) {
+          var passwordInput = document.getElementById('confirmDeletePassword');
+          if (!passwordInput || !passwordInput.value.trim()) {
+            e.preventDefault();
+            if (passwordInput) {
+              passwordInput.classList.add('is-invalid');
+            }
+          }
+        });
+      }
+    })();
+  </script>
+
+</div>
+
+</body>
+</html>

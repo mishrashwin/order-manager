@@ -13,6 +13,7 @@ import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.entity.OrderStatus;
 import com.example.ordermanager.order.service.OrderService;
+import com.example.ordermanager.utils.PasswordVerificationService;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -38,13 +39,15 @@ class OrderControllerTest {
   private CompanyService companyService;
   @Mock
   private SecurityContextHelper securityContextHelper;
+  @Mock
+  private PasswordVerificationService passwordVerificationService;
 
   private OrderController orderController;
 
   @BeforeEach
   void setUp() {
-    orderController =
-        new OrderController(orderService, clientService, companyService, securityContextHelper);
+    orderController = new OrderController(orderService, clientService, companyService,
+        securityContextHelper, passwordVerificationService);
   }
 
   @Test
@@ -149,13 +152,26 @@ class OrderControllerTest {
   @Test
   void deleteOrder_success_redirectsToOrdersWithFlashMessage() {
     RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+    when(passwordVerificationService.verifyCurrentUserPassword("correct")).thenReturn(true);
 
-    String view = orderController.deleteOrder(25L, redirectAttributes);
+    String view = orderController.deleteOrder(25L, "correct", redirectAttributes);
 
     assertThat(view).isEqualTo("redirect:/orders");
     assertThat(redirectAttributes.getFlashAttributes().get("message"))
         .isEqualTo("Order deleted successfully");
     verify(orderService).deleteOrder(25L);
+  }
+
+  @Test
+  void deleteOrder_wrongPassword_doesNotDeleteAndReturnsError() {
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+    when(passwordVerificationService.verifyCurrentUserPassword("wrong")).thenReturn(false);
+
+    String view = orderController.deleteOrder(25L, "wrong", redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/orders");
+    assertThat(redirectAttributes.getFlashAttributes().get("error"))
+        .isEqualTo("Incorrect password. Order was not deleted.");
   }
 
   @Test

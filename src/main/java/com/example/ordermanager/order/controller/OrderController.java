@@ -6,11 +6,13 @@ import com.example.ordermanager.client.service.ClientService;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.order.service.OrderService;
 import com.example.ordermanager.utils.SecurityContextHelper;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.example.ordermanager.utils.PasswordVerificationService;
 import java.time.LocalDate;
 import java.util.Arrays;
 
@@ -22,13 +24,16 @@ public class OrderController {
   private final ClientService clientService;
   private final CompanyService companyService;
   private final SecurityContextHelper securityContextHelper;
+  private final PasswordVerificationService passwordVerificationService;
 
   public OrderController(OrderService orderService, ClientService clientService,
-      CompanyService companyService, SecurityContextHelper securityContextHelper) {
+      CompanyService companyService, SecurityContextHelper securityContextHelper,
+      PasswordVerificationService passwordVerificationService) {
     this.orderService = orderService;
     this.clientService = clientService;
     this.companyService = companyService;
     this.securityContextHelper = securityContextHelper;
+    this.passwordVerificationService = passwordVerificationService;
   }
 
   @GetMapping
@@ -100,8 +105,14 @@ public class OrderController {
     return "redirect:/orders";
   }
 
-  @GetMapping("/delete/{id}")
-  public String deleteOrder(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+  @PostMapping("/delete/{id}")
+  @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+  public String deleteOrder(@PathVariable Long id, @RequestParam String password,
+      RedirectAttributes redirectAttributes) {
+    if (!passwordVerificationService.verifyCurrentUserPassword(password)) {
+      redirectAttributes.addFlashAttribute("error", "Incorrect password. Order was not deleted.");
+      return "redirect:/orders";
+    }
     orderService.deleteOrder(id);
     redirectAttributes.addFlashAttribute("message", "Order deleted successfully");
     return "redirect:/orders";

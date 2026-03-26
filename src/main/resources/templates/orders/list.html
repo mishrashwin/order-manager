@@ -128,12 +128,16 @@
                                title="Duplicate order">
                                 <i class="bi bi-files"></i> Duplicate
                             </a>
-                            <a th:href="@{|/orders/delete/${order.id}|}"
-                               class="btn btn-sm btn-outline-danger om-btn-icon"
-                               title="Delete order"
-                               onclick="return confirm('Delete this order?');">
+                            <button th:if="${#authorization.expression('hasAnyRole(''ADMIN'',''MANAGER'')')}"
+                                    type="button"
+                                    class="btn btn-sm btn-outline-danger om-btn-icon"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#confirmDeleteModal"
+                                    th:data-delete-url="@{|/orders/delete/${order.id}|}"
+                                    th:data-entity-label="${'Order #' + order.id + (order.productName != null ? ' (' + order.productName + ')' : '')}"
+                                    title="Delete order">
                                 <i class="bi bi-trash"></i> Delete
-                            </a>
+                            </button>
                         </div>
                     </td>
                 </tr>
@@ -153,6 +157,9 @@
 
 <!-- Table Utility JS -->
 <div th:replace="~{fragments/table-utils :: tableUtils}"></div>
+
+<!-- Password Confirmation Modal -->
+<div th:replace="~{fragments/confirm-delete-modal :: confirmDeleteModal}"></div>
 
 <script>
   // Reset date range to default (past one month)

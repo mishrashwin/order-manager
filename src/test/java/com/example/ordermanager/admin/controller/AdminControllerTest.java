@@ -1,26 +1,23 @@
 package com.example.ordermanager.admin.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import com.example.ordermanager.admin.dto.ClientOrderStatDTO;
-import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.entity.OrderStatus;
 import com.example.ordermanager.order.service.OrderService;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.service.UserService;
+import com.example.ordermanager.utils.PasswordVerificationService;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,13 +42,15 @@ class AdminControllerTest {
   private SecurityContextHelper securityContextHelper;
   @Mock
   private OrderService orderService;
+  @Mock
+  private PasswordVerificationService passwordVerificationService;
 
   private AdminController adminController;
 
   @BeforeEach
   void setUp() {
-    adminController =
-        new AdminController(userService, companyService, securityContextHelper, orderService);
+    adminController = new AdminController(userService, companyService, securityContextHelper,
+        orderService, passwordVerificationService);
   }
 
   @Test
