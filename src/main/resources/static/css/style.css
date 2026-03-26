@@ -1007,6 +1007,31 @@ footer strong {
   transform: translateY(-1px);
 }
 
+.admin-action-card.stats-card::before {
+  background: linear-gradient(90deg, var(--om-warning), #f59e0b);
+}
+
+.admin-action-card.stats-card .card-icon-wrap {
+  background: var(--om-warning-soft);
+}
+
+.admin-action-card.stats-card i {
+  color: var(--om-warning);
+}
+
+.btn-stats {
+  background: linear-gradient(135deg, var(--om-warning) 0%, #b45309 100%);
+  color: #fff;
+  border: none;
+}
+
+.btn-stats:hover {
+  background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.35);
+  transform: translateY(-1px);
+}
+
 @media (max-width: 768px) {
   .admin-cards-container {
     grid-template-columns: 1fr;
