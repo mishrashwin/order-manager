@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import com.example.ordermanager.client.entity.Client;
 import com.example.ordermanager.client.service.ClientService;
+import com.example.ordermanager.utils.PasswordVerificationService;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,12 +26,15 @@ class ClientControllerTest {
   private ClientService clientService;
   @Mock
   private SecurityContextHelper securityContextHelper;
+  @Mock
+  private PasswordVerificationService passwordVerificationService;
 
   private ClientController clientController;
 
   @BeforeEach
   void setUp() {
-    clientController = new ClientController(clientService, securityContextHelper);
+    clientController =
+        new ClientController(clientService, securityContextHelper, passwordVerificationService);
   }
 
   @Test

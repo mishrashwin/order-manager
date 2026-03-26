@@ -3,7 +3,9 @@ package com.example.ordermanager.vendor.controller;
 import com.example.ordermanager.vendor.entity.Vendor;
 import com.example.ordermanager.vendor.service.VendorService;
 import com.example.ordermanager.company.service.CompanyService;
+import com.example.ordermanager.utils.PasswordVerificationService;
 import com.example.ordermanager.utils.SecurityContextHelper;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -16,12 +18,15 @@ public class VendorController {
   private final VendorService vendorService;
   private final CompanyService companyService;
   private final SecurityContextHelper securityContextHelper;
+  private final PasswordVerificationService passwordVerificationService;
 
   public VendorController(VendorService vendorService, CompanyService companyService,
-      SecurityContextHelper securityContextHelper) {
+      SecurityContextHelper securityContextHelper,
+      PasswordVerificationService passwordVerificationService) {
     this.vendorService = vendorService;
     this.companyService = companyService;
     this.securityContextHelper = securityContextHelper;
+    this.passwordVerificationService = passwordVerificationService;
   }
 
   @GetMapping
@@ -76,8 +81,14 @@ public class VendorController {
     return "vendors/form";
   }
 
-  @GetMapping("/delete/{id}")
-  public String deleteVendor(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+  @PostMapping("/delete/{id}")
+  @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+  public String deleteVendor(@PathVariable Long id, @RequestParam String password,
+      RedirectAttributes redirectAttributes) {
+    if (!passwordVerificationService.verifyCurrentUserPassword(password)) {
+      redirectAttributes.addFlashAttribute("error", "Incorrect password. Vendor was not deleted.");
+      return "redirect:/vendors";
+    }
     try {
       vendorService.deleteVendor(id);
       redirectAttributes.addFlashAttribute("message", "Vendor deleted successfully.");

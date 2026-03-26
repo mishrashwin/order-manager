@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.example.ordermanager.company.service.CompanyService;
+import com.example.ordermanager.utils.PasswordVerificationService;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import com.example.ordermanager.vendor.entity.Vendor;
 import com.example.ordermanager.vendor.service.VendorService;
@@ -28,12 +29,15 @@ class VendorControllerTest {
   private CompanyService companyService;
   @Mock
   private SecurityContextHelper securityContextHelper;
+  @Mock
+  private PasswordVerificationService passwordVerificationService;
 
   private VendorController vendorController;
 
   @BeforeEach
   void setUp() {
-    vendorController = new VendorController(vendorService, companyService, securityContextHelper);
+    vendorController = new VendorController(vendorService, companyService, securityContextHelper,
+        passwordVerificationService);
   }
 
   @Test
@@ -96,8 +100,9 @@ class VendorControllerTest {
   @Test
   void deleteVendor_success_redirectsToVendorListWithMessage() {
     RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+    when(passwordVerificationService.verifyCurrentUserPassword("correct")).thenReturn(true);
 
-    String view = vendorController.deleteVendor(21L, redirectAttributes);
+    String view = vendorController.deleteVendor(21L, "correct", redirectAttributes);
 
     assertThat(view).isEqualTo("redirect:/vendors");
     assertThat(redirectAttributes.getFlashAttributes().get("message"))
@@ -106,12 +111,25 @@ class VendorControllerTest {
   }
 
   @Test
-  void deleteVendor_failure_redirectsToVendorListWithError() {
+  void deleteVendor_wrongPassword_doesNotDeleteAndReturnsError() {
     RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+    when(passwordVerificationService.verifyCurrentUserPassword("wrong")).thenReturn(false);
+
+    String view = vendorController.deleteVendor(999L, "wrong", redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/vendors");
+    assertThat(redirectAttributes.getFlashAttributes().get("error"))
+        .isEqualTo("Incorrect password. Vendor was not deleted.");
+  }
+
+  @Test
+  void deleteVendor_correctPasswordButServiceFails_redirectsWithError() {
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+    when(passwordVerificationService.verifyCurrentUserPassword("correct")).thenReturn(true);
     doThrow(new IllegalArgumentException("Vendor not found")).when(vendorService)
         .deleteVendor(999L);
 
-    String view = vendorController.deleteVendor(999L, redirectAttributes);
+    String view = vendorController.deleteVendor(999L, "correct", redirectAttributes);
 
     assertThat(view).isEqualTo("redirect:/vendors");
     assertThat(redirectAttributes.getFlashAttributes().get("error"))

@@ -24,4 +24,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
   @Query("SELECT u.company.id AS companyId, COUNT(u) AS userCount FROM User u WHERE u.company.id IN :companyIds GROUP BY u.company.id")
   List<CompanyUserCount> countByCompanyIdIn(@Param("companyIds") List<Long> companyIds);
+
+  @Query("SELECT u.company.id AS companyId, COUNT(u) AS userCount FROM User u WHERE u.company.id IN :companyIds AND u.role = :role GROUP BY u.company.id")
+  List<CompanyUserCount> countByCompanyIdInAndRole(@Param("companyIds") List<Long> companyIds,
+      @Param("role") String role);
 }

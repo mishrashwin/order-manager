@@ -40,32 +40,33 @@ public class OwnerManagementService {
     List<Company> companies =
         companyRepository.findAll().stream().sorted(Comparator.comparing(Company::getCreatedAt,
             Comparator.nullsLast(Comparator.reverseOrder()))).toList();
-    Map<Long, Long> userCounts = fetchUserCountMap(companies);
-    return companies.stream().map(c -> toSummary(c, userCounts.getOrDefault(c.getId(), 0L)))
-        .toList();
+    Map<Long, Long> adminCounts = fetchRoleCountMap(companies, "ADMIN");
+    Map<Long, Long> userCounts = fetchRoleCountMap(companies, "USER");
+    return companies.stream().map(c -> toSummary(c, adminCounts.getOrDefault(c.getId(), 0L),
+        userCounts.getOrDefault(c.getId(), 0L))).toList();
   }
 
   public List<OwnerCompanySummary> getPendingCompanySummaries() {
     List<Company> companies =
         companyRepository.findByApprovalStatusOrderByCreatedAtDesc(CompanyApprovalStatus.PENDING);
-    Map<Long, Long> userCounts = fetchUserCountMap(companies);
-    return companies.stream().map(c -> toSummary(c, userCounts.getOrDefault(c.getId(), 0L)))
-        .toList();
+    Map<Long, Long> adminCounts = fetchRoleCountMap(companies, "ADMIN");
+    Map<Long, Long> userCounts = fetchRoleCountMap(companies, "USER");
+    return companies.stream().map(c -> toSummary(c, adminCounts.getOrDefault(c.getId(), 0L),
+        userCounts.getOrDefault(c.getId(), 0L))).toList();
   }
 
-  private Map<Long, Long> fetchUserCountMap(List<Company> companies) {
+  private Map<Long, Long> fetchRoleCountMap(List<Company> companies, String role) {
     if (companies.isEmpty()) {
       return Collections.emptyMap();
     }
     List<Long> ids = companies.stream().map(Company::getId).toList();
-    return userRepository.countByCompanyIdIn(ids).stream()
+    return userRepository.countByCompanyIdInAndRole(ids, role).stream()
         .filter(row -> row.getCompanyId() != null && row.getUserCount() != null).collect(Collectors
             .toMap(CompanyUserCount::getCompanyId, CompanyUserCount::getUserCount, Long::sum));
   }
 
-  private OwnerCompanySummary toSummary(Company company, long usersCount) {
+  private OwnerCompanySummary toSummary(Company company, long adminCount, long userCount) {
     return new OwnerCompanySummary(company.getId(), company.getName(), company.getApprovalStatus(),
-        company.isActive(), usersCount, company.getCreatedAt(), company.getApprovedBy(),
-        company.getApprovedAt());
+        company.isActive(), adminCount, userCount, company.getCreatedAt());
   }
 }
