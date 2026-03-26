@@ -56,6 +56,8 @@ This file is the living test inventory for controller and service methods.
 - `DASH-02` valid date params are parsed and passed to `getOrdersByCompanyIdAndDateRange`
 - `DASH-03` urgent order projection includes only expected fields (`id`, `customerName`, `productName`, `quantity`, `deliveryDate`)
 - `DASH-04` includes all enum statuses and selected company name fallback
+- `DASH-05` urgent alerts include only orders whose `orderDate` falls within the selected dashboard date range
+- `DASH-06` urgent alerts exclude entries with null `orderDate` to prevent out-of-range notification leakage
 
 ### `OrderController`
 - `ORDC-01` list endpoint uses tenant id and date range defaults and shows flash `message`/`error` alerts

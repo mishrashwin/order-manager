@@ -132,4 +132,10 @@ Use this file as the session-to-session handoff log for test implementation.
 - Added `ORS-08` through `ORS-11` test cases in `OrderServiceTest` covering: overdue non-final included, final-status excluded, sort order (overdue-first), and beyond-7-day boundary.
 - Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with ORS-07 through ORS-11.
 
+## Batch Completed (2026-03-26 — Dashboard Alert Range Alignment)
+- Updated `DashboardController.dashboard()` so urgent alert cards are shown only when the order's `orderDate` falls within the currently selected `startDate/endDate` filter.
+- Added guard logic to exclude urgent-alert candidates with null `orderDate`.
+- Added `src/test/java/com/example/ordermanager/dashboard/controller/DashboardControllerTest.java` with happy + edge coverage for date-range-aligned urgent notifications.
+- Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with `DASH-05` and `DASH-06`.
+
 
