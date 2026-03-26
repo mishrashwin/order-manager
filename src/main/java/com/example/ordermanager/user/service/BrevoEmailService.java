@@ -145,13 +145,11 @@ public class BrevoEmailService {
   }
 
   public void sendPaymentNotificationEmail(String to, Payment payment, Company company) {
-    String monthYear = java.time.Month.of(payment.getPaymentMonth())
-        .getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.ENGLISH) + " "
-        + payment.getPaymentYear();
+    String monthYear = java.time.Month.of(payment.getPaymentMonth()).getDisplayName(
+        java.time.format.TextStyle.FULL, java.util.Locale.ENGLISH) + " " + payment.getPaymentYear();
     String subject = "New Payment Submitted - " + escapeHtml(company.getName());
-    String htmlContent = "<html><body>"
-        + "<p>A new payment has been submitted by <strong>" + escapeHtml(company.getName())
-        + "</strong>.</p>"
+    String htmlContent = "<html><body>" + "<p>A new payment has been submitted by <strong>"
+        + escapeHtml(company.getName()) + "</strong>.</p>"
         + "<p><strong>Payment for Month:</strong> " + escapeHtml(monthYear) + "</p>"
         + "<p><strong>Payment Message:</strong> "
         + escapeHtml(payment.getPaymentMsg() != null ? payment.getPaymentMsg() : "-") + "</p>"
@@ -159,8 +157,8 @@ public class BrevoEmailService {
             ? "<p><strong>Screenshot:</strong> " + escapeHtml(payment.getPaymentSsFilename())
                 + " (available in owner payments panel)</p>"
             : "")
-        + "<p>Please log in to your owner console to review this payment.</p>"
-        + getEmailSignature() + "</body></html>";
+        + "<p>Please log in to your owner console to review this payment.</p>" + getEmailSignature()
+        + "</body></html>";
 
     sendEmail(to, subject, htmlContent);
   }

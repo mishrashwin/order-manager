@@ -38,8 +38,7 @@ public class Payment {
   @Column(name = "payment_ss_filename")
   private String paymentSsFilename;
 
-  @Lob
-  @Column(name = "payment_ss_data")
+  @Column(name = "payment_ss_data", columnDefinition = "BYTEA")
   private byte[] paymentSsData;
 
   @Column(name = "payment_ss_content_type", length = 100)

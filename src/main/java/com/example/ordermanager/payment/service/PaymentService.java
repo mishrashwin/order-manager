@@ -67,8 +67,8 @@ public class PaymentService {
   }
 
   public Payment getPaymentByIdAndCompany(Long paymentId, Long companyId) {
-    return paymentRepository.findByIdAndCompanyId(paymentId, companyId).orElseThrow(
-        () -> new IllegalArgumentException("Payment not found or access denied"));
+    return paymentRepository.findByIdAndCompanyId(paymentId, companyId)
+        .orElseThrow(() -> new IllegalArgumentException("Payment not found or access denied"));
   }
 
   public Payment getPaymentById(Long paymentId) {
@@ -77,8 +77,8 @@ public class PaymentService {
   }
 
   public String getMonthYearLabel(int month, int year) {
-    return Month.of(month).getDisplayName(java.time.format.TextStyle.FULL,
-        java.util.Locale.ENGLISH) + " " + year;
+    return Month.of(month).getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.ENGLISH)
+        + " " + year;
   }
 
   private void notifyOwnerOfNewPayment(Payment payment, Company company) {

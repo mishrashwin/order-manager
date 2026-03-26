@@ -42,8 +42,7 @@ public class AdminController {
 
   public AdminController(UserService userService, CompanyService companyService,
       SecurityContextHelper securityContextHelper, OrderService orderService,
-      PaymentService paymentService,
-      @Value("${app.payment.upi-id:}") String paymentUpiId) {
+      PaymentService paymentService, @Value("${app.payment.upi-id:}") String paymentUpiId) {
     this.userService = userService;
     this.companyService = companyService;
     this.securityContextHelper = securityContextHelper;
