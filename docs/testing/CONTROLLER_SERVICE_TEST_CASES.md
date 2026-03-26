@@ -36,6 +36,10 @@ This file is the living test inventory for controller and service methods.
 - `ADM-12` `POST /admin/users/{id}/update` mobile validation failure returns edit form with `mobileError` and refreshed user data
 - `ADM-13` `POST /admin/users/{id}/update` generic validation failure sets error attribute and returns edit form
 - `ADM-14` company view/edit/update paths load current tenant company and handle missing company
+- `ADM-15` `POST /admin/users/{id}/toggle-status` activates inactive user and sets flash `message` with "activated"
+- `ADM-16` `POST /admin/users/{id}/toggle-status` deactivates active user and sets flash `message` with "deactivated"
+- `ADM-17` `POST /admin/users/{id}/toggle-status` blocks self-toggle with flash `error`
+- `ADM-18` `POST /admin/users/{id}/toggle-status` user not in company sets flash `error`
 
 ### `CompanyController`
 - `COM-01` `GET /company/register` initializes `registrationData`
@@ -161,6 +165,9 @@ This file is the living test inventory for controller and service methods.
 - `USR-09` email change resets `enabled=false` and sends new verification; unchanged email skips resend
 - `USR-10` create/update normalize mobile to international canonical digits and reject invalid input
 - `USR-11` create/update reject duplicate mobile after normalization
+- `USR-12` `setUserEnabled` activates disabled user and persists change
+- `USR-13` `setUserEnabled` deactivates enabled user and persists change
+- `USR-14` `setUserEnabled` throws when user does not belong to the given company
 
 ### `RegistrationService`
 - `REG-01` existing unexpired token raises `EmailAlreadySentException`

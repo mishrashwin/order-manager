@@ -164,5 +164,64 @@ class UserServiceTest {
     assertThatThrownBy(() -> userService.updateUserByAdmin(101L, update, 11L))
         .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Email is required");
   }
+
+  @Test
+  void setUserEnabled_activatesUser() {
+    Company company = new Company();
+    company.setId(11L);
+
+    User existing = new User();
+    existing.setId(101L);
+    existing.setCompany(company);
+    existing.setUsername("manager1");
+    existing.setEnabled(false);
+
+    when(userRepository.findById(101L)).thenReturn(Optional.of(existing));
+    when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+    userService.setUserEnabled(101L, true, 11L);
+
+    assertThat(existing.isEnabled()).isTrue();
+    verify(userRepository).save(existing);
+  }
+
+  @Test
+  void setUserEnabled_deactivatesUser() {
+    Company company = new Company();
+    company.setId(11L);
+
+    User existing = new User();
+    existing.setId(101L);
+    existing.setCompany(company);
+    existing.setUsername("manager1");
+    existing.setEnabled(true);
+
+    when(userRepository.findById(101L)).thenReturn(Optional.of(existing));
+    when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+    userService.setUserEnabled(101L, false, 11L);
+
+    assertThat(existing.isEnabled()).isFalse();
+    verify(userRepository).save(existing);
+  }
+
+  @Test
+  void setUserEnabled_throwsForWrongCompany() {
+    Company company = new Company();
+    company.setId(11L);
+
+    User existing = new User();
+    existing.setId(101L);
+    existing.setCompany(company);
+    existing.setUsername("manager1");
+
+    when(userRepository.findById(101L)).thenReturn(Optional.of(existing));
+
+    assertThatThrownBy(() -> userService.setUserEnabled(101L, false, 99L))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("does not belong to your company");
+
+    verify(userRepository, never()).save(any(User.class));
+  }
 }
 

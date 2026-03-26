@@ -141,6 +141,31 @@ public class AdminController {
     }
   }
 
+  @PostMapping("/users/{id}/toggle-status")
+  public String toggleUserStatus(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    try {
+      Long companyId = securityContextHelper.getCompanyIdFromContext();
+      String currentUsername = securityContextHelper.getCurrentUsername();
+      User user = userService.getUserByIdAndCompany(id, companyId);
+
+      if (user.getUsername().equals(currentUsername)) {
+        redirectAttributes.addFlashAttribute("error",
+            "You cannot change the active status of your own account!");
+        return "redirect:/admin/users";
+      }
+
+      boolean newStatus = !user.isEnabled();
+      userService.setUserEnabled(id, newStatus, companyId);
+      String statusLabel = newStatus ? "activated" : "deactivated";
+      redirectAttributes.addFlashAttribute("message",
+          "User '" + user.getUsername() + "' has been " + statusLabel + " successfully.");
+      return "redirect:/admin/users";
+    } catch (IllegalArgumentException e) {
+      redirectAttributes.addFlashAttribute("error", e.getMessage());
+      return "redirect:/admin/users";
+    }
+  }
+
   @PostMapping("/users/{id}/resend-verification")
   public String resendVerificationEmail(@PathVariable Long id,
       RedirectAttributes redirectAttributes) {

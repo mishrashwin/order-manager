@@ -94,6 +94,16 @@
                                title="Edit user">
                                 <i class="bi bi-pencil"></i> Edit
                             </a>
+                            <form th:action="@{|/admin/users/${user.id}/toggle-status|}" method="post" class="om-inline-form">
+                                <button type="submit"
+                                        th:class="'btn btn-sm om-btn-icon ' + (${user.enabled} ? 'btn-success' : 'btn-outline-secondary')"
+                                        th:disabled="${user.username == currentUsername}"
+                                        th:title="${user.enabled ? 'Click to deactivate this user' : 'Click to activate this user'}"
+                                        th:onclick="|return confirm('Change status of user ${user.username}?');|">
+                                    <i th:class="'bi ' + (${user.enabled} ? 'bi-toggle-on' : 'bi-toggle-off')"></i>
+                                    <span th:text="${user.enabled ? 'Active' : 'Inactive'}"></span>
+                                </button>
+                            </form>
                             <form th:action="@{|/admin/users/${user.id}/delete|}" method="post" class="om-inline-form">
                                 <button type="submit"
                                         class="btn btn-sm btn-outline-danger om-btn-icon"

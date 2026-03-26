@@ -253,9 +253,21 @@ public class UserService {
   }
 
   /**
-   * Update user by admin Can update firstName, lastName, username, email, mobileNumber, and role
-   * Status (enabled) cannot be changed by admin - it's automatically managed by email verification
-   * If email is changed, verification email is resent and status is reset to pending
+   * Activate or deactivate a user by admin. Sets the user's enabled status directly.
+   *
+   * @param userId User ID to update
+   * @param enabled New enabled state
+   * @param companyId Admin's company ID (for tenant verification)
+   */
+  public void setUserEnabled(Long userId, boolean enabled, Long companyId) {
+    User user = getUserByIdAndCompany(userId, companyId);
+    user.setEnabled(enabled);
+    userRepository.save(user);
+  }
+
+  /**
+   * Update user by admin. Can update firstName, lastName, username, email, mobileNumber, and role.
+   * If email is changed, verification email is resent and status is reset to pending.
    *
    * @param userId User ID to update
    * @param updatedUser User object with updated fields
