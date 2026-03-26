@@ -33,4 +33,15 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
    */
   List<Order> findByCompanyIdAndDeliveryDateBetween(Long companyId, LocalDate fromDate,
       LocalDate toDate);
+
+  /**
+   * TENANT-AWARE: Get orders by company with delivery date on or before a given date. Used for
+   * fetching overdue and upcoming urgent orders for dashboard notifications.
+   *
+   * @param companyId Company ID
+   * @param toDate Upper bound for delivery date (inclusive); orders with null delivery date are
+   *        excluded by JPA
+   * @return List of orders with delivery date ≤ toDate
+   */
+  List<Order> findByCompanyIdAndDeliveryDateLessThanEqual(Long companyId, LocalDate toDate);
 }

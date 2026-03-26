@@ -19,7 +19,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * Tests for OrderService statistics methods introduced for the Admin Order Statistics page.
+ * Tests for OrderService statistics methods introduced for the Admin Order Statistics page, and
+ * urgent order notification logic.
  */
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
@@ -232,5 +233,90 @@ class OrderServiceTest {
 
     assertThat(result.get(0).getOrderDate()).isEqualTo(LocalDate.of(2025, 1, 20));
     assertThat(result.get(1).getOrderDate()).isEqualTo(LocalDate.of(2025, 1, 5));
+  }
+
+  // ── getUrgentOrdersByCompanyId ────────────────────────────────────────────────
+
+  private Order orderWithDelivery(OrderStatus status, LocalDate deliveryDate) {
+    Order o = new Order();
+    o.setStatus(status);
+    o.setDeliveryDate(deliveryDate);
+    o.setOrderDate(LocalDate.of(2025, 1, 1));
+    return o;
+  }
+
+  @Test
+  void getUrgentOrders_upcomingNonFinal_included() {
+    LocalDate tomorrow = LocalDate.now().plusDays(1);
+    Order upcoming = orderWithDelivery(OrderStatus.CREATED, tomorrow);
+
+    when(orderRepository.findByCompanyIdAndDeliveryDateLessThanEqual(1L,
+        LocalDate.now().plusDays(7))).thenReturn(List.of(upcoming));
+
+    List<Order> result = orderService.getUrgentOrdersByCompanyId(1L);
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0)).isEqualTo(upcoming);
+  }
+
+  @Test
+  void getUrgentOrders_overdueNonFinal_included() {
+    LocalDate yesterday = LocalDate.now().minusDays(1);
+    Order overdue = orderWithDelivery(OrderStatus.VENDOR_PROCESSING, yesterday);
+
+    when(orderRepository.findByCompanyIdAndDeliveryDateLessThanEqual(1L,
+        LocalDate.now().plusDays(7))).thenReturn(List.of(overdue));
+
+    List<Order> result = orderService.getUrgentOrdersByCompanyId(1L);
+
+    assertThat(result).hasSize(1);
+    assertThat(result.get(0)).isEqualTo(overdue);
+  }
+
+  @Test
+  void getUrgentOrders_finalStatus_excluded() {
+    LocalDate yesterday = LocalDate.now().minusDays(1);
+    Order delivered = orderWithDelivery(OrderStatus.DELIVERED, yesterday);
+    Order cancelled = orderWithDelivery(OrderStatus.CANCELLED, yesterday);
+
+    when(orderRepository.findByCompanyIdAndDeliveryDateLessThanEqual(1L,
+        LocalDate.now().plusDays(7))).thenReturn(List.of(delivered, cancelled));
+
+    List<Order> result = orderService.getUrgentOrdersByCompanyId(1L);
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void getUrgentOrders_sortedOverdueThenUpcoming() {
+    LocalDate twoDaysAgo = LocalDate.now().minusDays(2);
+    LocalDate yesterday = LocalDate.now().minusDays(1);
+    LocalDate tomorrow = LocalDate.now().plusDays(1);
+
+    Order overdueOld = orderWithDelivery(OrderStatus.CREATED, twoDaysAgo);
+    Order overdueRecent = orderWithDelivery(OrderStatus.VENDOR_PROCESSING, yesterday);
+    Order upcoming = orderWithDelivery(OrderStatus.CREATED, tomorrow);
+
+    when(orderRepository.findByCompanyIdAndDeliveryDateLessThanEqual(1L,
+        LocalDate.now().plusDays(7))).thenReturn(List.of(upcoming, overdueRecent, overdueOld));
+
+    List<Order> result = orderService.getUrgentOrdersByCompanyId(1L);
+
+    assertThat(result).hasSize(3);
+    assertThat(result.get(0).getDeliveryDate()).isEqualTo(twoDaysAgo);
+    assertThat(result.get(1).getDeliveryDate()).isEqualTo(yesterday);
+    assertThat(result.get(2).getDeliveryDate()).isEqualTo(tomorrow);
+  }
+
+  @Test
+  void getUrgentOrders_deliveryBeyond7Days_notIncluded() {
+    // Orders with delivery date > today+7 are not returned by the repository query.
+    // Verify the service returns an empty list when the repository returns nothing.
+    when(orderRepository.findByCompanyIdAndDeliveryDateLessThanEqual(1L,
+        LocalDate.now().plusDays(7))).thenReturn(List.of());
+
+    List<Order> result = orderService.getUrgentOrdersByCompanyId(1L);
+
+    assertThat(result).isEmpty();
   }
 }

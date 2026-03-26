@@ -226,7 +226,6 @@ class AdminControllerTest {
     assertThat(redirectAttributes.getFlashAttributes().get("error"))
         .isEqualTo("User not found or does not belong to your company");
   }
-}
 
   // ── Order Statistics endpoint tests ──────────────────────────────────────────
 

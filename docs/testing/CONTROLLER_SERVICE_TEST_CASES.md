@@ -131,7 +131,11 @@ This file is the living test inventory for controller and service methods.
 - `ORS-04` `patchOrder` updates only non-null fields and preserves unspecified fields
 - `ORS-05` `patchOrder` supports legacy `customerName` update when client absent
 - `ORS-06` `deleteOrder` throws `OrderNotFoundException` when id absent
-- `ORS-07` urgent order query excludes final statuses via `status.isFinal()` and sorts by nearest delivery date
+- `ORS-07` urgent order query: upcoming non-final orders (delivery date ≤ today+7) included
+- `ORS-08` urgent order query: overdue non-final orders (delivery date < today) included
+- `ORS-09` urgent order query: final status orders excluded regardless of delivery date
+- `ORS-10` urgent order query: sorted overdue-first then upcoming by delivery date ascending
+- `ORS-11` urgent order query: orders with delivery date > today+7 not returned
 
 ### `ClientService`
 - `CLS-01` save assigns company by id and enforces uppercase client name
