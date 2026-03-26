@@ -37,6 +37,7 @@ public class UserService {
         PhoneNumberUtils.normalizeRequiredInternational(user.getMobileNumber(), "Mobile number"));
     user.setPassword(passwordEncoder.encode(user.getPassword()));
     user.setEnabled(false); // not verified yet
+    user.setAccountActive(true); // admin-controlled activation defaults to active on create
     User saved = userRepository.save(user);
 
     registrationService.sendVerificationEmail(saved);
@@ -77,6 +78,7 @@ public class UserService {
     user.setCompany(company);
     user.setMobileNumber(normalizedMobile);
     user.setEnabled(false); // Email verification required
+    user.setAccountActive(true); // newly created users start active unless admin deactivates later
     user.setPassword(passwordEncoder.encode(user.getPassword()));
 
     // Save user
@@ -253,9 +255,22 @@ public class UserService {
   }
 
   /**
-   * Update user by admin Can update firstName, lastName, username, email, mobileNumber, and role
-   * Status (enabled) cannot be changed by admin - it's automatically managed by email verification
-   * If email is changed, verification email is resent and status is reset to pending
+   * Activate or deactivate a user by admin. Uses accountActive so verification status remains
+   * intact.
+   *
+   * @param userId User ID to update
+   * @param active New activation state
+   * @param companyId Admin's company ID (for tenant verification)
+   */
+  public void setUserActive(Long userId, boolean active, Long companyId) {
+    User user = getUserByIdAndCompany(userId, companyId);
+    user.setAccountActive(active);
+    userRepository.save(user);
+  }
+
+  /**
+   * Update user by admin. Can update firstName, lastName, username, email, mobileNumber, and role.
+   * If email is changed, verification email is resent and status is reset to pending.
    *
    * @param userId User ID to update
    * @param updatedUser User object with updated fields

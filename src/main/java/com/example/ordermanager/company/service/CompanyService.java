@@ -114,6 +114,7 @@ public class CompanyService {
     adminUser.setMobileNumber(normalizedMobile);
     adminUser.setRole("ADMIN"); // First user is admin
     adminUser.setEnabled(false); // Requires email verification
+    adminUser.setAccountActive(true);
     adminUser.setPassword(passwordEncoder.encode(adminUser.getPassword())); // Hash password
 
     // Step 5: Save user with company and send verification email

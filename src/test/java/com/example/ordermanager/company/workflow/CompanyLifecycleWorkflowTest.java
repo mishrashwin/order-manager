@@ -148,6 +148,7 @@ class CompanyLifecycleWorkflowTest {
     assertThat(savedCompany.getApprovalStatus()).isEqualTo(CompanyApprovalStatus.PENDING);
     assertThat(savedCompany.isActive()).isTrue();
     assertThat(savedAdminRef.get().isEnabled()).isFalse();
+    assertThat(savedAdminRef.get().isAccountActive()).isTrue();
     assertThat(savedAdminRef.get().getRole()).isEqualTo("ADMIN");
     assertThat(savedAdminRef.get().getPassword()).isNotEqualTo("Pass@123");
 
@@ -181,6 +182,7 @@ class CompanyLifecycleWorkflowTest {
     assertThat(createdManager.getId()).isEqualTo(101L);
     assertThat(createdManager.getCompany().getId()).isEqualTo(10L);
     assertThat(createdManager.isEnabled()).isFalse();
+    assertThat(createdManager.isAccountActive()).isTrue();
 
     Client client = new Client();
     client.setName("acme retail");

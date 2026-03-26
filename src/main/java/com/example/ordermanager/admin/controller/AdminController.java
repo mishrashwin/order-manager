@@ -1,7 +1,10 @@
 package com.example.ordermanager.admin.controller;
 
+import com.example.ordermanager.admin.dto.ClientOrderStatDTO;
 import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.company.service.CompanyService;
+import com.example.ordermanager.order.entity.Order;
+import com.example.ordermanager.order.service.OrderService;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.service.UserService;
 import com.example.ordermanager.utils.PasswordVerificationService;
@@ -12,6 +15,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -26,14 +30,17 @@ public class AdminController {
   private final UserService userService;
   private final CompanyService companyService;
   private final SecurityContextHelper securityContextHelper;
+  private final OrderService orderService;
   private final PasswordVerificationService passwordVerificationService;
 
   public AdminController(UserService userService, CompanyService companyService,
+      SecurityContextHelper securityContextHelper, OrderService orderService) {
       SecurityContextHelper securityContextHelper,
       PasswordVerificationService passwordVerificationService) {
     this.userService = userService;
     this.companyService = companyService;
     this.securityContextHelper = securityContextHelper;
+    this.orderService = orderService;
     this.passwordVerificationService = passwordVerificationService;
   }
 
@@ -150,6 +157,31 @@ public class AdminController {
     }
   }
 
+  @PostMapping("/users/{id}/toggle-status")
+  public String toggleUserStatus(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    try {
+      Long companyId = securityContextHelper.getCompanyIdFromContext();
+      String currentUsername = securityContextHelper.getCurrentUsername();
+      User user = userService.getUserByIdAndCompany(id, companyId);
+
+      if (user.getUsername().equals(currentUsername)) {
+        redirectAttributes.addFlashAttribute("error",
+            "You cannot change the active status of your own account!");
+        return "redirect:/admin/users";
+      }
+
+      boolean newStatus = !user.isAccountActive();
+      userService.setUserActive(id, newStatus, companyId);
+      String statusLabel = newStatus ? "activated" : "deactivated";
+      redirectAttributes.addFlashAttribute("message",
+          "User '" + user.getUsername() + "' has been " + statusLabel + " successfully.");
+      return "redirect:/admin/users";
+    } catch (IllegalArgumentException e) {
+      redirectAttributes.addFlashAttribute("error", e.getMessage());
+      return "redirect:/admin/users";
+    }
+  }
+
   @PostMapping("/users/{id}/resend-verification")
   public String resendVerificationEmail(@PathVariable Long id,
       RedirectAttributes redirectAttributes) {
@@ -191,6 +223,46 @@ public class AdminController {
       model.addAttribute("roles", new String[] {"USER", "MANAGER", "ADMIN"});
       return "admin/users/form-edit";
     }
+  }
+
+  @GetMapping("/order-statistics")
+  public String showOrderStatistics(@RequestParam(required = false) String startDate,
+      @RequestParam(required = false) String endDate, @RequestParam(required = false) Long clientId,
+      @RequestParam(required = false) String clientName,
+      @RequestParam(required = false, defaultValue = "ALL") String statusFilter, Model model) {
+    Long companyId = securityContextHelper.getCompanyIdFromContext();
+
+    LocalDate start = (startDate != null && !startDate.isBlank()) ? LocalDate.parse(startDate)
+        : LocalDate.now().minusMonths(1);
+    LocalDate end =
+        (endDate != null && !endDate.isBlank()) ? LocalDate.parse(endDate) : LocalDate.now();
+
+    List<ClientOrderStatDTO> stats =
+        orderService.getClientOrderStats(companyId, start, end, statusFilter);
+
+    long totalOrders = stats.stream().mapToLong(ClientOrderStatDTO::getOrderCount).sum();
+
+    List<Order> selectedClientOrders = null;
+    String selectedClientNameResolved = clientName;
+    if (clientId != null || (clientName != null && !clientName.isBlank())) {
+      // resolve clientName from stats if only clientId given
+      if (selectedClientNameResolved == null && clientId != null) {
+        selectedClientNameResolved = stats.stream().filter(s -> clientId.equals(s.getClientId()))
+            .map(ClientOrderStatDTO::getClientName).findFirst().orElse(null);
+      }
+      selectedClientOrders = orderService.getOrdersByClientAndDateRange(companyId, clientId,
+          selectedClientNameResolved, start, end, statusFilter);
+    }
+
+    model.addAttribute("stats", stats);
+    model.addAttribute("startDate", start);
+    model.addAttribute("endDate", end);
+    model.addAttribute("selectedClientId", clientId);
+    model.addAttribute("selectedClientName", selectedClientNameResolved);
+    model.addAttribute("selectedClientOrders", selectedClientOrders);
+    model.addAttribute("statusFilter", statusFilter);
+    model.addAttribute("totalOrders", totalOrders);
+    return "admin/order-statistics";
   }
 
   @GetMapping("/company")

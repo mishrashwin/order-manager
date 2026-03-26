@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:with="page='admin-order-statistics'">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Statistics | Order Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .stats-toolbar {
+            background: var(--om-surface);
+            border: 1px solid var(--om-border);
+            border-radius: var(--om-r-lg);
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--om-shadow-sm);
+        }
+        .chart-wrapper {
+            background: var(--om-surface);
+            border: 1px solid var(--om-border);
+            border-radius: var(--om-r-lg);
+            padding: 1.5rem;
+            box-shadow: var(--om-shadow-sm);
+            margin-bottom: 1.5rem;
+        }
+        .chart-container {
+            position: relative;
+            max-width: 420px;
+            margin: 0 auto;
+        }
+        .legend-table td, .legend-table th {
+            font-size: 0.82rem;
+            vertical-align: middle;
+            padding: 0.4rem 0.6rem;
+        }
+        .legend-swatch {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+        .drill-card {
+            background: var(--om-surface);
+            border: 1px solid var(--om-border);
+            border-radius: var(--om-r-lg);
+            padding: 1.25rem 1.5rem;
+            box-shadow: var(--om-shadow-sm);
+        }
+        .drill-card .drill-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .empty-chart {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--om-text-muted);
+        }
+        .empty-chart i {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 0.75rem;
+        }
+        .stat-summary-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: var(--om-surface-muted);
+            border: 1px solid var(--om-border);
+            border-radius: 20px;
+            padding: 0.3rem 0.75rem;
+            font-size: 0.8rem;
+            color: var(--om-text-secondary);
+        }
+        .chart-layout {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            align-items: flex-start;
+        }
+        .chart-layout .chart-container {
+            flex: 0 0 380px;
+        }
+        .chart-layout .legend-container {
+            flex: 1 1 260px;
+            min-width: 220px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Unified Navbar -->
+<div th:replace="~{fragments/unified-navbar :: unified-navbar}"></div>
+
+<div class="main-content">
+    <!-- Header -->
+    <div class="content-header">
+        <h1><i class="bi bi-pie-chart-fill"></i> Order Statistics</h1>
+        <a class="btn btn-outline-secondary btn-sm" th:href="@{/admin/dashboard}">
+            <i class="bi bi-arrow-left"></i> Admin Dashboard
+        </a>
+    </div>
+
+    <!-- Filters Toolbar -->
+    <div class="stats-toolbar">
+        <form method="get" th:action="@{/admin/order-statistics}" class="row g-2 align-items-end">
+            <!-- Date Range -->
+            <div class="col-auto">
+                <label class="form-label form-label-sm mb-1 fw-semibold">From</label>
+                <input type="date" class="form-control form-control-sm"
+                       name="startDate"
+                       th:value="${#temporals.format(startDate, 'yyyy-MM-dd')}"
+                       required>
+            </div>
+            <div class="col-auto">
+                <label class="form-label form-label-sm mb-1 fw-semibold">To</label>
+                <input type="date" class="form-control form-control-sm"
+                       name="endDate"
+                       th:value="${#temporals.format(endDate, 'yyyy-MM-dd')}"
+                       required>
+            </div>
+            <!-- Status Filter -->
+            <div class="col-auto">
+                <label class="form-label form-label-sm mb-1 fw-semibold">Order Status</label>
+                <select class="form-select form-select-sm" name="statusFilter">
+                    <option value="ALL"      th:selected="${statusFilter == 'ALL'}">All Orders</option>
+                    <option value="ACTIVE"   th:selected="${statusFilter == 'ACTIVE'}">Active Only</option>
+                    <option value="COMPLETED" th:selected="${statusFilter == 'COMPLETED'}">Completed / Final</option>
+                </select>
+            </div>
+            <!-- Preserve selected client across filter changes -->
+            <input type="hidden" name="clientId"   th:if="${selectedClientId != null}"   th:value="${selectedClientId}">
+            <input type="hidden" name="clientName" th:if="${selectedClientName != null}" th:value="${selectedClientName}">
+            <!-- Actions -->
+            <div class="col-auto d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-funnel"></i> Apply
+                </button>
+                <a th:href="@{/admin/order-statistics}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-counterclockwise"></i> Reset
+                </a>
+            </div>
+            <!-- Summary pills -->
+            <div class="col-auto ms-auto d-flex gap-2 align-items-center flex-wrap">
+                <span class="stat-summary-pill">
+                    <i class="bi bi-list-ol"></i>
+                    Total orders: <strong th:text="${totalOrders}">0</strong>
+                </span>
+                <span class="stat-summary-pill">
+                    <i class="bi bi-people"></i>
+                    Clients: <strong th:text="${stats.size()}">0</strong>
+                </span>
+            </div>
+        </form>
+    </div>
+
+    <!-- Empty State -->
+    <div th:if="${#lists.isEmpty(stats)}" class="chart-wrapper">
+        <div class="empty-chart">
+            <i class="bi bi-pie-chart"></i>
+            <h5>No orders found for the selected range</h5>
+            <p class="text-muted">Try adjusting the date range or status filter.</p>
+        </div>
+    </div>
+
+    <!-- Chart + Legend -->
+    <div th:if="${!#lists.isEmpty(stats)}" class="chart-wrapper">
+        <h5 class="mb-3 fw-semibold"><i class="bi bi-pie-chart-fill text-warning me-2"></i>Orders by Client</h5>
+        <div class="chart-layout">
+            <!-- Pie Chart -->
+            <div class="chart-container">
+                <canvas id="clientPieChart"></canvas>
+                <p class="text-center text-muted mt-2" style="font-size:0.78rem;">
+                    Click a slice to drill down into that client's orders.
+                </p>
+            </div>
+            <!-- Legend Table -->
+            <div class="legend-container">
+                <table class="table table-sm legend-table mb-0">
+                    <thead>
+                    <tr>
+                        <th>Client</th>
+                        <th class="text-end">Orders</th>
+                        <th class="text-end">%</th>
+                        <th class="text-end">Value (₹)</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="s, i : ${stats}"
+                        th:classappend="${selectedClientName != null and selectedClientName == s.clientName} ? 'table-warning fw-bold' : ''"
+                        class="stat-legend-row"
+                        style="cursor:pointer;"
+                        th:attr="data-client-id=${s.clientId}, data-client-name=${s.clientName}">
+                        <td>
+                            <span class="legend-swatch" th:id="'swatch-' + ${i.index}"></span>
+                            <span th:text="${s.clientName}"></span>
+                        </td>
+                        <td class="text-end" th:text="${s.orderCount}"></td>
+                        <td class="text-end" th:text="${s.percentage + '%'}"></td>
+                        <td class="text-end"
+                            th:text="${'₹' + #numbers.formatDecimal(s.totalAmount, 0, 'COMMA', 0, 'POINT')}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Drill-down: selected client orders -->
+    <div th:if="${selectedClientOrders != null}" class="drill-card">
+        <div class="drill-header">
+            <i class="bi bi-table fs-5 text-warning"></i>
+            <h5 class="mb-0 fw-semibold">
+                Orders for <span th:text="${selectedClientName}">Client</span>
+            </h5>
+            <span class="badge bg-secondary ms-auto" th:text="${selectedClientOrders.size() + ' orders'}"></span>
+            <a th:href="@{/admin/order-statistics(startDate=${#temporals.format(startDate,'yyyy-MM-dd')},endDate=${#temporals.format(endDate,'yyyy-MM-dd')},statusFilter=${statusFilter})}"
+               class="btn btn-sm btn-outline-secondary ms-2">
+                <i class="bi bi-x-lg"></i> Clear
+            </a>
+        </div>
+
+        <!-- Empty drill-down -->
+        <div th:if="${#lists.isEmpty(selectedClientOrders)}" class="text-muted text-center py-3">
+            <i class="bi bi-inbox me-1"></i> No orders found for this client in the selected range.
+        </div>
+
+        <!-- Drill-down Table -->
+        <div th:if="${!#lists.isEmpty(selectedClientOrders)}">
+            <!-- Search + Reset sort -->
+            <div class="row g-2 mb-2 align-items-center">
+                <div class="col-md-5">
+                    <div class="d-flex gap-2">
+                        <input type="text" id="searchInput" class="form-control form-control-sm om-list-search-input"
+                               placeholder="🔍 Search orders...">
+                    </div>
+                </div>
+                <div class="col-auto ms-auto">
+                    <button type="button" id="resetSortBtn" class="btn btn-sm btn-outline-secondary om-btn-icon" title="Reset Table Sort">
+                        <i class="bi bi-sort-up"></i> Reset Sort
+                    </button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table unified-table table-hover align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th class="om-sortable">#</th>
+                        <th class="om-sortable">PO/Order No</th>
+                        <th class="om-sortable">Product</th>
+                        <th class="text-end om-sortable">Qty</th>
+                        <th class="text-end om-sortable">Order Value</th>
+                        <th class="om-sortable">Status</th>
+                        <th class="om-sortable">Order Date</th>
+                        <th class="om-sortable">Delivery Date</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="order, iterStat : ${selectedClientOrders}">
+                        <td th:text="${iterStat.index + 1}"></td>
+                        <td th:text="${order.poOrderNo != null ? order.poOrderNo : '-'}"></td>
+                        <td th:text="${order.productName}"></td>
+                        <td class="text-end" th:text="${order.quantity}"></td>
+                        <td class="text-end">
+                            <strong th:text="${'₹' + #numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 2, 'POINT')}"></strong>
+                        </td>
+                        <td>
+                            <span th:class="'badge badge-custom bg-' + ${order.status.badgeColor}"
+                                  th:text="${order.status.displayName}"></span>
+                        </td>
+                        <td th:text="${#temporals.format(order.orderDate, 'dd MMM yyyy')}"></td>
+                        <td th:text="${order.deliveryDate != null ? #temporals.format(order.deliveryDate, 'dd MMM yyyy') : '-'}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-2 text-muted" style="font-size:0.82rem;">
+                <i class="bi bi-info-circle"></i>
+                Showing <strong th:text="${selectedClientOrders.size()}"></strong> orders
+                for <strong th:text="${selectedClientName}"></strong>
+                within selected date range.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<!-- Table Utility JS (sorting + search) -->
+<div th:replace="~{fragments/table-utils :: tableUtils}"></div>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const chartLabels   = /*[[${stats.![clientName]}]]*/ [];
+    const chartCounts   = /*[[${stats.![orderCount]}]]*/ [];
+    const chartPcts     = /*[[${stats.![percentage]}]]*/ [];
+    const chartClientIds   = /*[[${stats.![clientId]}]]*/ [];
+    const chartClientNames = /*[[${stats.![clientName]}]]*/ [];
+    const startDate     = /*[[${#temporals.format(startDate, 'yyyy-MM-dd')}]]*/ '';
+    const endDate       = /*[[${#temporals.format(endDate, 'yyyy-MM-dd')}]]*/ '';
+    const statusFilter  = /*[[${statusFilter}]]*/ 'ALL';
+
+    const PIE_COLORS = [
+        '#2563eb','#16a34a','#d97706','#dc2626','#7c3aed',
+        '#0891b2','#db2777','#65a30d','#9333ea','#ea580c',
+        '#0d9488','#f59e0b','#6366f1','#14b8a6','#ef4444',
+        '#84cc16','#8b5cf6','#f97316','#06b6d4','#ec4899'
+    ];
+
+    function sliceColor(i) {
+        return PIE_COLORS[i % PIE_COLORS.length];
+    }
+
+    /**
+     * Build the drill-down URL for a given client, preserving current date range and status filter.
+     */
+    function buildDrillUrl(clientId, clientName) {
+        let url = '/admin/order-statistics'
+            + '?startDate=' + encodeURIComponent(startDate)
+            + '&endDate='   + encodeURIComponent(endDate)
+            + '&statusFilter=' + encodeURIComponent(statusFilter);
+        if (clientId !== null && clientId !== undefined) {
+            url += '&clientId=' + encodeURIComponent(clientId);
+        } else {
+            url += '&clientName=' + encodeURIComponent(clientName);
+        }
+        return url;
+    }
+
+    // Apply swatch colours to legend table rows
+    document.querySelectorAll('[id^="swatch-"]').forEach(el => {
+        const idx = parseInt(el.id.replace('swatch-', ''), 10);
+        el.style.background = sliceColor(idx);
+    });
+
+    // Legend row click → drill down (uses data attributes, no inline onclick)
+    document.querySelectorAll('.stat-legend-row').forEach(row => {
+        row.addEventListener('click', () => {
+            const cid   = row.dataset.clientId   || null;
+            const cname = row.dataset.clientName || '';
+            window.location.href = buildDrillUrl(cid, cname);
+        });
+    });
+
+    if (chartLabels.length > 0) {
+        const ctx = document.getElementById('clientPieChart').getContext('2d');
+        const pieChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    data: chartCounts,
+                    backgroundColor: chartLabels.map((_, i) => sliceColor(i)),
+                    borderWidth: 2,
+                    borderColor: '#fff',
+                    hoverOffset: 14
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                const pct = chartPcts[ctx.dataIndex];
+                                return ` ${ctx.label}: ${ctx.raw} orders (${pct}%)`;
+                            }
+                        }
+                    }
+                },
+                onClick: function(event, elements) {
+                    if (elements.length > 0) {
+                        const idx   = elements[0].index;
+                        const cid   = chartClientIds[idx];
+                        const cname = chartClientNames[idx];
+                        window.location.href = buildDrillUrl(cid, cname);
+                    }
+                }
+            }
+        });
+    }
+    /*]]>*/
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
