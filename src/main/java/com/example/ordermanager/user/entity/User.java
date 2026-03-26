@@ -49,6 +49,9 @@ public class User {
   @Column(nullable = false)
   private boolean enabled = false;
 
+  @Column(name = "account_active", nullable = false)
+  private boolean accountActive = true;
+
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "company_id", nullable = false)
   private Company company;

@@ -12,85 +12,121 @@
 <div th:replace="~{fragments/unified-navbar :: unified-navbar}"></div>
 
 <div class="main-content">
-    <div class="content-header d-flex justify-content-between align-items-center">
+    <!-- Header -->
+    <div class="content-header">
         <div>
             <h1><i class="bi bi-buildings"></i> Company Management</h1>
             <p class="text-muted mb-0">Pending approvals: <strong th:text="${pendingCount}">0</strong></p>
         </div>
     </div>
 
-    <div th:if="${message}" class="alert alert-success mt-3" th:text="${message}"></div>
-    <div th:if="${error}" class="alert alert-danger mt-3" th:text="${error}"></div>
+    <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill"></i> <span th:text="${message}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 
-    <div class="card mt-3">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-striped align-middle">
-                    <thead>
-                    <tr>
-                        <th>Company</th>
-                        <th>Status</th>
-                        <th>Access</th>
-                        <th>Users</th>
-                        <th>Created</th>
-                        <th>Approval Details</th>
-                        <th>Actions</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr th:each="company : ${companies}">
-                        <td th:text="${company.companyName}">Company</td>
-                        <td>
-                            <span class="badge text-bg-warning" th:if="${company.approvalStatus.name() == 'PENDING'}">PENDING</span>
-                            <span class="badge text-bg-success" th:if="${company.approvalStatus.name() == 'APPROVED'}">APPROVED</span>
-                            <span class="badge text-bg-danger" th:if="${company.approvalStatus.name() == 'REJECTED'}">REJECTED</span>
-                        </td>
-                        <td>
-                            <span class="badge text-bg-success" th:if="${company.active}">ENABLED</span>
-                            <span class="badge text-bg-secondary" th:unless="${company.active}">SUSPENDED</span>
-                        </td>
-                        <td th:text="${company.usersCount}">0</td>
-                        <td th:text="${#temporals.format(company.createdAt, 'dd MMM yyyy')}">-</td>
-                        <td>
-                            <span th:if="${company.approvedBy != null}">
-                                <span th:text="${company.approvedBy}">owner</span>
-                                <small class="text-muted d-block" th:text="${#temporals.format(company.approvedAt, 'dd MMM yyyy HH:mm')}">-</small>
-                            </span>
-                            <span class="text-muted" th:if="${company.approvedBy == null}">Not reviewed</span>
-                        </td>
-                        <td>
-                            <div class="d-flex gap-2 flex-wrap">
-                                <form th:if="${company.approvalStatus.name() != 'APPROVED'}" th:action="@{/owner/companies/{id}/approve(id=${company.companyId})}" method="post">
-                                    <button type="submit" class="btn btn-success btn-sm">Approve</button>
-                                </form>
-                                <form th:if="${company.approvalStatus.name() != 'REJECTED'}" th:action="@{/owner/companies/{id}/reject(id=${company.companyId})}" method="post">
-                                    <button type="submit" class="btn btn-outline-danger btn-sm">Reject</button>
-                                </form>
-                                <form th:if="${company.approvalStatus.name() == 'APPROVED'}" th:action="@{/owner/companies/{id}/toggle-access(id=${company.companyId})}" method="post">
-                                    <button type="submit" class="btn btn-outline-primary btn-sm"
-                                            th:text="${company.active ? 'Suspend Access' : 'Enable Access'}">Toggle</button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill"></i> <span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="search-box om-list-toolbar">
+        <div class="om-list-toolbar-row">
+            <input type="text" id="searchInput" class="form-control-custom om-list-search-input"
+                   placeholder="🔍 Search companies by name, status, access...">
+            <div class="om-list-actions">
+                <button id="resetSortBtn" class="btn btn-outline-secondary om-btn-icon">
+                    <i class="bi bi-arrow-clockwise"></i> Reset Sort
+                </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div th:if="${#lists.isEmpty(companies)}" class="empty-state">
+        <i class="bi bi-buildings"></i>
+        <h4>No companies found</h4>
+        <p>No companies have registered yet</p>
+    </div>
+
+    <!-- Companies Table -->
+    <div th:if="${!#lists.isEmpty(companies)}" class="unified-card">
+        <div class="table-responsive">
+            <table class="table unified-table table-hover align-middle mb-0">
+                <thead>
+                <tr>
+                    <th class="om-sortable">#</th>
+                    <th class="om-sortable">Company</th>
+                    <th class="om-sortable">Status</th>
+                    <th class="om-sortable">Access</th>
+                    <th class="om-sortable">Users</th>
+                    <th class="om-sortable">Created</th>
+                    <th class="om-sortable">Approval Details</th>
+                    <th class="text-center no-sort">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="company, iterStat : ${companies}">
+                    <td th:text="${iterStat.index + 1}"></td>
+                    <td><strong th:text="${company.companyName}">Company</strong></td>
+                    <td>
+                        <span class="badge text-bg-warning" th:if="${company.approvalStatus.name() == 'PENDING'}">PENDING</span>
+                        <span class="badge text-bg-success" th:if="${company.approvalStatus.name() == 'APPROVED'}">APPROVED</span>
+                        <span class="badge text-bg-danger" th:if="${company.approvalStatus.name() == 'REJECTED'}">REJECTED</span>
+                    </td>
+                    <td>
+                        <span class="badge text-bg-success" th:if="${company.active}">ENABLED</span>
+                        <span class="badge text-bg-secondary" th:unless="${company.active}">SUSPENDED</span>
+                    </td>
+                    <td th:text="${company.usersCount}">0</td>
+                    <td th:text="${#temporals.format(company.createdAt, 'dd MMM yyyy')}">-</td>
+                    <td>
+                        <span th:if="${company.approvedBy != null}">
+                            <span th:text="${company.approvedBy}">owner</span>
+                            <small class="text-muted d-block" th:text="${#temporals.format(company.approvedAt, 'dd MMM yyyy HH:mm')}">-</small>
+                        </span>
+                        <span class="text-muted" th:if="${company.approvedBy == null}">Not reviewed</span>
+                    </td>
+                    <td class="text-center">
+                        <div class="action-buttons om-action-group">
+                            <form th:if="${company.approvalStatus.name() != 'APPROVED'}" th:action="@{/owner/companies/{id}/approve(id=${company.companyId})}" method="post" class="om-inline-form">
+                                <button type="submit" class="btn btn-sm btn-success om-btn-icon">
+                                    <i class="bi bi-check-circle"></i> Approve
+                                </button>
+                            </form>
+                            <form th:if="${company.approvalStatus.name() != 'REJECTED'}" th:action="@{/owner/companies/{id}/reject(id=${company.companyId})}" method="post" class="om-inline-form">
+                                <button type="submit" class="btn btn-sm btn-outline-danger om-btn-icon">
+                                    <i class="bi bi-x-circle"></i> Reject
+                                </button>
+                            </form>
+                            <form th:if="${company.approvalStatus.name() == 'APPROVED'}" th:action="@{/owner/companies/{id}/toggle-access(id=${company.companyId})}" method="post" class="om-inline-form">
+                                <button type="submit"
+                                        th:class="'btn btn-sm om-btn-icon ' + ${company.active ? 'btn-outline-warning' : 'btn-outline-primary'}"
+                                        title="Toggle company access">
+                                    <i th:class="'bi ' + ${company.active ? 'bi-pause-circle' : 'bi-play-circle'}"></i>
+                                    <span th:text="${company.active ? 'Suspend Access' : 'Enable Access'}"></span>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="unified-card-body">
+            <p class="text-muted-custom mb-0">
+                <i class="bi bi-info-circle"></i> Total Companies: <strong th:text="${companies.size()}"></strong>
+            </p>
         </div>
     </div>
 </div>
 
+<!-- Footer -->
 <div th:replace="~{fragments/footer :: footer}"></div>
 
-<script>
-    setTimeout(() => {
-        document.querySelectorAll('.alert').forEach(alert => {
-            alert.style.transition = "opacity 0.5s ease";
-            alert.style.opacity = "0";
-            setTimeout(() => alert.style.display = "none", 500);
-        });
-    }, 20000);
-</script>
+<!-- Table Utility JS -->
+<div th:replace="~{fragments/table-utils :: tableUtils}"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
