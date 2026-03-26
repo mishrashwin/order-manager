@@ -55,6 +55,10 @@ services:
       - key: OWNER_PASSWORD
         sync: false # Set manually in Render dashboard
 
+      # ===== Payment Settings =====
+      - key: PAYMENT_UPI_ID
+        sync: false # Set manually in Render dashboard (fallback in app properties applies if unset)
+
       # ===== JVM Optimization (for free tier's 0.5GB RAM) =====
       - key: JAVA_OPTS
         value: -Xmx256m -Xms128m -XX:+UseContainerSupport -XX:MaxRAMPercentage=50.0

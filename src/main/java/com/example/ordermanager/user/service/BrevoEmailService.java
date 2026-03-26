@@ -2,6 +2,7 @@ package com.example.ordermanager.user.service;
 
 import com.example.ordermanager.aspect.SkipMethodLogging;
 import com.example.ordermanager.company.entity.Company;
+import com.example.ordermanager.payment.entity.Payment;
 import com.example.ordermanager.user.entity.User;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
@@ -141,6 +142,25 @@ public class BrevoEmailService {
         + "\">" + escapeHtml(loginUrl) + "</a></p>" + getEmailSignature() + "</body></html>";
 
     sendEmail(to, "Your Order Manager company access has been restored", htmlContent);
+  }
+
+  public void sendPaymentNotificationEmail(String to, Payment payment, Company company) {
+    String monthYear = java.time.Month.of(payment.getPaymentMonth()).getDisplayName(
+        java.time.format.TextStyle.FULL, java.util.Locale.ENGLISH) + " " + payment.getPaymentYear();
+    String subject = "New Payment Submitted - " + escapeHtml(company.getName());
+    String htmlContent = "<html><body>" + "<p>A new payment has been submitted by <strong>"
+        + escapeHtml(company.getName()) + "</strong>.</p>"
+        + "<p><strong>Payment for Month:</strong> " + escapeHtml(monthYear) + "</p>"
+        + "<p><strong>Payment Message:</strong> "
+        + escapeHtml(payment.getPaymentMsg() != null ? payment.getPaymentMsg() : "-") + "</p>"
+        + (payment.getPaymentSsFilename() != null
+            ? "<p><strong>Screenshot:</strong> " + escapeHtml(payment.getPaymentSsFilename())
+                + " (available in owner payments panel)</p>"
+            : "")
+        + "<p>Please log in to your owner console to review this payment.</p>" + getEmailSignature()
+        + "</body></html>";
+
+    sendEmail(to, subject, htmlContent);
   }
 
   private void sendEmail(String to, String subject, String htmlContent) {

@@ -2,6 +2,7 @@ package com.example.ordermanager.user.service;
 
 import com.example.ordermanager.aspect.SkipMethodLogging;
 import com.example.ordermanager.company.entity.Company;
+import com.example.ordermanager.payment.entity.Payment;
 import com.example.ordermanager.user.entity.User;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
@@ -102,6 +103,17 @@ public class EmailService {
       log.info("Company access restored email sent successfully to: {}", to);
     } catch (Exception e) {
       log.error("Failed to send company access restored email to: {}", to, e);
+      throw e;
+    }
+  }
+
+  public void sendPaymentNotificationEmail(String to, Payment payment, Company company) {
+    log.info("Sending payment notification email to owner for company: {}", company.getName());
+    try {
+      brevoEmailService.sendPaymentNotificationEmail(to, payment, company);
+      log.info("Payment notification email sent successfully to: {}", to);
+    } catch (Exception e) {
+      log.error("Failed to send payment notification email to: {}", to, e);
       throw e;
     }
   }

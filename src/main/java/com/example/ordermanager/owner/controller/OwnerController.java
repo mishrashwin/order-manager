@@ -4,8 +4,16 @@ import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.company.entity.CompanyApprovalStatus;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.owner.service.OwnerManagementService;
+<<<<<<< copilot/add-payment-tab-admin-panel
+import com.example.ordermanager.payment.entity.Payment;
+import com.example.ordermanager.payment.service.PaymentService;
+=======
 import com.example.ordermanager.utils.PasswordVerificationService;
+>>>>>>> Dashboard-Updates
 import java.security.Principal;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -23,6 +31,15 @@ public class OwnerController {
 
   private final OwnerManagementService ownerManagementService;
   private final CompanyService companyService;
+<<<<<<< copilot/add-payment-tab-admin-panel
+  private final PaymentService paymentService;
+
+  public OwnerController(OwnerManagementService ownerManagementService,
+      CompanyService companyService, PaymentService paymentService) {
+    this.ownerManagementService = ownerManagementService;
+    this.companyService = companyService;
+    this.paymentService = paymentService;
+=======
   private final PasswordVerificationService passwordVerificationService;
 
   public OwnerController(OwnerManagementService ownerManagementService,
@@ -30,6 +47,7 @@ public class OwnerController {
     this.ownerManagementService = ownerManagementService;
     this.companyService = companyService;
     this.passwordVerificationService = passwordVerificationService;
+>>>>>>> Dashboard-Updates
   }
 
   @GetMapping("/dashboard")
@@ -48,6 +66,33 @@ public class OwnerController {
     model.addAttribute("companies", ownerManagementService.getAllCompanySummaries());
     model.addAttribute("pendingCount", companyService.getPendingCompanyCount());
     return "owner/companies";
+  }
+
+  @GetMapping("/payments")
+  public String payments(Model model) {
+    model.addAttribute("companyName", "Owner Console");
+    model.addAttribute("page", "owner-payments");
+    model.addAttribute("payments", paymentService.getAllPayments());
+    return "owner/payments";
+  }
+
+  @GetMapping("/payments/{id}/download")
+  public ResponseEntity<byte[]> downloadPaymentScreenshot(@PathVariable Long id) {
+    Payment payment = paymentService.getPaymentById(id);
+
+    if (payment.getPaymentSsData() == null) {
+      return ResponseEntity.notFound().build();
+    }
+
+    String contentType =
+        payment.getPaymentSsContentType() != null ? payment.getPaymentSsContentType()
+            : "application/octet-stream";
+    String filename =
+        payment.getPaymentSsFilename() != null ? payment.getPaymentSsFilename() : "screenshot";
+
+    return ResponseEntity.ok()
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+        .contentType(MediaType.parseMediaType(contentType)).body(payment.getPaymentSsData());
   }
 
   @PostMapping("/companies/{id}/approve")
@@ -97,6 +142,8 @@ public class OwnerController {
     return "redirect:/owner/companies";
   }
 
+<<<<<<< copilot/add-payment-tab-admin-panel
+=======
   @PostMapping("/companies/{id}/delete")
   public String deleteCompany(@PathVariable Long id, @RequestParam String password,
       RedirectAttributes redirectAttributes) {
@@ -112,5 +159,7 @@ public class OwnerController {
     }
     return "redirect:/owner/companies";
   }
+>>>>>>> Dashboard-Updates
 }
+
 

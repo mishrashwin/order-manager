@@ -12,6 +12,7 @@ import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.entity.OrderStatus;
 import com.example.ordermanager.order.service.OrderService;
+import com.example.ordermanager.payment.service.PaymentService;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.service.UserService;
 import com.example.ordermanager.utils.PasswordVerificationService;
@@ -43,6 +44,7 @@ class AdminControllerTest {
   @Mock
   private OrderService orderService;
   @Mock
+  private PaymentService paymentService;
   private PasswordVerificationService passwordVerificationService;
 
   private AdminController adminController;
@@ -50,7 +52,7 @@ class AdminControllerTest {
   @BeforeEach
   void setUp() {
     adminController = new AdminController(userService, companyService, securityContextHelper,
-        orderService, passwordVerificationService);
+        orderService,passwordVerificationService, paymentService, "test-upi-id");
   }
 
   @Test
@@ -225,6 +227,7 @@ class AdminControllerTest {
     assertThat(redirectAttributes.getFlashAttributes().get("error"))
         .isEqualTo("User not found or does not belong to your company");
   }
+
 
   // ── Order Statistics endpoint tests ──────────────────────────────────────────
 

@@ -62,7 +62,7 @@
                 <!-- Admin Panel Link (Only for Admins) -->
                 <li class="nav-item" th:if="${#authorization.expression('hasRole(''ADMIN'')')}">
                     <a class="nav-link admin-link"
-                       th:classappend="${page == 'admin-dashboard' or page == 'admin-users' or page == 'admin-add-user' or page == 'admin-edit-user' or page == 'admin-company' or page == 'admin-edit-company'} ? 'active'"
+                       th:classappend="${page == 'admin-dashboard' or page == 'admin-users' or page == 'admin-add-user' or page == 'admin-edit-user' or page == 'admin-company' or page == 'admin-edit-company' or page == 'admin-payments'} ? 'active'"
                        th:href="@{/admin/dashboard}">
                         <i class="bi bi-shield-check"></i> Admin Panel
                     </a>
@@ -82,6 +82,13 @@
                        th:classappend="${page == 'owner-companies'} ? 'active'"
                        th:href="@{/owner/companies}">
                         <i class="bi bi-buildings"></i> Companies
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link"
+                       th:classappend="${page == 'owner-payments'} ? 'active'"
+                       th:href="@{/owner/payments}">
+                        <i class="bi bi-credit-card-2-front"></i> Payments
                     </a>
                 </li>
             </ul>
