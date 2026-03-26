@@ -56,6 +56,8 @@ This file is the living test inventory for controller and service methods.
 - `DASH-02` valid date params are parsed and passed to `getOrdersByCompanyIdAndDateRange`
 - `DASH-03` urgent order projection includes only expected fields (`id`, `customerName`, `productName`, `quantity`, `deliveryDate`)
 - `DASH-04` includes all enum statuses and selected company name fallback
+- `DASH-05` urgent alerts include only orders whose `orderDate` falls within the selected dashboard date range
+- `DASH-06` urgent alerts exclude entries with null `orderDate` to prevent out-of-range notification leakage
 
 ### `OrderController`
 - `ORDC-01` list endpoint uses tenant id and date range defaults and shows flash `message`/`error` alerts
@@ -131,7 +133,11 @@ This file is the living test inventory for controller and service methods.
 - `ORS-04` `patchOrder` updates only non-null fields and preserves unspecified fields
 - `ORS-05` `patchOrder` supports legacy `customerName` update when client absent
 - `ORS-06` `deleteOrder` throws `OrderNotFoundException` when id absent
-- `ORS-07` urgent order query excludes final statuses via `status.isFinal()` and sorts by nearest delivery date
+- `ORS-07` urgent order query: upcoming non-final orders (delivery date ≤ today+7) included
+- `ORS-08` urgent order query: overdue non-final orders (delivery date < today) included
+- `ORS-09` urgent order query: final status orders excluded regardless of delivery date
+- `ORS-10` urgent order query: sorted overdue-first then upcoming by delivery date ascending
+- `ORS-11` urgent order query: orders with delivery date > today+7 not returned
 
 ### `ClientService`
 - `CLS-01` save assigns company by id and enforces uppercase client name

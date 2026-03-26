@@ -120,8 +120,22 @@ Use this file as the session-to-session handoff log for test implementation.
 - Added migration `src/main/resources/db/migration/V11__add_user_account_active_flag.sql` with safe backfill + not-null default.
 - Updated tests:
   - `src/test/java/com/example/ordermanager/user/service/UserServiceTest.java` (`setUserActive` + defaults)
-  - `src/test/java/com/example/ordermanager/admin/controller/AdminControllerTest.java` (toggle status uses accountActive)
+  - `src/test/java/com/example/ordermanager/admin/controller/AdminControllerTest.java` (toggle status uses accountActive; fixed premature class-closing brace)
   - `src/test/java/com/example/ordermanager/company/workflow/CompanyLifecycleWorkflowTest.java` (new users default active)
   - `src/test/java/com/example/ordermanager/config/CustomUserDetailsServiceTest.java` (inactive vs unverified vs success paths)
+
+## Batch Completed (2026-03-26 — Overdue Delivery Alerts)
+- Fixed dashboard urgent-order alerts to continue showing for overdue undelivered orders (delivery date in the past) not just orders due in the next 7 days.
+- **`OrderRepository`**: added `findByCompanyIdAndDeliveryDateLessThanEqual` to fetch all orders with delivery date ≤ a given cutoff (includes overdue + upcoming up to today+7).
+- **`OrderService.getUrgentOrdersByCompanyId`**: replaced `findByCompanyIdAndDeliveryDateBetween(today, today+7)` with `findByCompanyIdAndDeliveryDateLessThanEqual(today+7)`; overdue orders now remain in the alert set until their status becomes final.
+- **`dashboard.html`**: updated `daysText` calculation to display `"X days overdue"` for past-due orders instead of the broken `"In -X days"`.
+- Added `ORS-08` through `ORS-11` test cases in `OrderServiceTest` covering: overdue non-final included, final-status excluded, sort order (overdue-first), and beyond-7-day boundary.
+- Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with ORS-07 through ORS-11.
+
+## Batch Completed (2026-03-26 — Dashboard Alert Range Alignment)
+- Updated `DashboardController.dashboard()` so urgent alert cards are shown only when the order's `orderDate` falls within the currently selected `startDate/endDate` filter.
+- Added guard logic to exclude urgent-alert candidates with null `orderDate`.
+- Added `src/test/java/com/example/ordermanager/dashboard/controller/DashboardControllerTest.java` with happy + edge coverage for date-range-aligned urgent notifications.
+- Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with `DASH-05` and `DASH-06`.
 
 

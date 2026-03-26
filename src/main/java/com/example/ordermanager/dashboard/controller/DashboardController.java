@@ -1,6 +1,7 @@
 package com.example.ordermanager.dashboard.controller;
 
 import com.example.ordermanager.company.entity.Company;
+import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.entity.OrderStatus;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.order.service.OrderService;
@@ -51,6 +52,7 @@ public class DashboardController {
         orderService.getOrdersByCompanyIdAndDateRange(companyId, start, end));
 
     var urgentOrderNotifications = orderService.getUrgentOrdersByCompanyId(companyId).stream()
+        .filter(order -> isWithinSelectedDateRange(order, start, end))
         .map(order -> Map.of("id", order.getId(), "customerName", order.getCustomerName(),
             "productName", order.getProductName(), "quantity", order.getQuantity(), "deliveryDate",
             order.getDeliveryDate().toString()))
@@ -58,6 +60,13 @@ public class DashboardController {
     model.addAttribute("urgentOrders", urgentOrderNotifications);
 
     return "dashboard";
+  }
+
+  private boolean isWithinSelectedDateRange(Order order, LocalDate start, LocalDate end) {
+    if (order.getOrderDate() == null) {
+      return false;
+    }
+    return !order.getOrderDate().isBefore(start) && !order.getOrderDate().isAfter(end);
   }
 
 }
