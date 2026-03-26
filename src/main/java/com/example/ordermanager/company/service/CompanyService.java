@@ -114,6 +114,7 @@ public class CompanyService {
     adminUser.setMobileNumber(normalizedMobile);
     adminUser.setRole("ADMIN"); // First user is admin
     adminUser.setEnabled(false); // Requires email verification
+    adminUser.setAccountActive(true);
     adminUser.setPassword(passwordEncoder.encode(adminUser.getPassword())); // Hash password
 
     // Step 5: Save user with company and send verification email
@@ -248,6 +249,18 @@ public class CompanyService {
     Company rejectedCompany = companyRepository.save(company);
     notifyCompanyRejection(rejectedCompany);
     return rejectedCompany;
+  }
+
+  /**
+   * Hard delete a company and all its associated data (users, orders, clients, vendors). The DB
+   * foreign keys use ON DELETE CASCADE so all child records are removed automatically.
+   */
+  @Transactional
+  public void deleteCompany(Long companyId) {
+    if (!companyRepository.existsById(companyId)) {
+      throw new IllegalArgumentException("Company with ID " + companyId + " not found");
+    }
+    companyRepository.deleteById(companyId);
   }
 
   public boolean canUsersLogin(Company company) {

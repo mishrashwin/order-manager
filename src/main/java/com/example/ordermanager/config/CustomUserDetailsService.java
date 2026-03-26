@@ -68,6 +68,14 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
   }
 
+  public String getOwnerUsername() {
+    return ownerUsername;
+  }
+
+  public String getOwnerEncodedPassword() {
+    return ownerEncodedPassword;
+  }
+
   @Override
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
     String normalizedUsername = username != null ? username.trim() : null;
@@ -110,6 +118,10 @@ public class CustomUserDetailsService implements UserDetailsService {
     if (!companyService.canUsersLogin(user.getCompany())) {
       throw new DisabledException(
           "Company access is currently paused due to account status. Please contact support.");
+    }
+
+    if (!user.isAccountActive()) {
+      throw new DisabledException("User is inactive. Contact Admin for account activation.");
     }
 
     // Keep unverified-user message explicit so login page can show resend verification guidance.
