@@ -63,6 +63,7 @@ class UserServiceTest {
     assertThat(created.getCompany().getId()).isEqualTo(11L);
     assertThat(created.getMobileNumber()).isEqualTo("919876543210");
     assertThat(created.isEnabled()).isFalse();
+    assertThat(created.isAccountActive()).isTrue();
     assertThat(created.getPassword()).isNotEqualTo("RawPass123");
     verify(registrationService).sendVerificationEmail(created);
   }
@@ -163,6 +164,65 @@ class UserServiceTest {
 
     assertThatThrownBy(() -> userService.updateUserByAdmin(101L, update, 11L))
         .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Email is required");
+  }
+
+  @Test
+  void setUserActive_activatesUser() {
+    Company company = new Company();
+    company.setId(11L);
+
+    User existing = new User();
+    existing.setId(101L);
+    existing.setCompany(company);
+    existing.setUsername("manager1");
+    existing.setAccountActive(false);
+
+    when(userRepository.findById(101L)).thenReturn(Optional.of(existing));
+    when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+    userService.setUserActive(101L, true, 11L);
+
+    assertThat(existing.isAccountActive()).isTrue();
+    verify(userRepository).save(existing);
+  }
+
+  @Test
+  void setUserActive_deactivatesUser() {
+    Company company = new Company();
+    company.setId(11L);
+
+    User existing = new User();
+    existing.setId(101L);
+    existing.setCompany(company);
+    existing.setUsername("manager1");
+    existing.setAccountActive(true);
+
+    when(userRepository.findById(101L)).thenReturn(Optional.of(existing));
+    when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+    userService.setUserActive(101L, false, 11L);
+
+    assertThat(existing.isAccountActive()).isFalse();
+    verify(userRepository).save(existing);
+  }
+
+  @Test
+  void setUserActive_throwsForWrongCompany() {
+    Company company = new Company();
+    company.setId(11L);
+
+    User existing = new User();
+    existing.setId(101L);
+    existing.setCompany(company);
+    existing.setUsername("manager1");
+
+    when(userRepository.findById(101L)).thenReturn(Optional.of(existing));
+
+    assertThatThrownBy(() -> userService.setUserActive(101L, false, 99L))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("does not belong to your company");
+
+    verify(userRepository, never()).save(any(User.class));
   }
 }
 

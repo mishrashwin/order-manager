@@ -138,5 +138,81 @@ class AdminControllerTest {
     assertThat(model.getAttribute("user")).isEqualTo(existingUser);
     assertThat(model.getAttribute("roles")).isEqualTo(new String[] {"USER", "MANAGER", "ADMIN"});
   }
+
+  @Test
+  void toggleUserStatus_activate_redirectsWithSuccessMessage() {
+    User user = new User();
+    user.setId(30L);
+    user.setUsername("targetuser");
+    user.setAccountActive(false);
+
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    when(securityContextHelper.getCurrentUsername()).thenReturn("adminuser");
+    when(userService.getUserByIdAndCompany(30L, 5L)).thenReturn(user);
+
+    String view = adminController.toggleUserStatus(30L, redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/admin/users");
+    assertThat(redirectAttributes.getFlashAttributes().get("message"))
+        .isEqualTo("User 'targetuser' has been activated successfully.");
+  }
+
+  @Test
+  void toggleUserStatus_deactivate_redirectsWithSuccessMessage() {
+    User user = new User();
+    user.setId(31L);
+    user.setUsername("targetuser");
+    user.setAccountActive(true);
+
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    when(securityContextHelper.getCurrentUsername()).thenReturn("adminuser");
+    when(userService.getUserByIdAndCompany(31L, 5L)).thenReturn(user);
+
+    String view = adminController.toggleUserStatus(31L, redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/admin/users");
+    assertThat(redirectAttributes.getFlashAttributes().get("message"))
+        .isEqualTo("User 'targetuser' has been deactivated successfully.");
+  }
+
+  @Test
+  void toggleUserStatus_selfToggle_redirectsWithError() {
+    User user = new User();
+    user.setId(32L);
+    user.setUsername("adminuser");
+    user.setAccountActive(true);
+
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    when(securityContextHelper.getCurrentUsername()).thenReturn("adminuser");
+    when(userService.getUserByIdAndCompany(32L, 5L)).thenReturn(user);
+
+    String view = adminController.toggleUserStatus(32L, redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/admin/users");
+    assertThat(redirectAttributes.getFlashAttributes().get("error"))
+        .isEqualTo("You cannot change the active status of your own account!");
+  }
+
+  @Test
+  void toggleUserStatus_userNotInCompany_redirectsWithError() {
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    when(securityContextHelper.getCurrentUsername()).thenReturn("adminuser");
+    doThrow(new IllegalArgumentException("User not found or does not belong to your company"))
+        .when(userService).getUserByIdAndCompany(99L, 5L);
+
+    String view = adminController.toggleUserStatus(99L, redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/admin/users");
+    assertThat(redirectAttributes.getFlashAttributes().get("error"))
+        .isEqualTo("User not found or does not belong to your company");
+  }
 }
 
