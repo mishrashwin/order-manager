@@ -68,6 +68,14 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
   }
 
+  public String getOwnerUsername() {
+    return ownerUsername;
+  }
+
+  public String getOwnerEncodedPassword() {
+    return ownerEncodedPassword;
+  }
+
   @Override
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
     String normalizedUsername = username != null ? username.trim() : null;

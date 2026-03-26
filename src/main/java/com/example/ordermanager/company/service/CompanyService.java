@@ -250,6 +250,18 @@ public class CompanyService {
     return rejectedCompany;
   }
 
+  /**
+   * Hard delete a company and all its associated data (users, orders, clients, vendors). The DB
+   * foreign keys use ON DELETE CASCADE so all child records are removed automatically.
+   */
+  @Transactional
+  public void deleteCompany(Long companyId) {
+    if (!companyRepository.existsById(companyId)) {
+      throw new IllegalArgumentException("Company with ID " + companyId + " not found");
+    }
+    companyRepository.deleteById(companyId);
+  }
+
   public boolean canUsersLogin(Company company) {
     return company != null && company.isActive()
         && CompanyApprovalStatus.APPROVED.equals(company.getApprovalStatus());

@@ -4,6 +4,7 @@ import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.company.entity.CompanyApprovalStatus;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.owner.service.OwnerManagementService;
+import com.example.ordermanager.utils.PasswordVerificationService;
 import java.security.Principal;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
@@ -21,11 +23,13 @@ public class OwnerController {
 
   private final OwnerManagementService ownerManagementService;
   private final CompanyService companyService;
+  private final PasswordVerificationService passwordVerificationService;
 
   public OwnerController(OwnerManagementService ownerManagementService,
-      CompanyService companyService) {
+      CompanyService companyService, PasswordVerificationService passwordVerificationService) {
     this.ownerManagementService = ownerManagementService;
     this.companyService = companyService;
+    this.passwordVerificationService = passwordVerificationService;
   }
 
   @GetMapping("/dashboard")
@@ -87,6 +91,22 @@ public class OwnerController {
         companyService.activateCompany(id);
         redirectAttributes.addFlashAttribute("message", "Company access restored.");
       }
+    } catch (IllegalArgumentException ex) {
+      redirectAttributes.addFlashAttribute("error", ex.getMessage());
+    }
+    return "redirect:/owner/companies";
+  }
+
+  @PostMapping("/companies/{id}/delete")
+  public String deleteCompany(@PathVariable Long id, @RequestParam String password,
+      RedirectAttributes redirectAttributes) {
+    if (!passwordVerificationService.verifyCurrentUserPassword(password)) {
+      redirectAttributes.addFlashAttribute("error", "Incorrect password. Company was not deleted.");
+      return "redirect:/owner/companies";
+    }
+    try {
+      companyService.deleteCompany(id);
+      redirectAttributes.addFlashAttribute("message", "Company deleted successfully.");
     } catch (IllegalArgumentException ex) {
       redirectAttributes.addFlashAttribute("error", ex.getMessage());
     }

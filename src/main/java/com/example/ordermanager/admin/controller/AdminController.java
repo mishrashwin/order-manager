@@ -4,6 +4,7 @@ import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.service.UserService;
+import com.example.ordermanager.utils.PasswordVerificationService;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -25,12 +26,15 @@ public class AdminController {
   private final UserService userService;
   private final CompanyService companyService;
   private final SecurityContextHelper securityContextHelper;
+  private final PasswordVerificationService passwordVerificationService;
 
   public AdminController(UserService userService, CompanyService companyService,
-      SecurityContextHelper securityContextHelper) {
+      SecurityContextHelper securityContextHelper,
+      PasswordVerificationService passwordVerificationService) {
     this.userService = userService;
     this.companyService = companyService;
     this.securityContextHelper = securityContextHelper;
+    this.passwordVerificationService = passwordVerificationService;
   }
 
   @GetMapping("/dashboard")
@@ -113,7 +117,12 @@ public class AdminController {
   }
 
   @PostMapping("/users/{id}/delete")
-  public String deleteUser(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+  public String deleteUser(@PathVariable Long id, @RequestParam String password,
+      RedirectAttributes redirectAttributes) {
+    if (!passwordVerificationService.verifyCurrentUserPassword(password)) {
+      redirectAttributes.addFlashAttribute("error", "Incorrect password. User was not deleted.");
+      return "redirect:/admin/users";
+    }
     try {
       Long companyId = securityContextHelper.getCompanyIdFromContext();
       String currentUsername = securityContextHelper.getCurrentUsername();

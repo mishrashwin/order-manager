@@ -10,6 +10,7 @@ import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.service.UserService;
+import com.example.ordermanager.utils.PasswordVerificationService;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,12 +35,15 @@ class AdminControllerTest {
   private CompanyService companyService;
   @Mock
   private SecurityContextHelper securityContextHelper;
+  @Mock
+  private PasswordVerificationService passwordVerificationService;
 
   private AdminController adminController;
 
   @BeforeEach
   void setUp() {
-    adminController = new AdminController(userService, companyService, securityContextHelper);
+    adminController = new AdminController(userService, companyService, securityContextHelper,
+        passwordVerificationService);
   }
 
   @Test
