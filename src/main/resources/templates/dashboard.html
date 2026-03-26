@@ -50,21 +50,30 @@
 
       <div class="order-list" th:attr="id='list-' + ${status.name()}">
         <div class="order-card"
-             th:attr="data-id=${order.id}"
+             th:attr="data-id=${order.id},
+                      data-customer-name=${order.customerName},
+                      data-product-name=${order.productName},
+                      data-quantity=${order.quantity},
+                      data-po-order-no=${order.poOrderNo != null ? order.poOrderNo : ''},
+                      data-status-display=${order.status.displayName},
+                      data-badge-color=${order.status.badgeColor},
+                      data-order-date=${#temporals.format(order.orderDate, 'dd MMM yyyy')},
+                      data-delivery-date=${order.deliveryDate != null ? #temporals.format(order.deliveryDate, 'dd MMM yyyy') : ''},
+                      data-total-amount=${order.totalAmount},
+                      data-order-note=${order.orderNote != null ? order.orderNote : ''}"
              th:each="order : ${orders}"
              th:if="${order.status.name() == status.name()}">
 
           <strong th:text="${order.customerName}"></strong><br>
 
           <small class="text-muted">
-            <span th:text="${order.productName}"></span>
+            <span th:if="${order.poOrderNo != null and !#strings.isEmpty(order.poOrderNo)}"
+                  th:text="${order.poOrderNo + ' / '}"></span><span th:text="${order.productName}"></span>
             (<span th:text="${order.quantity}"></span>)
           </small>
 
-          <!-- Dates -->
+          <!-- Delivery Date -->
           <div class="order-dates mt-1">
-            <small th:text="'Order: ' + ${#temporals.format(order.orderDate, 'dd MMM yyyy')}"></small>
-
             <small th:classappend="
                             ${order.status.final}
                                 ? 'delivery-date delivered'
@@ -75,6 +84,43 @@
             </small>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Order Detail Modal (read-only, opened by double-clicking a card) -->
+<div class="modal fade" id="orderDetailModal" tabindex="-1" aria-labelledby="orderDetailModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="orderDetailModalLabel"><i class="bi bi-receipt"></i> Order Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <dl class="row mb-0">
+          <dt class="col-5">Client</dt>
+          <dd class="col-7" id="modalCustomerName">-</dd>
+          <dt class="col-5">PO / Order No</dt>
+          <dd class="col-7" id="modalPoOrderNo">-</dd>
+          <dt class="col-5">Product</dt>
+          <dd class="col-7" id="modalProductName">-</dd>
+          <dt class="col-5">Quantity</dt>
+          <dd class="col-7" id="modalQuantity">-</dd>
+          <dt class="col-5">Total Amount</dt>
+          <dd class="col-7" id="modalTotalAmount">-</dd>
+          <dt class="col-5">Status</dt>
+          <dd class="col-7"><span id="modalStatus" class="badge">-</span></dd>
+          <dt class="col-5">Order Date</dt>
+          <dd class="col-7" id="modalOrderDate">-</dd>
+          <dt class="col-5">Delivery Date</dt>
+          <dd class="col-7" id="modalDeliveryDate">-</dd>
+          <dt class="col-5 border-top pt-2">Notes</dt>
+          <dd class="col-7 border-top pt-2" id="modalOrderNote">-</dd>
+        </dl>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
@@ -278,6 +324,33 @@
                       });
               }
           });
+      });
+
+      // Double-click on an order card to view full read-only details
+      document.querySelector('.board').addEventListener('dblclick', function (e) {
+          const card = e.target.closest('.order-card');
+          if (!card) return;
+
+          const d = card.dataset;
+
+          document.getElementById('modalCustomerName').textContent = d.customerName || '-';
+          document.getElementById('modalPoOrderNo').textContent = d.poOrderNo || '-';
+          document.getElementById('modalProductName').textContent = d.productName || '-';
+          document.getElementById('modalQuantity').textContent = d.quantity || '-';
+
+          const amount = parseFloat(d.totalAmount);
+          document.getElementById('modalTotalAmount').textContent =
+              isNaN(amount) ? '-' : '₹' + amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+          const statusEl = document.getElementById('modalStatus');
+          statusEl.textContent = d.statusDisplay || '-';
+          statusEl.className = 'badge badge-custom bg-' + (d.badgeColor || 'secondary');
+
+          document.getElementById('modalOrderDate').textContent = d.orderDate || '-';
+          document.getElementById('modalDeliveryDate').textContent = d.deliveryDate || '-';
+          document.getElementById('modalOrderNote').textContent = d.orderNote || '-';
+
+          new bootstrap.Modal(document.getElementById('orderDetailModal')).show();
       });
   });
 </script>
