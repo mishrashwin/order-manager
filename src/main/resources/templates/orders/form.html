@@ -33,7 +33,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
 
-        <form th:action="${order.id == null} ? @{/orders} : @{/orders/update/{id}(id=${order.id})}" th:object="${order}" method="post">
+        <form id="orderForm" th:action="${order.id == null} ? @{/orders} : @{/orders/update/{id}(id=${order.id})}" th:object="${order}" method="post">
             <input type="hidden" th:field="*{id}">
 
             <!-- Customer Selection -->
@@ -48,7 +48,8 @@
                                 th:selected="${order.client != null && order.client.id == client.id}">
                         </option>
                     </select>
-                    <a class="btn btn-outline-success" th:href="@{/clients/new}" target="_blank">
+                    <a id="addClientLink" class="btn btn-outline-success"
+                       th:href="@{/clients/new(returnTo=${order.id == null ? '/orders/new' : '/orders/edit/' + order.id})}">
                         <i class="bi bi-plus-circle"></i> Add Client
                     </a>
                 </div>
@@ -61,22 +62,103 @@
                 <input type="text" class="form-control form-control-custom" th:field="*{poOrderNo}" placeholder="e.g., PO-2026-001">
             </div>
 
-            <!-- Product Name -->
+            <!-- Product Items -->
             <div class="mb-4">
-                <label class="form-label"><i class="bi bi-box"></i> Product Name</label>
-                <input type="text" class="form-control form-control-custom" th:field="*{productName}" required>
+                <label class="form-label"><i class="bi bi-boxes"></i> Products</label>
+                <div id="productRows">
+                    <!-- Existing order items (for edit) -->
+                    <div th:each="item, itemStat : ${order.orderItems}"
+                         class="product-row row g-2 mb-2 align-items-center">
+                        <div class="col-md-5">
+                            <select class="form-select form-control-custom" name="itemProductIds">
+                                <option value="">-- Select Product --</option>
+                                <option th:each="p : ${products}"
+                                        th:value="${p.id}"
+                                        th:text="${p.name + (p.brand != null ? ' (' + p.brand + ')' : '')}"
+                                        th:attr="data-price=${p.price != null ? p.price : ''}"
+                                        th:selected="${item.product != null and item.product.id == p.id}">
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="number" class="form-control form-control-custom"
+                                   name="itemQuantities" min="1" placeholder="Qty"
+                                   th:value="${item.quantity}">
+                        </div>
+                        <div class="col-md-3">
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" class="form-control form-control-custom"
+                                       name="itemUnitPrices" step="0.01" min="0" placeholder="Unit Price"
+                                       th:value="${item.unitPrice}">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-outline-danger btn-sm remove-product-row">
+                                <i class="bi bi-dash-circle"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Default empty row for new orders (no existing items) -->
+                    <div th:if="${order.orderItems == null or order.orderItems.isEmpty()}"
+                         class="product-row row g-2 mb-2 align-items-center">
+                        <div class="col-md-5">
+                            <select class="form-select form-control-custom" name="itemProductIds">
+                                <option value="">-- Select Product --</option>
+                                <option th:each="p : ${products}"
+                                        th:value="${p.id}"
+                                        th:text="${p.name + (p.brand != null ? ' (' + p.brand + ')' : '')}"
+                                        th:attr="data-price=${p.price != null ? p.price : ''}">
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="number" class="form-control form-control-custom"
+                                   name="itemQuantities" min="1" placeholder="Qty">
+                        </div>
+                        <div class="col-md-3">
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" class="form-control form-control-custom"
+                                       name="itemUnitPrices" step="0.01" min="0" placeholder="Unit Price">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-outline-danger btn-sm remove-product-row">
+                                <i class="bi bi-dash-circle"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-2">
+                    <button type="button" id="addProductRowBtn" class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-plus-circle"></i> Add Another Product
+                    </button>
+                    <a id="addProductLink" class="btn btn-outline-secondary btn-sm"
+                       th:href="@{/products/new(returnTo=${order.id == null ? '/orders/new' : '/orders/edit/' + order.id})}">
+                        <i class="bi bi-plus-circle"></i> New Product
+                    </a>
+                </div>
+                <small class="form-text text-muted">Select existing products or
+                    <a th:href="@{/products/new(returnTo=${order.id == null ? '/orders/new' : '/orders/edit/' + order.id})}">create a new product</a>.
+                </small>
             </div>
 
-            <!-- Order Details Row -->
+            <!-- Legacy product name (hidden, auto-synced on save) -->
+            <input type="hidden" th:field="*{productName}">
+            <input type="hidden" th:field="*{quantity}">
+            <input type="hidden" th:field="*{totalAmount}">
+
+            <!-- Derived Order Summary + Status -->
             <div class="row">
                 <div class="col-md-4 mb-4">
-                    <label class="form-label"><i class="bi bi-hash"></i> Quantity</label>
-                    <input type="number" class="form-control form-control-custom" th:field="*{quantity}" min="1" required>
+                    <label class="form-label"><i class="bi bi-hash"></i> Total Qty</label>
+                    <div class="form-control form-control-custom d-flex align-items-center bg-light-subtle" id="orderQuantitySummary">0</div>
                 </div>
 
                 <div class="col-md-4 mb-4">
-                    <label class="form-label"><i class="bi bi-currency-rupee"></i> Total Amount</label>
-                    <input type="number" class="form-control form-control-custom" th:field="*{totalAmount}" step="0.01" min="0" required>
+                    <label class="form-label"><i class="bi bi-currency-rupee"></i> Calculated Total Amount</label>
+                    <div class="form-control form-control-custom d-flex align-items-center bg-light-subtle" id="orderTotalAmountSummary">₹0.00</div>
                 </div>
 
                 <div class="col-md-4 mb-4">
@@ -103,8 +185,13 @@
                 <div class="col-md-6 mb-4">
                     <label class="form-label"><i class="bi bi-calendar-check"></i> Delivery Date</label>
                     <input type="date" class="form-control form-control-custom"
+                           th:classappend="${dateError} ? ' is-invalid' : ''"
                            th:field="*{deliveryDate}"
                            th:value="${#temporals.format(order.deliveryDate, 'yyyy-MM-dd')}">
+                    <div th:if="${dateError}" class="invalid-feedback d-block" th:text="${dateError}"></div>
+                    <div id="dateClientError" class="invalid-feedback d-block" style="display: none;">
+                        Delivery date must be on or after order date.
+                    </div>
                 </div>
             </div>
 
@@ -132,5 +219,306 @@
 <div th:replace="~{fragments/footer :: footer}"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const orderDraftStorageKey = 'om:draft:order:' + window.location.pathname + window.location.search;
+    const orderDraftTtlMs = 8 * 60 * 60 * 1000;
+
+    function saveOrderDraft() {
+        const form = document.getElementById('orderForm');
+        const productRows = document.getElementById('productRows');
+        if (!form || !productRows) {
+            return;
+        }
+
+        const values = {};
+        form.querySelectorAll('input[name], select[name], textarea[name]').forEach(function (field) {
+            if (field.closest('#productRows')) {
+                return;
+            }
+            values[field.name] = field.value;
+        });
+
+        const draft = {
+            updatedAt: Date.now(),
+            values: values,
+            productRows: collectProductRows()
+        };
+
+        sessionStorage.setItem(orderDraftStorageKey, JSON.stringify(draft));
+    }
+
+    function restoreOrderDraft() {
+        const rawDraft = sessionStorage.getItem(orderDraftStorageKey);
+        if (!rawDraft) {
+            return;
+        }
+
+        try {
+            const draft = JSON.parse(rawDraft);
+            if (!draft.updatedAt || (Date.now() - draft.updatedAt) > orderDraftTtlMs) {
+                sessionStorage.removeItem(orderDraftStorageKey);
+                return;
+            }
+
+            if (draft.productRows && Array.isArray(draft.productRows) && draft.productRows.length > 0) {
+                renderProductRows(draft.productRows);
+            }
+
+            if (draft.values) {
+                Object.keys(draft.values).forEach(function (name) {
+                    const field = document.querySelector('#orderForm [name="' + name + '"]');
+                    if (field) {
+                        field.value = draft.values[name];
+                    }
+                });
+            }
+        } catch (error) {
+            sessionStorage.removeItem(orderDraftStorageKey);
+        }
+    }
+
+    function collectProductRows() {
+        return Array.from(document.querySelectorAll('#productRows .product-row')).map(function (row) {
+            const productSelect = row.querySelector('select[name="itemProductIds"]');
+            const qtyInput = row.querySelector('input[name="itemQuantities"]');
+            const priceInput = row.querySelector('input[name="itemUnitPrices"]');
+
+            return {
+                productId: productSelect ? productSelect.value : '',
+                quantity: qtyInput ? qtyInput.value : '',
+                unitPrice: priceInput ? priceInput.value : ''
+            };
+        });
+    }
+
+    // Template for a blank product row (cloned when adding more rows)
+    const productRowTemplate = `
+        <div class="product-row row g-2 mb-2 align-items-center">
+            <div class="col-md-5">
+                <select class="form-select form-control-custom" name="itemProductIds">
+                    <option value="">-- Select Product --</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <input type="number" class="form-control form-control-custom"
+                       name="itemQuantities" min="1" placeholder="Qty">
+            </div>
+            <div class="col-md-3">
+                <div class="input-group">
+                    <span class="input-group-text">₹</span>
+                    <input type="number" class="form-control form-control-custom"
+                           name="itemUnitPrices" step="0.01" min="0" placeholder="Unit Price">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-outline-danger btn-sm remove-product-row">
+                    <i class="bi bi-dash-circle"></i> Remove
+                </button>
+            </div>
+        </div>`;
+
+    // Collect product options from the first existing select
+    function getProductOptions() {
+        const firstSelect = document.querySelector('#productRows select[name="itemProductIds"]');
+        return firstSelect ? firstSelect.innerHTML : '';
+    }
+
+    function createProductRow(rowData, productOptionsHtml) {
+        const div = document.createElement('div');
+        div.innerHTML = productRowTemplate;
+        const newRow = div.firstElementChild;
+        const newSelect = newRow.querySelector('select[name="itemProductIds"]');
+        const qtyInput = newRow.querySelector('input[name="itemQuantities"]');
+        const priceInput = newRow.querySelector('input[name="itemUnitPrices"]');
+
+        if (newSelect) {
+            newSelect.innerHTML = productOptionsHtml || getProductOptions();
+            if (rowData && rowData.productId) {
+                newSelect.value = rowData.productId;
+            }
+        }
+        if (qtyInput && rowData && rowData.quantity) {
+            qtyInput.value = rowData.quantity;
+        }
+        if (priceInput && rowData && rowData.unitPrice) {
+            priceInput.value = rowData.unitPrice;
+        }
+
+        return newRow;
+    }
+
+    function renderProductRows(rows) {
+        const container = document.getElementById('productRows');
+        if (!container) {
+            return;
+        }
+
+        const rowsToRender = rows && rows.length > 0 ? rows : [{}];
+        const productOptionsHtml = getProductOptions();
+        container.innerHTML = '';
+        rowsToRender.forEach(function (rowData) {
+            container.appendChild(createProductRow(rowData, productOptionsHtml));
+        });
+    }
+
+    function recalculateOrderSummary() {
+        let totalQty = 0;
+        let totalAmount = 0;
+
+        document.querySelectorAll('#productRows .product-row').forEach(function (row) {
+            const qtyInput = row.querySelector('input[name="itemQuantities"]');
+            const unitPriceInput = row.querySelector('input[name="itemUnitPrices"]');
+            const qty = parseInt(qtyInput ? qtyInput.value : '0', 10);
+            const unitPrice = parseFloat(unitPriceInput ? unitPriceInput.value : '0');
+
+            if (!Number.isNaN(qty) && qty > 0) {
+                totalQty += qty;
+                totalAmount += qty * (Number.isNaN(unitPrice) ? 0 : unitPrice);
+            }
+        });
+
+        const quantitySummary = document.getElementById('orderQuantitySummary');
+        const amountSummary = document.getElementById('orderTotalAmountSummary');
+        const quantityField = document.getElementById('quantity');
+        const totalAmountField = document.getElementById('totalAmount');
+
+        if (quantitySummary) {
+            quantitySummary.textContent = String(totalQty);
+        }
+        if (amountSummary) {
+            amountSummary.textContent = '₹' + totalAmount.toLocaleString('en-IN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+        if (quantityField) {
+            quantityField.value = totalQty > 0 ? String(totalQty) : '';
+        }
+        if (totalAmountField) {
+            totalAmountField.value = totalAmount > 0 ? totalAmount.toFixed(2) : '0.00';
+        }
+    }
+
+    function validateOrderDatesOnClient() {
+        const orderDateInput = document.getElementById('orderDate');
+        const deliveryDateInput = document.getElementById('deliveryDate');
+        const dateClientError = document.getElementById('dateClientError');
+
+        if (!orderDateInput || !deliveryDateInput || !dateClientError) {
+            return true;
+        }
+
+        deliveryDateInput.setCustomValidity('');
+        dateClientError.style.display = 'none';
+
+        if (!orderDateInput.value || !deliveryDateInput.value) {
+            deliveryDateInput.classList.remove('is-invalid');
+            return true;
+        }
+
+        if (deliveryDateInput.value < orderDateInput.value) {
+            const message = 'Delivery date must be on or after order date.';
+            deliveryDateInput.classList.add('is-invalid');
+            deliveryDateInput.setCustomValidity(message);
+            dateClientError.textContent = message;
+            dateClientError.style.display = 'block';
+            return false;
+        }
+
+        deliveryDateInput.classList.remove('is-invalid');
+        return true;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        restoreOrderDraft();
+        recalculateOrderSummary();
+
+        const orderForm = document.getElementById('orderForm');
+        if (orderForm) {
+            orderForm.addEventListener('input', saveOrderDraft);
+            orderForm.addEventListener('change', saveOrderDraft);
+            orderForm.addEventListener('submit', function (event) {
+                if (!validateOrderDatesOnClient()) {
+                    event.preventDefault();
+                    document.getElementById('deliveryDate').reportValidity();
+                    return;
+                }
+                recalculateOrderSummary();
+                sessionStorage.removeItem(orderDraftStorageKey);
+            });
+        }
+
+        ['orderDate', 'deliveryDate'].forEach(function (fieldId) {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('change', validateOrderDatesOnClient);
+            }
+        });
+
+        // Auto-fill unit price when a product is selected
+        document.getElementById('productRows').addEventListener('change', function (e) {
+            if (e.target.matches('select[name="itemProductIds"]')) {
+                const row = e.target.closest('.product-row');
+                const priceInput = row ? row.querySelector('input[name="itemUnitPrices"]') : null;
+                const selectedOption = e.target.selectedOptions[0];
+                const price = selectedOption ? selectedOption.getAttribute('data-price') : null;
+                if (priceInput && price != null) {
+                    priceInput.value = price;
+                }
+                recalculateOrderSummary();
+                saveOrderDraft();
+            }
+        });
+
+        document.getElementById('productRows').addEventListener('input', function () {
+            recalculateOrderSummary();
+            saveOrderDraft();
+        });
+
+        // Remove product row
+        document.getElementById('productRows').addEventListener('click', function (e) {
+            if (e.target.closest('.remove-product-row')) {
+                const rows = document.querySelectorAll('#productRows .product-row');
+                if (rows.length > 1) {
+                    e.target.closest('.product-row').remove();
+                    recalculateOrderSummary();
+                    saveOrderDraft();
+                }
+            }
+        });
+
+        // Add another product row
+        document.getElementById('addProductRowBtn').addEventListener('click', function () {
+            const container = document.getElementById('productRows');
+            container.appendChild(createProductRow({}, getProductOptions()));
+            recalculateOrderSummary();
+            saveOrderDraft();
+        });
+
+        const addProductLink = document.getElementById('addProductLink');
+        if (addProductLink) {
+            addProductLink.addEventListener('click', function (e) {
+                e.preventDefault();
+                saveOrderDraft();
+                window.location.href = addProductLink.href;
+            });
+        }
+
+        const addClientLink = document.getElementById('addClientLink');
+        if (addClientLink) {
+            addClientLink.addEventListener('click', function (e) {
+                e.preventDefault();
+                saveOrderDraft();
+                window.location.href = addClientLink.href;
+            });
+        }
+
+        document.querySelectorAll('a[href="/orders"]').forEach(function (link) {
+            link.addEventListener('click', function () {
+                sessionStorage.removeItem(orderDraftStorageKey);
+            });
+        });
+    });
+</script>
 </body>
 </html>

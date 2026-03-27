@@ -54,8 +54,8 @@ public class DashboardController {
     var urgentOrderNotifications = orderService.getUrgentOrdersByCompanyId(companyId).stream()
         .filter(order -> isWithinSelectedDateRange(order, start, end))
         .map(order -> Map.of("id", order.getId(), "customerName", order.getCustomerName(),
-            "productName", order.getProductName(), "quantity", order.getQuantity(), "deliveryDate",
-            order.getDeliveryDate().toString()))
+            "productName", order.getDisplayProductSummary(), "quantity",
+            order.getDisplayQuantitySummary(), "deliveryDate", order.getDeliveryDate().toString()))
         .toList();
     model.addAttribute("urgentOrders", urgentOrderNotifications);
 

@@ -5,6 +5,7 @@ import com.example.ordermanager.owner.dto.OwnerDashboardMetrics;
 import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.company.entity.CompanyApprovalStatus;
 import com.example.ordermanager.company.repository.CompanyRepository;
+import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.repository.CompanyUserCount;
 import com.example.ordermanager.user.repository.UserRepository;
 import java.util.Collections;
@@ -51,7 +52,7 @@ public class OwnerManagementService {
         companyRepository.findByApprovalStatusOrderByCreatedAtDesc(CompanyApprovalStatus.PENDING);
     Map<Long, Long> adminCounts = fetchRoleCountMap(companies, "ADMIN");
     Map<Long, Long> userCounts = fetchRoleCountMap(companies, "USER");
-    return companies.stream().map(c -> toSummary(c, adminCounts.getOrDefault(c.getId(), 0L),
+    return companies.stream().map(c -> toPendingSummary(c, adminCounts.getOrDefault(c.getId(), 0L),
         userCounts.getOrDefault(c.getId(), 0L))).toList();
   }
 
@@ -67,6 +68,17 @@ public class OwnerManagementService {
 
   private OwnerCompanySummary toSummary(Company company, long adminCount, long userCount) {
     return new OwnerCompanySummary(company.getId(), company.getName(), company.getApprovalStatus(),
-        company.isActive(), adminCount, userCount, company.getCreatedAt());
+        company.isActive(), adminCount, userCount, company.getCreatedAt(), null, null, null, null);
+  }
+
+  private OwnerCompanySummary toPendingSummary(Company company, long adminCount, long userCount) {
+    User firstAdmin = userRepository
+        .findFirstByCompanyIdAndRoleOrderByIdAsc(company.getId(), "ADMIN").orElse(null);
+    return new OwnerCompanySummary(company.getId(), company.getName(), company.getApprovalStatus(),
+        company.isActive(), adminCount, userCount, company.getCreatedAt(),
+        firstAdmin != null ? firstAdmin.getFirstName() : null,
+        firstAdmin != null ? firstAdmin.getLastName() : null,
+        firstAdmin != null ? firstAdmin.getEmail() : null,
+        firstAdmin != null ? firstAdmin.getMobileNumber() : null);
   }
 }

@@ -78,18 +78,26 @@
             <div class="table-responsive" th:if="${!#lists.isEmpty(pendingCompanies)}">
                 <table class="table table-hover align-middle">
                     <thead>
-                    <tr>
                         <th>Company</th>
                         <th>Created On</th>
-                        <th>Users</th>
+                        <th>Admin Contact</th>
                         <th>Actions</th>
+                    <tr>
                     </tr>
                     </thead>
                     <tbody>
                     <tr th:each="company : ${pendingCompanies}">
                         <td th:text="${company.companyName}">ACME</td>
                         <td th:text="${#temporals.format(company.createdAt, 'dd MMM yyyy HH:mm')}">-</td>
-                        <td th:text="${company.userCount}">0</td>
+                        <td>
+                            <div th:if="${company.adminEmail != null}">
+                                <div class="fw-semibold"
+                                     th:text="${company.adminFirstName + ' ' + company.adminLastName}">Admin Name</div>
+                                <div class="small text-muted" th:text="${company.adminEmail}">admin@example.com</div>
+                                <div class="small text-muted" th:text="${company.adminMobileNumber}">+919999999999</div>
+                            </div>
+                            <span th:if="${company.adminEmail == null}" class="text-muted">Admin details not available yet</span>
+                        </td>
                         <td class="d-flex gap-2">
                             <form th:action="@{/owner/companies/{id}/approve(id=${company.companyId})}" method="post">
                                 <button type="submit" class="btn btn-success btn-sm">Approve</button>

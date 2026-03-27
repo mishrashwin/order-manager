@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.order.entity.Order;
+import com.example.ordermanager.order.entity.OrderItem;
 import com.example.ordermanager.order.entity.OrderStatus;
 import com.example.ordermanager.order.service.OrderService;
 import com.example.ordermanager.utils.SecurityContextHelper;
@@ -64,6 +65,8 @@ class DashboardControllerTest {
 
     assertThat(urgentOrders).hasSize(1);
     assertThat(urgentOrders.get(0).get("id")).isEqualTo(1L);
+    assertThat(urgentOrders.get(0).get("productName")).isEqualTo("Product [2]");
+    assertThat(urgentOrders.get(0).get("quantity")).isEqualTo("Product [2]");
   }
 
   @Test
@@ -106,6 +109,11 @@ class DashboardControllerTest {
     order.setCustomerName("Customer");
     order.setProductName("Product");
     order.setQuantity(1);
+    OrderItem item = new OrderItem();
+    item.setOrder(order);
+    item.setProductName("Product");
+    item.setQuantity(2);
+    order.getOrderItems().add(item);
     return order;
   }
 }

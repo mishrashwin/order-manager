@@ -46,7 +46,7 @@ class ClientControllerTest {
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(7L);
 
-    String view = clientController.saveClient(client, model, redirectAttributes);
+    String view = clientController.saveClient(client, null, model, redirectAttributes);
 
     assertThat(view).isEqualTo("redirect:/clients");
     assertThat(redirectAttributes.getFlashAttributes().get("success"))
@@ -64,7 +64,7 @@ class ClientControllerTest {
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(7L);
 
-    String view = clientController.saveClient(client, model, redirectAttributes);
+    String view = clientController.saveClient(client, null, model, redirectAttributes);
 
     assertThat(view).isEqualTo("redirect:/clients");
     assertThat(redirectAttributes.getFlashAttributes().get("success"))
@@ -84,7 +84,7 @@ class ClientControllerTest {
         "Client Phone No is invalid. Use country code + mobile number.")).when(clientService)
         .saveClientWithCompany(client, 7L);
 
-    String view = clientController.saveClient(client, model, redirectAttributes);
+    String view = clientController.saveClient(client, "/orders/new", model, redirectAttributes);
 
     assertThat(view).isEqualTo("clients/form");
     assertThat(model.getAttribute("error"))
@@ -92,6 +92,54 @@ class ClientControllerTest {
     assertThat(model.getAttribute("phoneError"))
         .isEqualTo("Client Phone No is invalid. Use country code + mobile number.");
     assertThat(model.getAttribute("client")).isEqualTo(client);
+    assertThat(model.getAttribute("returnTo")).isEqualTo("/orders/new");
+  }
+
+  @Test
+  void saveClient_withAllowedReturnTo_redirectsToOrderFlow() {
+    Client client = new Client();
+    client.setName("Acme");
+    Model model = new ConcurrentModel();
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(7L);
+
+    String view = clientController.saveClient(client, "/orders/new", model, redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/orders/new");
+    verify(clientService).saveClientWithCompany(client, 7L);
+  }
+
+  @Test
+  void saveClient_withInvalidReturnTo_fallsBackToClientList() {
+    Client client = new Client();
+    client.setName("Acme");
+    Model model = new ConcurrentModel();
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(7L);
+
+    String view = clientController.saveClient(client, "https://evil.example/redirect", model,
+        redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/clients");
+    verify(clientService).saveClientWithCompany(client, 7L);
+  }
+
+  @Test
+  void saveClient_withDuplicateCommaJoinedReturnTo_redirectsToSingleOrderPath() {
+    Client client = new Client();
+    client.setName("Acme");
+    Model model = new ConcurrentModel();
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(7L);
+
+    String view =
+        clientController.saveClient(client, "/orders/new,/orders/new", model, redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/orders/new");
+    verify(clientService).saveClientWithCompany(client, 7L);
   }
 }
 

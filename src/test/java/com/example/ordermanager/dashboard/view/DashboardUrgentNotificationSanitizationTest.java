@@ -19,8 +19,8 @@ class DashboardUrgentNotificationSanitizationTest {
 
     assertTrue(functionBody.contains("customerStrong.textContent = customerName;"),
         "Customer name should be rendered via textContent");
-    assertTrue(functionBody.contains("createTextNode(` - ${productName} (Qty: ${quantityText})`)"),
-        "Product and quantity should be rendered as text node content");
+    assertTrue(functionBody.contains("createTextNode(` - ${productName}`)"),
+        "Product summary should be rendered as text node content");
     assertTrue(functionBody.contains("createTextNode(` Delivery: ${daysText}`)"),
         "Delivery metadata should be rendered as text node content");
     assertTrue(

@@ -5,6 +5,8 @@ import com.example.ordermanager.client.exception.ClientHasActiveOrdersException;
 import com.example.ordermanager.client.service.ClientService;
 import com.example.ordermanager.utils.PasswordVerificationService;
 import com.example.ordermanager.utils.SecurityContextHelper;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -14,6 +16,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @Controller
 @RequestMapping("/clients")
 public class ClientController {
+
+  private static final String CLIENT_FALLBACK_PATH = "/clients";
 
   private final ClientService clientService;
   private final SecurityContextHelper securityContextHelper;
@@ -35,13 +39,15 @@ public class ClientController {
   }
 
   @GetMapping("/new")
-  public String newClientForm(Model model) {
+  public String newClientForm(@RequestParam(required = false) String returnTo, Model model) {
     model.addAttribute("client", new Client());
+    model.addAttribute("returnTo", sanitizeReturnTo(returnTo));
     return "clients/form";
   }
 
   @PostMapping
-  public String saveClient(@ModelAttribute Client client, Model model,
+  public String saveClient(@ModelAttribute Client client,
+      @RequestParam(required = false) String returnTo, Model model,
       RedirectAttributes redirectAttributes) {
     try {
       boolean isUpdate = client.getId() != null;
@@ -49,7 +55,7 @@ public class ClientController {
       clientService.saveClientWithCompany(client, companyId);
       redirectAttributes.addFlashAttribute("success",
           isUpdate ? "Client updated successfully" : "Client added successfully");
-      return "redirect:/clients";
+      return "redirect:" + sanitizeReturnTo(returnTo);
     } catch (IllegalArgumentException e) {
       String message = e.getMessage();
       model.addAttribute("error", message);
@@ -57,14 +63,17 @@ public class ClientController {
         model.addAttribute("phoneError", message);
       }
       model.addAttribute("client", client);
+      model.addAttribute("returnTo", sanitizeReturnTo(returnTo));
       return "clients/form";
     } catch (IllegalStateException e) {
       model.addAttribute("error", "You must be logged in to create a client");
       model.addAttribute("client", client);
+      model.addAttribute("returnTo", sanitizeReturnTo(returnTo));
       return "clients/form";
     } catch (Exception e) {
       model.addAttribute("error", "Error saving client: " + e.getMessage());
       model.addAttribute("client", client);
+      model.addAttribute("returnTo", sanitizeReturnTo(returnTo));
       return "clients/form";
     }
   }
@@ -74,8 +83,10 @@ public class ClientController {
   }
 
   @GetMapping("/edit/{id}")
-  public String editClient(@PathVariable Long id, Model model) {
+  public String editClient(@PathVariable Long id, @RequestParam(required = false) String returnTo,
+      Model model) {
     model.addAttribute("client", clientService.getClientById(id));
+    model.addAttribute("returnTo", sanitizeReturnTo(returnTo));
     return "clients/form";
   }
 
@@ -100,5 +111,26 @@ public class ClientController {
       redirectAttributes.addFlashAttribute("error", "Error deleting client: " + e.getMessage());
     }
     return "redirect:/clients";
+  }
+
+  private String sanitizeReturnTo(String returnTo) {
+    if (returnTo == null || returnTo.isBlank()) {
+      return CLIENT_FALLBACK_PATH;
+    }
+    String normalized = returnTo.trim();
+    try {
+      normalized = URLDecoder.decode(normalized, StandardCharsets.UTF_8);
+    } catch (IllegalArgumentException ignored) {
+    }
+    int delimiter = normalized.indexOf(',');
+    if (delimiter >= 0) {
+      normalized = normalized.substring(0, delimiter).trim();
+    }
+    if (!normalized.startsWith("/") || normalized.startsWith("//") || normalized.contains("\r")
+        || normalized.contains("\n")) {
+      return CLIENT_FALLBACK_PATH;
+    }
+    return normalized.startsWith("/orders") || normalized.startsWith("/clients") ? normalized
+        : CLIENT_FALLBACK_PATH;
   }
 }

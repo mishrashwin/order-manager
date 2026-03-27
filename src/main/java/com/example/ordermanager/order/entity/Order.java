@@ -9,6 +9,9 @@ import lombok.ToString;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "orders")
@@ -48,6 +51,9 @@ public class Order {
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "company_id", nullable = false)
   private Company company;
+
+  @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<OrderItem> orderItems = new ArrayList<>();
 
   /**
    * Helper method to get the customer name from the client relationship. Falls back to the
@@ -96,6 +102,45 @@ public class Order {
     this.orderDate = orderDate;
     this.deliveryDate = deliveryDate;
     this.orderNote = orderNote;
+  }
+
+  @Transient
+  public String getDisplayProductSummary() {
+    if (orderItems != null && !orderItems.isEmpty()) {
+      String summary =
+          orderItems.stream().filter(item -> item.getProductName() != null).map(item -> {
+            String product = item.getProductName().trim();
+            Integer itemQty = item.getQuantity();
+            return itemQty != null ? product + " [" + itemQty + "]" : product;
+          }).filter(item -> !item.isBlank()).collect(Collectors.joining(", "));
+      if (!summary.isBlank()) {
+        return summary;
+      }
+    }
+
+    if (productName == null || productName.isBlank()) {
+      return "-";
+    }
+    return quantity != null ? productName + " [" + quantity + "]" : productName;
+  }
+
+  @Transient
+  public String getDisplayQuantitySummary() {
+    if (orderItems != null && !orderItems.isEmpty()) {
+      String summary = orderItems.stream().map(item -> {
+        String product = item.getProductName() != null ? item.getProductName().trim() : "Product";
+        Integer itemQty = item.getQuantity();
+        return itemQty != null ? product + " [" + itemQty + "]" : product;
+      }).filter(item -> !item.isBlank()).collect(Collectors.joining(", "));
+      if (!summary.isBlank()) {
+        return summary;
+      }
+    }
+
+    if (quantity == null) {
+      return "-";
+    }
+    return quantity.toString();
   }
 
 }
