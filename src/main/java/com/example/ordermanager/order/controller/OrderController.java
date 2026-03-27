@@ -86,6 +86,17 @@ public class OrderController {
       return "redirect:/orders";
     } catch (IllegalStateException e) {
       return "redirect:/login";
+    } catch (IllegalArgumentException e) {
+      model.addAttribute("error", e.getMessage());
+      if (e.getMessage() != null && e.getMessage().contains("Delivery date")) {
+        model.addAttribute("dateError", e.getMessage());
+      }
+      model.addAttribute("order", order);
+      Long companyId = securityContextHelper.getCompanyIdFromContext();
+      model.addAttribute("clients", clientService.getClientsByCompanyId(companyId));
+      model.addAttribute("products", productService.getProductsByCompanyId(companyId));
+      model.addAttribute("statuses", Arrays.asList(OrderStatus.values()));
+      return "orders/form";
     } catch (Exception e) {
       model.addAttribute("error", "Error saving order: " + e.getMessage());
       model.addAttribute("order", order);
@@ -115,13 +126,28 @@ public class OrderController {
   public String updateOrder(@PathVariable Long id, @ModelAttribute("order") Order updatedOrder,
       @RequestParam(required = false) List<Long> itemProductIds,
       @RequestParam(required = false) List<Integer> itemQuantities,
-      @RequestParam(required = false) List<Double> itemUnitPrices,
+      @RequestParam(required = false) List<Double> itemUnitPrices, Model model,
       RedirectAttributes redirectAttributes) {
-    Long companyId = securityContextHelper.getCompanyIdFromContext();
-    buildOrderItems(updatedOrder, itemProductIds, itemQuantities, itemUnitPrices, companyId);
-    orderService.patchOrder(id, updatedOrder);
-    redirectAttributes.addFlashAttribute("message", "Order updated successfully");
-    return "redirect:/orders";
+    try {
+      Long companyId = securityContextHelper.getCompanyIdFromContext();
+      buildOrderItems(updatedOrder, itemProductIds, itemQuantities, itemUnitPrices, companyId);
+      orderService.patchOrder(id, updatedOrder);
+      redirectAttributes.addFlashAttribute("message", "Order updated successfully");
+      return "redirect:/orders";
+    } catch (IllegalStateException e) {
+      return "redirect:/login";
+    } catch (IllegalArgumentException e) {
+      model.addAttribute("error", e.getMessage());
+      if (e.getMessage() != null && e.getMessage().contains("Delivery date")) {
+        model.addAttribute("dateError", e.getMessage());
+      }
+      model.addAttribute("order", updatedOrder);
+      Long companyId = securityContextHelper.getCompanyIdFromContext();
+      model.addAttribute("clients", clientService.getClientsByCompanyId(companyId));
+      model.addAttribute("products", productService.getProductsByCompanyId(companyId));
+      model.addAttribute("statuses", Arrays.asList(OrderStatus.values()));
+      return "orders/form";
+    }
   }
 
   @PostMapping("/delete/{id}")

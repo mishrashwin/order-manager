@@ -10,6 +10,7 @@ import com.example.ordermanager.product.entity.Product;
 import com.example.ordermanager.product.service.ProductService;
 import com.example.ordermanager.utils.PasswordVerificationService;
 import com.example.ordermanager.utils.SecurityContextHelper;
+import com.example.ordermanager.vendor.entity.Vendor;
 import com.example.ordermanager.vendor.service.VendorService;
 import java.util.Collections;
 import java.util.List;
@@ -70,7 +71,7 @@ class ProductControllerTest {
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(3L);
 
-    String view = productController.saveProduct(product, model, redirectAttributes);
+    String view = productController.saveProduct(product, null, model, redirectAttributes);
 
     assertThat(view).isEqualTo("redirect:/products");
     assertThat(redirectAttributes.getFlashAttributes().get("message"))
@@ -88,7 +89,7 @@ class ProductControllerTest {
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(3L);
 
-    String view = productController.saveProduct(product, model, redirectAttributes);
+    String view = productController.saveProduct(product, null, model, redirectAttributes);
 
     assertThat(view).isEqualTo("redirect:/products");
     assertThat(redirectAttributes.getFlashAttributes().get("message"))
@@ -107,11 +108,88 @@ class ProductControllerTest {
     doThrow(new IllegalArgumentException("Company not found")).when(productService)
         .saveProductWithCompany(product, 3L);
 
-    String view = productController.saveProduct(product, model, redirectAttributes);
+    String view = productController.saveProduct(product, "/orders/new", model, redirectAttributes);
 
     assertThat(view).isEqualTo("products/form");
     assertThat(model.getAttribute("error")).isEqualTo("Company not found");
     assertThat(model.getAttribute("product")).isEqualTo(product);
+    assertThat(model.getAttribute("returnTo")).isEqualTo("/orders/new");
+  }
+
+  @Test
+  void newProductForm_withReturnTo_loadsFormWithReturnContext() {
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(3L);
+    when(vendorService.getVendorsByCompanyId(3L)).thenReturn(List.of(new Vendor()));
+
+    Model model = new ConcurrentModel();
+    String view = productController.newProductForm("/orders/new", model);
+
+    assertThat(view).isEqualTo("products/form");
+    assertThat(model.getAttribute("returnTo")).isEqualTo("/orders/new");
+    assertThat(model.getAttribute("product")).isNotNull();
+  }
+
+  @Test
+  void saveProduct_withAllowedReturnTo_redirectsToProvidedPath() {
+    Product product = new Product();
+    product.setName("Steel Rod 12mm");
+    Model model = new ConcurrentModel();
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(3L);
+
+    String view = productController.saveProduct(product, "/orders/new", model, redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/orders/new");
+    verify(productService).saveProductWithCompany(product, 3L);
+  }
+
+  @Test
+  void saveProduct_withEncodedReturnTo_redirectsToDecodedOrderPath() {
+    Product product = new Product();
+    product.setName("Steel Rod 12mm");
+    Model model = new ConcurrentModel();
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(3L);
+
+    String view =
+        productController.saveProduct(product, "%2Forders%2Fedit%2F42", model, redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/orders/edit/42");
+    verify(productService).saveProductWithCompany(product, 3L);
+  }
+
+  @Test
+  void saveProduct_withDuplicateCommaJoinedReturnTo_redirectsToSingleOrderPath() {
+    Product product = new Product();
+    product.setName("Steel Rod 12mm");
+    Model model = new ConcurrentModel();
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(3L);
+
+    String view = productController.saveProduct(product, "/orders/new,/orders/new", model,
+        redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/orders/new");
+    verify(productService).saveProductWithCompany(product, 3L);
+  }
+
+  @Test
+  void saveProduct_withInvalidReturnTo_fallsBackToProductList() {
+    Product product = new Product();
+    product.setName("Steel Rod 12mm");
+    Model model = new ConcurrentModel();
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(3L);
+
+    String view = productController.saveProduct(product, "https://evil.example/redirect", model,
+        redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/products");
+    verify(productService).saveProductWithCompany(product, 3L);
   }
 
   @Test

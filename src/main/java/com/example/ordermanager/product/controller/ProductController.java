@@ -13,6 +13,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +22,8 @@ import java.util.Map;
 @Controller
 @RequestMapping("/products")
 public class ProductController {
+
+  private static final String PRODUCT_FALLBACK_PATH = "/products";
 
   private final ProductService productService;
   private final VendorService vendorService;
@@ -66,15 +70,17 @@ public class ProductController {
   }
 
   @GetMapping("/new")
-  public String newProductForm(Model model) {
+  public String newProductForm(@RequestParam(required = false) String returnTo, Model model) {
     Long companyId = securityContextHelper.getCompanyIdFromContext();
     model.addAttribute("product", new Product());
     model.addAttribute("vendors", vendorService.getVendorsByCompanyId(companyId));
+    model.addAttribute("returnTo", sanitizeReturnTo(returnTo));
     return "products/form";
   }
 
   @PostMapping
-  public String saveProduct(@ModelAttribute Product product, Model model,
+  public String saveProduct(@ModelAttribute Product product,
+      @RequestParam(required = false) String returnTo, Model model,
       RedirectAttributes redirectAttributes) {
     try {
       boolean isUpdate = product.getId() != null;
@@ -82,28 +88,65 @@ public class ProductController {
       productService.saveProductWithCompany(product, companyId);
       redirectAttributes.addFlashAttribute("message",
           isUpdate ? "Product updated successfully." : "Product added successfully.");
-      return "redirect:/products";
+      String redirectPath = sanitizeReturnTo(returnTo);
+      return "redirect:" + redirectPath;
     } catch (IllegalArgumentException e) {
       model.addAttribute("error", e.getMessage());
       Long companyId = securityContextHelper.getCompanyIdFromContext();
       model.addAttribute("vendors", vendorService.getVendorsByCompanyId(companyId));
       model.addAttribute("product", product);
+      model.addAttribute("returnTo", sanitizeReturnTo(returnTo));
       return "products/form";
     } catch (Exception e) {
       model.addAttribute("error", "Error saving product: " + e.getMessage());
       Long companyId = securityContextHelper.getCompanyIdFromContext();
       model.addAttribute("vendors", vendorService.getVendorsByCompanyId(companyId));
       model.addAttribute("product", product);
+      model.addAttribute("returnTo", sanitizeReturnTo(returnTo));
       return "products/form";
     }
   }
 
   @GetMapping("/edit/{id}")
-  public String editProduct(@PathVariable Long id, Model model) {
+  public String editProduct(@PathVariable Long id, @RequestParam(required = false) String returnTo,
+      Model model) {
     Long companyId = securityContextHelper.getCompanyIdFromContext();
     model.addAttribute("product", productService.getProductById(id));
     model.addAttribute("vendors", vendorService.getVendorsByCompanyId(companyId));
+    model.addAttribute("returnTo", sanitizeReturnTo(returnTo));
     return "products/form";
+  }
+
+  private String sanitizeReturnTo(String returnTo) {
+    if (returnTo == null || returnTo.isBlank()) {
+      return PRODUCT_FALLBACK_PATH;
+    }
+
+    String normalized = normalizeReturnToCandidate(returnTo.trim());
+
+    if (!normalized.startsWith("/") || normalized.startsWith("//") || normalized.contains("\r")
+        || normalized.contains("\n")) {
+      return PRODUCT_FALLBACK_PATH;
+    }
+
+    boolean allowed = normalized.startsWith("/orders") || normalized.startsWith("/products");
+    return allowed ? normalized : PRODUCT_FALLBACK_PATH;
+  }
+
+  private String normalizeReturnToCandidate(String value) {
+    String normalized = value;
+    try {
+      normalized = URLDecoder.decode(value, StandardCharsets.UTF_8);
+    } catch (IllegalArgumentException ignored) {
+      // Keep original value when URL decoding fails.
+    }
+
+    // Some browsers/framework paths can submit duplicate params as comma-joined values.
+    int delimiter = normalized.indexOf(',');
+    if (delimiter >= 0) {
+      normalized = normalized.substring(0, delimiter).trim();
+    }
+    return normalized;
   }
 
   @PostMapping("/delete/{id}")

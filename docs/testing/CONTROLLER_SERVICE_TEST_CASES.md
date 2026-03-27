@@ -40,6 +40,8 @@ This file is the living test inventory for controller and service methods.
 - `ADM-16` `POST /admin/users/{id}/toggle-status` deactivates active user by setting `accountActive=false` and sets flash `message` with "deactivated"
 - `ADM-17` `POST /admin/users/{id}/toggle-status` blocks self-toggle with flash `error`
 - `ADM-18` `POST /admin/users/{id}/toggle-status` user not in company sets flash `error`
+- `ADM-19` `GET /admin/order-statistics` computes and exposes overall total order value for the selected date/status filters
+- `ADM-20` drill-down (`clientId`/`clientName`) computes selected-client total order value and ignores null order amounts
 
 ### `CompanyController`
 - `COM-01` `GET /company/register` initializes `registrationData`
@@ -58,6 +60,7 @@ This file is the living test inventory for controller and service methods.
 - `DASH-04` includes all enum statuses and selected company name fallback
 - `DASH-05` urgent alerts include only orders whose `orderDate` falls within the selected dashboard date range
 - `DASH-06` urgent alerts exclude entries with null `orderDate` to prevent out-of-range notification leakage
+- `DASH-07` dashboard urgent payload and cards use item-based product summaries with per-product quantities in brackets
 
 ### `OrderController`
 - `ORDC-01` list endpoint uses tenant id and date range defaults and shows flash `message`/`error` alerts
@@ -68,6 +71,9 @@ This file is the living test inventory for controller and service methods.
 - `ORDC-06` edit/duplicate for missing order redirects to `/orders`; `POST /orders/update/{id}` success redirects with flash `message`
 - `ORDC-07` `GET /orders/delete/{id}` success redirects with flash `message`
 - `ORDC-07` duplicate order copies fields and resets `orderDate=now`, `status=CREATED`
+- `ORDC-08` order form template includes draft-resume hooks and Add Product link wiring to preserve in-progress edits before navigation
+- `ORDC-09` order form uses line-item qty/unit price as source of truth, shows calculated total/qty summary, and clears stale draft state on submit
+- `ORDC-10` order date validation blocks `deliveryDate < orderDate` (client-side pre-submit + server-side `POST /orders` fallback) and shows inline warning
 
 ### `OrderRestController`
 - `ORDA-01` `POST /api/orders` delegates create and returns created payload
@@ -87,6 +93,8 @@ This file is the living test inventory for controller and service methods.
 - `VEN-02` save success (create/update) redirects `/vendors` with flash `message`
 - `VEN-03` save unauthenticated/general error returns form with error
 - `VEN-04` edit route delegates by id; delete success/failure redirects `/vendors` with flash `message`/`error`
+- `VEN-05` `GET /vendors/new` and `POST /vendors` preserve/validate `returnTo` so nested vendor creation can return to product form safely
+- `VEN-06` vendor `returnTo` sanitization normalizes encoded/duplicate comma-joined values (for example query+form duplicates) to a single safe path
 
 ### `ProductController`
 - `PRD-01` list endpoint uses tenant-scoped `getProductsByCompanyId` and populates `orderUsageMap`
@@ -95,6 +103,8 @@ This file is the living test inventory for controller and service methods.
 - `PRD-04` delete correct password succeeds and redirects with flash `message`
 - `PRD-05` delete wrong password does not delete and returns flash `error`
 - `PRD-06` delete correct password but service throws returns flash `error`
+- `PRD-07` `GET /products/new|edit` and `POST /products` preserve/validate `returnTo` so product creation can return to order flow safely
+- `PRD-08` product `returnTo` sanitization normalizes encoded/duplicate comma-joined values (for example query+form duplicates) to a single safe path
 
 ### `OwnerController`
 - `OWN-01` dashboard model includes owner page markers and metrics/pending lists
@@ -146,6 +156,9 @@ This file is the living test inventory for controller and service methods.
 - `ORS-09` urgent order query: final status orders excluded regardless of delivery date
 - `ORS-10` urgent order query: sorted overdue-first then upcoming by delivery date ascending
 - `ORS-11` urgent order query: orders with delivery date > today+7 not returned
+- `ORS-12` create flow derives persisted `quantity` and `totalAmount` from order items instead of trusting manual order-level inputs
+- `ORS-13` patch/update flow recalculates persisted `quantity` and `totalAmount` from order items when items are submitted
+- `ORS-14` create/update date validation rejects orders where `deliveryDate` is before `orderDate`
 
 ### `ClientService`
 - `CLS-01` save assigns company by id and enforces uppercase client name

@@ -154,6 +154,12 @@
                     <i class="bi bi-people"></i>
                     Clients: <strong th:text="${stats.size()}">0</strong>
                 </span>
+                <span class="stat-summary-pill">
+                    <i class="bi bi-currency-rupee"></i>
+                    Total value:
+                    <strong
+                        th:text="${'₹' + #numbers.formatDecimal(totalOrderValue, 0, 'COMMA', 2, 'POINT')}">₹0.00</strong>
+                </span>
             </div>
         </form>
     </div>
@@ -217,6 +223,8 @@
             <h5 class="mb-0 fw-semibold">
                 Orders for <span th:text="${selectedClientName}">Client</span>
             </h5>
+            <span class="stat-summary-pill ms-2"
+                  th:text="${'Total value: ₹' + #numbers.formatDecimal(selectedClientTotalValue, 0, 'COMMA', 2, 'POINT')}">Total value: ₹0.00</span>
             <span class="badge bg-secondary ms-auto" th:text="${selectedClientOrders.size() + ' orders'}"></span>
             <a th:href="@{/admin/order-statistics(startDate=${#temporals.format(startDate,'yyyy-MM-dd')},endDate=${#temporals.format(endDate,'yyyy-MM-dd')},statusFilter=${statusFilter})}"
                class="btn btn-sm btn-outline-secondary ms-2">
@@ -252,7 +260,6 @@
                         <th class="om-sortable">#</th>
                         <th class="om-sortable">PO/Order No</th>
                         <th class="om-sortable">Product</th>
-                        <th class="text-end om-sortable">Qty</th>
                         <th class="text-end om-sortable">Order Value</th>
                         <th class="om-sortable">Status</th>
                         <th class="om-sortable">Order Date</th>
@@ -263,8 +270,7 @@
                     <tr th:each="order, iterStat : ${selectedClientOrders}">
                         <td th:text="${iterStat.index + 1}"></td>
                         <td th:text="${order.poOrderNo != null ? order.poOrderNo : '-'}"></td>
-                        <td th:text="${order.productName}"></td>
-                        <td class="text-end" th:text="${order.quantity}"></td>
+                        <td th:text="${order.displayProductSummary}"></td>
                         <td class="text-end">
                             <strong th:text="${'₹' + #numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 2, 'POINT')}"></strong>
                         </td>

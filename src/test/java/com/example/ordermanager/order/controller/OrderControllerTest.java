@@ -117,11 +117,33 @@ class OrderControllerTest {
     String view = orderController.saveOrder(order, null, null, null, model, redirectAttributes);
 
     assertThat(view).isEqualTo("orders/form");
-    assertThat(model.getAttribute("error"))
-        .isEqualTo("Error saving order: Product name cannot be null");
+    assertThat(model.getAttribute("error")).isEqualTo("Product name cannot be null");
     assertThat(model.getAttribute("order")).isEqualTo(order);
     assertThat(model.getAttribute("clients")).isEqualTo(clients);
     assertThat(model.getAttribute("statuses")).isEqualTo(Arrays.asList(OrderStatus.values()));
+  }
+
+  @Test
+  void saveOrder_withDeliveryDateBeforeOrderDate_returnsFormWithDateValidationError() {
+    Order order = new Order();
+    order.setOrderDate(LocalDate.of(2026, 3, 27));
+    order.setDeliveryDate(LocalDate.of(2026, 3, 26));
+    Model model = new ConcurrentModel();
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+    List<Client> clients = Arrays.asList(new Client());
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    doThrow(new IllegalArgumentException("Delivery date must be on or after order date."))
+        .when(orderService).createOrderWithCompany(order, 5L);
+    when(clientService.getClientsByCompanyId(5L)).thenReturn(clients);
+
+    String view = orderController.saveOrder(order, null, null, null, model, redirectAttributes);
+
+    assertThat(view).isEqualTo("orders/form");
+    assertThat(model.getAttribute("error"))
+        .isEqualTo("Delivery date must be on or after order date.");
+    assertThat(model.getAttribute("dateError"))
+        .isEqualTo("Delivery date must be on or after order date.");
   }
 
   @Test
@@ -145,10 +167,11 @@ class OrderControllerTest {
     updatedOrder.setProductName("Updated Widget");
     RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
 
+    Model model = new ConcurrentModel();
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
 
     String view =
-        orderController.updateOrder(15L, updatedOrder, null, null, null, redirectAttributes);
+        orderController.updateOrder(15L, updatedOrder, null, null, null, model, redirectAttributes);
 
     assertThat(view).isEqualTo("redirect:/orders");
     assertThat(redirectAttributes.getFlashAttributes().get("message"))

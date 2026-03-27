@@ -21,7 +21,7 @@
             <i class="bi bi-box-seam"></i>
             <span th:text="${product.id == null ? 'Add New Product' : 'Edit Product'}"></span>
         </h1>
-        <a class="btn btn-secondary" th:href="@{/products}">
+        <a class="btn btn-secondary" th:href="${returnTo != null ? returnTo : '/products'}">
             <i class="bi bi-arrow-left"></i> Back to Products
         </a>
     </div>
@@ -30,8 +30,9 @@
     <div class="unified-card">
         <div class="alert alert-danger" role="alert" th:if="${error}" th:text="${error}"></div>
 
-        <form th:action="@{/products}" th:object="${product}" method="post">
+        <form id="productForm" th:action="@{/products(returnTo=${returnTo})}" th:object="${product}" method="post">
             <input type="hidden" th:field="*{id}">
+            <input type="hidden" name="returnTo" th:value="${returnTo}">
 
             <div class="row">
                 <div class="col-md-6 mb-4">
@@ -82,7 +83,7 @@
                                 th:selected="${product.vendor != null and product.vendor.id == vendor.id}">
                         </option>
                     </select>
-                    <a class="btn btn-outline-success" th:href="@{/vendors/new}" target="_blank">
+                    <a id="addVendorLink" class="btn btn-outline-success" th:href="@{/vendors/new}">
                         <i class="bi bi-plus-circle"></i> Add Vendor
                     </a>
                 </div>
@@ -91,7 +92,7 @@
 
             <!-- Actions -->
             <div class="d-flex justify-content-end gap-3 pt-3 border-top">
-                <a class="btn btn-outline-secondary" th:href="@{/products}">
+                <a class="btn btn-outline-secondary" th:href="${returnTo != null ? returnTo : '/products'}">
                     <i class="bi bi-x-circle"></i> Cancel
                 </a>
                 <button type="submit" class="btn btn-success-custom">
@@ -106,5 +107,85 @@
 <div th:replace="~{fragments/footer :: footer}"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const productDraftStorageKey = 'om:draft:product:' + window.location.pathname + window.location.search;
+    const productDraftTtlMs = 8 * 60 * 60 * 1000;
+
+    function saveProductDraft() {
+        const form = document.getElementById('productForm');
+        if (!form) {
+            return;
+        }
+
+        const values = {};
+        form.querySelectorAll('input[name], select[name], textarea[name]').forEach(function (field) {
+            if (field.name === 'returnTo') {
+                return;
+            }
+            values[field.name] = field.value;
+        });
+
+        const draft = {
+            updatedAt: Date.now(),
+            values: values
+        };
+
+        sessionStorage.setItem(productDraftStorageKey, JSON.stringify(draft));
+    }
+
+    function restoreProductDraft() {
+        const rawDraft = sessionStorage.getItem(productDraftStorageKey);
+        if (!rawDraft) {
+            return;
+        }
+
+        try {
+            const draft = JSON.parse(rawDraft);
+            if (!draft.updatedAt || (Date.now() - draft.updatedAt) > productDraftTtlMs) {
+                sessionStorage.removeItem(productDraftStorageKey);
+                return;
+            }
+
+            if (!draft.values) {
+                return;
+            }
+
+            Object.keys(draft.values).forEach(function (name) {
+                const field = document.querySelector('#productForm [name="' + name + '"]');
+                if (field) {
+                    field.value = draft.values[name];
+                }
+            });
+        } catch (error) {
+            sessionStorage.removeItem(productDraftStorageKey);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        restoreProductDraft();
+
+        const productForm = document.getElementById('productForm');
+        if (productForm) {
+            productForm.addEventListener('input', saveProductDraft);
+            productForm.addEventListener('change', saveProductDraft);
+        }
+
+        const addVendorLink = document.getElementById('addVendorLink');
+        if (addVendorLink) {
+            addVendorLink.addEventListener('click', function (e) {
+                e.preventDefault();
+                saveProductDraft();
+                const productReturnTo = window.location.pathname + window.location.search;
+                window.location.href = '/vendors/new?returnTo=' + encodeURIComponent(productReturnTo);
+            });
+        }
+
+        document.querySelectorAll('a[href="/products"]').forEach(function (link) {
+            link.addEventListener('click', function () {
+                sessionStorage.removeItem(productDraftStorageKey);
+            });
+        });
+    });
+</script>
 </body>
 </html>

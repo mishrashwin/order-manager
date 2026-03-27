@@ -57,8 +57,8 @@
         <div class="order-card"
              th:attr="data-id=${order.id},
                       data-customer-name=${order.customerName},
-                      data-product-name=${order.productName},
-                      data-quantity=${order.quantity},
+                      data-product-name=${order.displayProductSummary},
+                      data-quantity=${order.displayQuantitySummary},
                       data-po-order-no=${order.poOrderNo != null ? order.poOrderNo : ''},
                       data-status-display=${order.status.displayName},
                       data-badge-color=${order.status.badgeColor},
@@ -73,8 +73,7 @@
 
           <small class="text-muted">
             <span th:if="${order.poOrderNo != null and !#strings.isEmpty(order.poOrderNo)}"
-                  th:text="${order.poOrderNo + ' / '}"></span><span th:text="${#strings.abbreviate(order.productName, 8)}"></span>
-            (<span th:text="${order.quantity}"></span>)
+                  th:text="${order.poOrderNo + ' / '}"></span><span th:text="${#strings.abbreviate(order.displayProductSummary, 24)}"></span>
           </small>
 
           <!-- Delivery Date -->
@@ -108,10 +107,8 @@
           <dd class="col-7" id="modalCustomerName">-</dd>
           <dt class="col-5">PO / Order No</dt>
           <dd class="col-7" id="modalPoOrderNo">-</dd>
-          <dt class="col-5">Product</dt>
+          <dt class="col-5">Products</dt>
           <dd class="col-7" id="modalProductName">-</dd>
-          <dt class="col-5">Quantity</dt>
-          <dd class="col-7" id="modalQuantity">-</dd>
           <dt class="col-5">Total Amount</dt>
           <dd class="col-7" id="modalTotalAmount">-</dd>
           <dt class="col-5">Status</dt>
@@ -183,7 +180,6 @@
 
     const customerName = safeOrder.customerName == null ? 'Unknown customer' : String(safeOrder.customerName);
     const productName = safeOrder.productName == null ? 'Unknown product' : String(safeOrder.productName);
-    const quantityText = safeOrder.quantity == null ? '-' : String(safeOrder.quantity);
 
     // Calculate days until delivery
     const today = new Date();
@@ -231,7 +227,7 @@
     const customerStrong = document.createElement('strong');
     customerStrong.textContent = customerName;
     content.appendChild(customerStrong);
-    content.appendChild(document.createTextNode(` - ${productName} (Qty: ${quantityText})`));
+    content.appendChild(document.createTextNode(` - ${productName}`));
 
     const meta = document.createElement('div');
     meta.className = 'flash-notification-meta';
@@ -375,7 +371,6 @@
           document.getElementById('modalCustomerName').textContent = d.customerName || '-';
           document.getElementById('modalPoOrderNo').textContent = d.poOrderNo || '-';
           document.getElementById('modalProductName').textContent = d.productName || '-';
-          document.getElementById('modalQuantity').textContent = d.quantity || '-';
 
           const amount = parseFloat(d.totalAmount);
           document.getElementById('modalTotalAmount').textContent =

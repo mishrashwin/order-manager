@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class OrderService {
@@ -44,6 +43,7 @@ public class OrderService {
   }
 
   public Order createOrder(Order order) {
+    validateOrderDates(order);
     if (order.getProductName() != null)
       order.setProductName(helper.toTitleCase(order.getProductName()));
     return orderRepository.save(order);
@@ -57,6 +57,8 @@ public class OrderService {
    * @param companyId Company ID
    */
   public Order createOrderWithCompany(Order order, Long companyId) {
+    validateOrderDates(order);
+
     // Get company and assign to order
     Company company =
         companyService.getCompanyById(companyId).orElseThrow(() -> new IllegalArgumentException(
@@ -69,8 +71,8 @@ public class OrderService {
       order.setCustomerName(order.getClient().getName());
     }
 
-    // Sync productName and quantity from orderItems if present
-    syncLegacyFieldsFromItems(order);
+    // Sync legacy summary fields and derived total from order items if present
+    syncDerivedFieldsFromItems(order);
 
     // Apply formatting to legacy productName field
     if (order.getProductName() != null)
@@ -98,17 +100,19 @@ public class OrderService {
           item.setOrder(existingOrder);
           existingOrder.getOrderItems().add(item);
         }
-        syncLegacyFieldsFromItems(existingOrder);
+        syncDerivedFieldsFromItems(existingOrder);
         if (existingOrder.getProductName() != null)
           existingOrder.setProductName(helper.toTitleCase(existingOrder.getProductName()));
       } else if (partialOrder.getProductName() != null) {
         existingOrder.setProductName(helper.toTitleCase(partialOrder.getProductName()));
       }
 
-      if (partialOrder.getQuantity() != null)
+      if (partialOrder.getQuantity() != null
+          && (partialOrder.getOrderItems() == null || partialOrder.getOrderItems().isEmpty()))
         existingOrder.setQuantity(partialOrder.getQuantity());
 
-      if (partialOrder.getTotalAmount() != null)
+      if (partialOrder.getTotalAmount() != null
+          && (partialOrder.getOrderItems() == null || partialOrder.getOrderItems().isEmpty()))
         existingOrder.setTotalAmount(partialOrder.getTotalAmount());
 
       if (partialOrder.getStatus() != null)
@@ -126,8 +130,17 @@ public class OrderService {
       if (partialOrder.getOrderNote() != null)
         existingOrder.setOrderNote(partialOrder.getOrderNote());
 
+      validateOrderDates(existingOrder);
+
       return orderRepository.save(existingOrder);
     }).orElseThrow(() -> new OrderNotFoundException(id));
+  }
+
+  private void validateOrderDates(Order order) {
+    if (order.getOrderDate() != null && order.getDeliveryDate() != null
+        && order.getDeliveryDate().isBefore(order.getOrderDate())) {
+      throw new IllegalArgumentException("Delivery date must be on or after order date.");
+    }
   }
 
 
@@ -142,20 +155,27 @@ public class OrderService {
    * Syncs the legacy productName and quantity fields from orderItems when items are present. This
    * keeps dashboard/list display working for orders with multiple products.
    */
-  private void syncLegacyFieldsFromItems(Order order) {
+  private void syncDerivedFieldsFromItems(Order order) {
     if (order.getOrderItems() == null || order.getOrderItems().isEmpty()) {
       return;
     }
+
     String names = order.getOrderItems().stream().map(OrderItem::getProductName)
         .filter(n -> n != null && !n.isEmpty()).collect(java.util.stream.Collectors.joining(", "));
     if (!names.isEmpty()) {
       order.setProductName(names);
     }
+
     int totalQty = order.getOrderItems().stream()
         .mapToInt(item -> item.getQuantity() != null ? item.getQuantity() : 0).sum();
-    if (totalQty > 0) {
-      order.setQuantity(totalQty);
-    }
+    order.setQuantity(totalQty > 0 ? totalQty : null);
+
+    double totalAmount = order.getOrderItems().stream().mapToDouble(item -> {
+      int qty = item.getQuantity() != null ? item.getQuantity() : 0;
+      double unitPrice = item.getUnitPrice() != null ? item.getUnitPrice() : 0.0;
+      return qty * unitPrice;
+    }).sum();
+    order.setTotalAmount(totalAmount);
   }
 
   public Order getOrderById(Long id) {
