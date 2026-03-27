@@ -67,7 +67,10 @@ public class OrderService {
       order.setCustomerName(order.getClient().getName());
     }
 
-    // Apply formatting
+    // Sync productName and quantity from orderItems if present
+    syncLegacyFieldsFromItems(order);
+
+    // Apply formatting to legacy productName field
     if (order.getProductName() != null)
       order.setProductName(helper.toTitleCase(order.getProductName()));
 
@@ -86,8 +89,19 @@ public class OrderService {
         existingOrder.setCustomerName(partialOrder.getCustomerName());
       }
 
-      if (partialOrder.getProductName() != null)
+      // Update order items if provided
+      if (partialOrder.getOrderItems() != null && !partialOrder.getOrderItems().isEmpty()) {
+        existingOrder.getOrderItems().clear();
+        for (var item : partialOrder.getOrderItems()) {
+          item.setOrder(existingOrder);
+          existingOrder.getOrderItems().add(item);
+        }
+        syncLegacyFieldsFromItems(existingOrder);
+        if (existingOrder.getProductName() != null)
+          existingOrder.setProductName(helper.toTitleCase(existingOrder.getProductName()));
+      } else if (partialOrder.getProductName() != null) {
         existingOrder.setProductName(helper.toTitleCase(partialOrder.getProductName()));
+      }
 
       if (partialOrder.getQuantity() != null)
         existingOrder.setQuantity(partialOrder.getQuantity());
@@ -120,6 +134,27 @@ public class OrderService {
       throw new OrderNotFoundException(id);
     }
     orderRepository.deleteById(id);
+  }
+
+  /**
+   * Syncs the legacy productName and quantity fields from orderItems when items are present. This
+   * keeps dashboard/list display working for orders with multiple products.
+   */
+  private void syncLegacyFieldsFromItems(Order order) {
+    if (order.getOrderItems() == null || order.getOrderItems().isEmpty()) {
+      return;
+    }
+    String names = order.getOrderItems().stream()
+        .map(item -> item.getProductName() != null ? item.getProductName() : "")
+        .filter(n -> !n.isEmpty()).reduce((a, b) -> a + ", " + b).orElse("");
+    if (!names.isEmpty()) {
+      order.setProductName(names);
+    }
+    int totalQty = order.getOrderItems().stream()
+        .mapToInt(item -> item.getQuantity() != null ? item.getQuantity() : 0).sum();
+    if (totalQty > 0) {
+      order.setQuantity(totalQty);
+    }
   }
 
   public Order getOrderById(Long id) {

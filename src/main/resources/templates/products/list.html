@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:with="page='products'">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products | Order Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<!-- Unified Navbar -->
+<div th:replace="~{fragments/unified-navbar :: unified-navbar}"></div>
+
+<!-- Main Content (Full Width) -->
+<div class="main-content">
+    <!-- Header -->
+    <div class="content-header">
+        <h1><i class="bi bi-box-seam"></i> Product Management</h1>
+        <a class="btn btn-success-custom" th:href="@{/products/new}">
+            <i class="bi bi-plus-circle"></i> Add New Product
+        </a>
+    </div>
+
+    <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill"></i> <span th:text="${message}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill"></i> <span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="search-box om-list-toolbar">
+        <div class="om-list-toolbar-row">
+            <input type="text" id="searchInput" class="form-control-custom om-list-search-input"
+                   placeholder="🔍 Search products by name, brand, category, vendor...">
+            <div class="om-list-actions">
+                <button id="resetSortBtn" class="btn btn-outline-secondary om-btn-icon">
+                <i class="bi bi-arrow-clockwise"></i> Reset Sort
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div th:if="${#lists.isEmpty(products)}" class="empty-state">
+        <i class="bi bi-box-seam"></i>
+        <h4>No products found</h4>
+        <p>Get started by adding your first product</p>
+        <a th:href="@{/products/new}" class="btn btn-success-custom">
+            <i class="bi bi-plus-circle"></i> Add First Product
+        </a>
+    </div>
+
+    <!-- Products Table -->
+    <div th:if="${!#lists.isEmpty(products)}" class="unified-card">
+        <div class="table-responsive">
+            <table class="table unified-table table-hover align-middle mb-0">
+                <thead>
+                <tr>
+                    <th class="om-sortable">#</th>
+                    <th class="om-sortable">Product Name</th>
+                    <th class="om-sortable">Similar / Other Name</th>
+                    <th class="om-sortable">Brand</th>
+                    <th class="om-sortable">Category</th>
+                    <th class="text-end om-sortable">Price</th>
+                    <th class="om-sortable">Vendor</th>
+                    <th class="om-sortable">Used In Order</th>
+                    <th class="text-center no-sort">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="product, iterStat : ${products}">
+                    <td th:text="${iterStat.index + 1}"></td>
+                    <td><strong th:text="${product.name}"></strong>
+                        <div th:if="${product.description != null and !#strings.isEmpty(product.description)}"
+                             class="text-muted small" th:text="${#strings.abbreviate(product.description, 60)}"></div>
+                    </td>
+                    <td th:text="${product.similarName}"></td>
+                    <td th:text="${product.brand}"></td>
+                    <td><span th:if="${product.category != null}"
+                              class="badge bg-secondary"
+                              th:text="${product.category}"></span></td>
+                    <td class="text-end">
+                        <span th:if="${product.price != null}"
+                              th:text="${'₹' + #numbers.formatDecimal(product.price, 1, 'COMMA', 2, 'POINT')}"></span>
+                    </td>
+                    <td>
+                        <span th:if="${product.vendor != null}" th:text="${product.vendor.companyName}"></span>
+                        <span th:if="${product.vendor == null}" class="text-muted">—</span>
+                    </td>
+                    <!-- Auto-populated: link to orders using this product -->
+                    <td>
+                        <span th:if="${orderUsageMap[product.id] == null or orderUsageMap[product.id].isEmpty()}"
+                              class="text-muted">—</span>
+                        <span th:each="orderRef, stat : ${orderUsageMap[product.id]}">
+                            <a th:href="@{/orders/edit/{id}(id=${orderRef.orderId})}"
+                               class="badge bg-primary text-decoration-none"
+                               th:text="${'#' + orderRef.orderId + (orderRef.poOrderNo != null and !#strings.isEmpty(orderRef.poOrderNo) ? ' (' + orderRef.poOrderNo + ')' : '')}">
+                            </a>
+                            <span th:if="${!stat.last}"> </span>
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <div class="action-buttons om-action-group">
+                            <a th:href="@{|/products/edit/${product.id}|}"
+                               class="btn btn-sm btn-outline-primary om-btn-icon"
+                               title="Edit product">
+                                <i class="bi bi-pencil"></i> Edit
+                            </a>
+                            <button th:if="${#authorization.expression('hasAnyRole(''ADMIN'',''MANAGER'')')}"
+                                    type="button"
+                                    class="btn btn-sm btn-outline-danger om-btn-icon"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#confirmDeleteModal"
+                                    th:data-delete-url="@{|/products/delete/${product.id}|}"
+                                    th:data-entity-label="${product.name}"
+                                    title="Delete product">
+                                <i class="bi bi-trash"></i> Delete
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="unified-card-body">
+            <p class="text-muted-custom mb-0">
+                <i class="bi bi-info-circle"></i> Total Products: <strong th:text="${products.size()}"></strong>
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<!-- Table Utility JS -->
+<div th:replace="~{fragments/table-utils :: tableUtils}"></div>
+
+<!-- Password Confirmation Modal -->
+<div th:replace="~{fragments/confirm-delete-modal :: confirmDeleteModal}"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

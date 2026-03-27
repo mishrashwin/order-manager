@@ -147,3 +147,23 @@ Use this file as the session-to-session handoff log for test implementation.
   - edge assertion that phone widget ids/init call remain unchanged
 
 
+
+## Batch Completed (2026-03-27 — Product Feature + Multi-Product Orders)
+- Added `Product` entity (`product/entity/Product.java`) with fields: name, similarName, description, brand, category, price, vendor (ManyToOne), company (ManyToOne).
+- Added `OrderItem` entity (`order/entity/OrderItem.java`) for multi-product orders: order, product (nullable), productName, quantity, unitPrice.
+- Added `Order.orderItems` (`@OneToMany(cascade=ALL, orphanRemoval=true)`).
+- Added `ProductRepository` (`product/repository/ProductRepository.java`) and `OrderItemRepository` (`order/repository/OrderItemRepository.java`).
+- Added `ProductService` with company-scoped CRUD, title-case formatting, vendor resolution.
+- Added `ProductController` with list (+ orderUsageMap), new/edit/save/delete endpoints.
+- Added `ProductOrderRef` DTO for order link display in product list.
+- Modified `OrderController`: added `ProductService` dependency; `showCreateForm`, `showEditForm`, `duplicateOrder` now pass products; `saveOrder` and `updateOrder` accept `itemProductIds[]`, `itemQuantities[]`, `itemUnitPrices[]` arrays and call `buildOrderItems()`.
+- Modified `OrderService.createOrderWithCompany()` and `patchOrder()` to call `syncLegacyFieldsFromItems()` which syncs `productName` and `quantity` legacy fields from orderItems for dashboard/list display.
+- Added Flyway migration `V13__add_products_and_order_items.sql`.
+- Added `products/list.html` with search bar, vendor column, order usage link column, delete modal.
+- Added `products/form.html` with name, similarName, description, brand, category, price, and vendor dropdown.
+- Updated `orders/form.html`: replaced product text field with dynamic multi-product rows (dropdown + qty + unit price), JS for add/remove rows and price auto-fill.
+- Updated `dashboard.html`: truncate product name on card to 8 chars via `#strings.abbreviate`; full product name still shown in double-click modal.
+- Updated `fragments/unified-navbar.html`: added Products nav link.
+- Updated `OrderControllerTest` to pass `ProductService` mock and new `saveOrder`/`updateOrder` method signatures.
+- Added `ProductControllerTest` with 7 test cases covering list, add/update success, error path, and delete happy/failure paths.
+- Updated `CONTROLLER_SERVICE_TEST_CASES.md` with PRD-01 through PRD-06.

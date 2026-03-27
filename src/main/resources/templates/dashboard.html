@@ -73,7 +73,7 @@
 
           <small class="text-muted">
             <span th:if="${order.poOrderNo != null and !#strings.isEmpty(order.poOrderNo)}"
-                  th:text="${order.poOrderNo + ' / '}"></span><span th:text="${order.productName}"></span>
+                  th:text="${order.poOrderNo + ' / '}"></span><span th:text="${#strings.abbreviate(order.productName, 8)}"></span>
             (<span th:text="${order.quantity}"></span>)
           </small>
 

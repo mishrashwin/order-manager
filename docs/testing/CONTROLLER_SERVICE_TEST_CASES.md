@@ -88,6 +88,14 @@ This file is the living test inventory for controller and service methods.
 - `VEN-03` save unauthenticated/general error returns form with error
 - `VEN-04` edit route delegates by id; delete success/failure redirects `/vendors` with flash `message`/`error`
 
+### `ProductController`
+- `PRD-01` list endpoint uses tenant-scoped `getProductsByCompanyId` and populates `orderUsageMap`
+- `PRD-02` save success (create/update) redirects `/products` with flash `message`
+- `PRD-03` save `IllegalArgumentException` returns form with inline error and product retained
+- `PRD-04` delete correct password succeeds and redirects with flash `message`
+- `PRD-05` delete wrong password does not delete and returns flash `error`
+- `PRD-06` delete correct password but service throws returns flash `error`
+
 ### `OwnerController`
 - `OWN-01` dashboard model includes owner page markers and metrics/pending lists
 - `OWN-02` companies page includes summaries + pending count

@@ -9,6 +9,9 @@ import lombok.ToString;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "orders")
@@ -48,6 +51,9 @@ public class Order {
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "company_id", nullable = false)
   private Company company;
+
+  @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<OrderItem> orderItems = new ArrayList<>();
 
   /**
    * Helper method to get the customer name from the client relationship. Falls back to the
