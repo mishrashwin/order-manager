@@ -252,8 +252,10 @@ public class AdminController {
         orderService.getClientOrderStats(companyId, start, end, statusFilter);
 
     long totalOrders = stats.stream().mapToLong(ClientOrderStatDTO::getOrderCount).sum();
+    double totalOrderValue = stats.stream().mapToDouble(ClientOrderStatDTO::getTotalAmount).sum();
 
     List<Order> selectedClientOrders = null;
+    double selectedClientTotalValue = 0.0;
     String selectedClientNameResolved = clientName;
     if (clientId != null || (clientName != null && !clientName.isBlank())) {
       // resolve clientName from stats if only clientId given
@@ -263,6 +265,8 @@ public class AdminController {
       }
       selectedClientOrders = orderService.getOrdersByClientAndDateRange(companyId, clientId,
           selectedClientNameResolved, start, end, statusFilter);
+      selectedClientTotalValue = selectedClientOrders.stream().map(Order::getTotalAmount)
+          .filter(v -> v != null).mapToDouble(Double::doubleValue).sum();
     }
 
     model.addAttribute("stats", stats);
@@ -273,6 +277,8 @@ public class AdminController {
     model.addAttribute("selectedClientOrders", selectedClientOrders);
     model.addAttribute("statusFilter", statusFilter);
     model.addAttribute("totalOrders", totalOrders);
+    model.addAttribute("totalOrderValue", totalOrderValue);
+    model.addAttribute("selectedClientTotalValue", selectedClientTotalValue);
     return "admin/order-statistics";
   }
 

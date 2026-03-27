@@ -243,6 +243,8 @@ class AdminControllerTest {
     assertThat(view).isEqualTo("admin/order-statistics");
     assertThat(model.getAttribute("stats")).isEqualTo(List.of());
     assertThat(model.getAttribute("totalOrders")).isEqualTo(0L);
+    assertThat(model.getAttribute("totalOrderValue")).isEqualTo(0.0);
+    assertThat(model.getAttribute("selectedClientTotalValue")).isEqualTo(0.0);
     assertThat(model.getAttribute("statusFilter")).isEqualTo("ALL");
     assertThat(model.getAttribute("selectedClientOrders")).isNull();
   }
@@ -258,6 +260,7 @@ class AdminControllerTest {
     Order o1 = new Order();
     o1.setStatus(OrderStatus.CREATED);
     o1.setOrderDate(LocalDate.now());
+    o1.setTotalAmount(450.0);
     List<Order> drillOrders = List.of(o1);
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
@@ -273,6 +276,8 @@ class AdminControllerTest {
     assertThat(model.getAttribute("selectedClientId")).isEqualTo(10L);
     assertThat(model.getAttribute("selectedClientName")).isEqualTo("ACME CORP");
     assertThat(model.getAttribute("selectedClientOrders")).isEqualTo(drillOrders);
+    assertThat(model.getAttribute("totalOrderValue")).isEqualTo(900.0);
+    assertThat(model.getAttribute("selectedClientTotalValue")).isEqualTo(450.0);
   }
 
   @Test
@@ -323,6 +328,32 @@ class AdminControllerTest {
     adminController.showOrderStatistics(null, null, null, null, "ALL", model);
 
     assertThat(model.getAttribute("totalOrders")).isEqualTo(10L);
+    assertThat(model.getAttribute("totalOrderValue")).isEqualTo(2500.0);
+  }
+
+  @Test
+  void showOrderStatistics_selectedClientTotalValue_ignoresNullOrderAmounts() {
+    ClientOrderStatDTO stat = new ClientOrderStatDTO(10L, "ACME CORP", 2, 500.0, 100.0);
+
+    Order withNullAmount = new Order();
+    withNullAmount.setStatus(OrderStatus.CREATED);
+    withNullAmount.setOrderDate(LocalDate.now());
+
+    Order withAmount = new Order();
+    withAmount.setStatus(OrderStatus.CREATED);
+    withAmount.setOrderDate(LocalDate.now());
+    withAmount.setTotalAmount(325.5);
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    when(orderService.getClientOrderStats(eq(5L), any(), any(), eq("ALL")))
+        .thenReturn(List.of(stat));
+    when(orderService.getOrdersByClientAndDateRange(eq(5L), eq(10L), eq("ACME CORP"), any(), any(),
+        eq("ALL"))).thenReturn(List.of(withNullAmount, withAmount));
+
+    Model model = new ConcurrentModel();
+    adminController.showOrderStatistics(null, null, 10L, "ACME CORP", "ALL", model);
+
+    assertThat(model.getAttribute("selectedClientTotalValue")).isEqualTo(325.5);
   }
 
 }

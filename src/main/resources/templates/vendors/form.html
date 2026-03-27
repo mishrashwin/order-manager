@@ -21,7 +21,7 @@
             <i class="bi bi-building"></i>
             <span th:text="${vendor.id == null ? 'Add New Vendor' : 'Edit Vendor'}"></span>
         </h1>
-        <a class="btn btn-secondary" th:href="@{/vendors}">
+        <a class="btn btn-secondary" th:href="${returnTo != null ? returnTo : '/vendors'}">
             <i class="bi bi-arrow-left"></i> Back to Vendors
         </a>
     </div>
@@ -32,6 +32,7 @@
 
         <form th:action="@{/vendors}" th:object="${vendor}" method="post">
             <input type="hidden" th:field="*{id}">
+            <input type="hidden" name="returnTo" th:value="${returnTo}">
 
             <div class="mb-4">
                 <label class="form-label"><i class="bi bi-building"></i> Company Name</label>
@@ -68,7 +69,7 @@
 
             <!-- Actions -->
             <div class="d-flex justify-content-end gap-3 pt-3 border-top">
-                <a class="btn btn-outline-secondary" th:href="@{/vendors}">
+                <a class="btn btn-outline-secondary" th:href="${returnTo != null ? returnTo : '/vendors'}">
                     <i class="bi bi-x-circle"></i> Cancel
                 </a>
                 <button type="submit" class="btn btn-success-custom">

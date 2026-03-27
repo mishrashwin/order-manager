@@ -49,7 +49,7 @@ class VendorControllerTest {
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(7L);
 
-    String view = vendorController.saveVendor(vendor, model, redirectAttributes);
+    String view = vendorController.saveVendor(vendor, null, model, redirectAttributes);
 
     assertThat(view).isEqualTo("redirect:/vendors");
     assertThat(redirectAttributes.getFlashAttributes().get("message"))
@@ -67,7 +67,7 @@ class VendorControllerTest {
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(7L);
 
-    String view = vendorController.saveVendor(vendor, model, redirectAttributes);
+    String view = vendorController.saveVendor(vendor, null, model, redirectAttributes);
 
     assertThat(view).isEqualTo("redirect:/vendors");
     assertThat(redirectAttributes.getFlashAttributes().get("message"))
@@ -87,7 +87,7 @@ class VendorControllerTest {
         "Vendor Phone No is invalid. Use country code + mobile number (for example +919876543210)."))
         .when(vendorService).saveVendorWithCompany(vendor, 7L);
 
-    String view = vendorController.saveVendor(vendor, model, redirectAttributes);
+    String view = vendorController.saveVendor(vendor, "/products/new", model, redirectAttributes);
 
     assertThat(view).isEqualTo("vendors/form");
     assertThat(model.getAttribute("error")).isEqualTo(
@@ -95,6 +95,67 @@ class VendorControllerTest {
     assertThat(model.getAttribute("phoneError")).isEqualTo(
         "Vendor Phone No is invalid. Use country code + mobile number (for example +919876543210).");
     assertThat(model.getAttribute("vendor")).isEqualTo(vendor);
+    assertThat(model.getAttribute("returnTo")).isEqualTo("/products/new");
+  }
+
+  @Test
+  void newVendorForm_withReturnTo_loadsFormWithReturnContext() {
+    Model model = new ConcurrentModel();
+
+    String view = vendorController.newVendorForm("/products/new?returnTo=%2Forders%2Fnew", model);
+
+    assertThat(view).isEqualTo("vendors/form");
+    assertThat(model.getAttribute("vendor")).isNotNull();
+    assertThat(model.getAttribute("returnTo")).isEqualTo("/products/new?returnTo=/orders/new");
+  }
+
+  @Test
+  void saveVendor_withAllowedReturnTo_redirectsToProductFlow() {
+    Vendor vendor = new Vendor();
+    vendor.setCompanyName("Acme Supplies");
+    Model model = new ConcurrentModel();
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(7L);
+
+    String view = vendorController.saveVendor(vendor, "/products/new?returnTo=%2Forders%2Fnew",
+        model, redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/products/new?returnTo=/orders/new");
+    verify(vendorService).saveVendorWithCompany(vendor, 7L);
+  }
+
+  @Test
+  void saveVendor_withDuplicateCommaJoinedReturnTo_redirectsToSingleProductPath() {
+    Vendor vendor = new Vendor();
+    vendor.setCompanyName("Acme Supplies");
+    Model model = new ConcurrentModel();
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(7L);
+
+    String view = vendorController.saveVendor(vendor,
+        "/products/new?returnTo=%2Forders%2Fnew,/products/new?returnTo=%2Forders%2Fnew", model,
+        redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/products/new?returnTo=/orders/new");
+    verify(vendorService).saveVendorWithCompany(vendor, 7L);
+  }
+
+  @Test
+  void saveVendor_withInvalidReturnTo_fallsBackToVendorsList() {
+    Vendor vendor = new Vendor();
+    vendor.setCompanyName("Acme Supplies");
+    Model model = new ConcurrentModel();
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(7L);
+
+    String view = vendorController.saveVendor(vendor, "https://evil.example/redirect", model,
+        redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/vendors");
+    verify(vendorService).saveVendorWithCompany(vendor, 7L);
   }
 
   @Test

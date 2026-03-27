@@ -13,10 +13,12 @@ import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.entity.OrderStatus;
 import com.example.ordermanager.order.service.OrderService;
+import com.example.ordermanager.product.service.ProductService;
 import com.example.ordermanager.utils.PasswordVerificationService;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +40,8 @@ class OrderControllerTest {
   @Mock
   private CompanyService companyService;
   @Mock
+  private ProductService productService;
+  @Mock
   private SecurityContextHelper securityContextHelper;
   @Mock
   private PasswordVerificationService passwordVerificationService;
@@ -47,7 +51,7 @@ class OrderControllerTest {
   @BeforeEach
   void setUp() {
     orderController = new OrderController(orderService, clientService, companyService,
-        securityContextHelper, passwordVerificationService);
+        productService, securityContextHelper, passwordVerificationService);
   }
 
   @Test
@@ -89,7 +93,7 @@ class OrderControllerTest {
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
 
-    String view = orderController.saveOrder(order, model, redirectAttributes);
+    String view = orderController.saveOrder(order, null, null, null, model, redirectAttributes);
 
     assertThat(view).isEqualTo("redirect:/orders");
     assertThat(redirectAttributes.getFlashAttributes().get("message"))
@@ -110,14 +114,36 @@ class OrderControllerTest {
         .createOrderWithCompany(order, 5L);
     when(clientService.getClientsByCompanyId(5L)).thenReturn(clients);
 
-    String view = orderController.saveOrder(order, model, redirectAttributes);
+    String view = orderController.saveOrder(order, null, null, null, model, redirectAttributes);
 
     assertThat(view).isEqualTo("orders/form");
-    assertThat(model.getAttribute("error"))
-        .isEqualTo("Error saving order: Product name cannot be null");
+    assertThat(model.getAttribute("error")).isEqualTo("Product name cannot be null");
     assertThat(model.getAttribute("order")).isEqualTo(order);
     assertThat(model.getAttribute("clients")).isEqualTo(clients);
     assertThat(model.getAttribute("statuses")).isEqualTo(Arrays.asList(OrderStatus.values()));
+  }
+
+  @Test
+  void saveOrder_withDeliveryDateBeforeOrderDate_returnsFormWithDateValidationError() {
+    Order order = new Order();
+    order.setOrderDate(LocalDate.of(2026, 3, 27));
+    order.setDeliveryDate(LocalDate.of(2026, 3, 26));
+    Model model = new ConcurrentModel();
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+    List<Client> clients = Arrays.asList(new Client());
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    doThrow(new IllegalArgumentException("Delivery date must be on or after order date."))
+        .when(orderService).createOrderWithCompany(order, 5L);
+    when(clientService.getClientsByCompanyId(5L)).thenReturn(clients);
+
+    String view = orderController.saveOrder(order, null, null, null, model, redirectAttributes);
+
+    assertThat(view).isEqualTo("orders/form");
+    assertThat(model.getAttribute("error"))
+        .isEqualTo("Delivery date must be on or after order date.");
+    assertThat(model.getAttribute("dateError"))
+        .isEqualTo("Delivery date must be on or after order date.");
   }
 
   @Test
@@ -129,7 +155,7 @@ class OrderControllerTest {
     when(securityContextHelper.getCompanyIdFromContext())
         .thenThrow(new IllegalStateException("Not authenticated"));
 
-    String view = orderController.saveOrder(order, model, redirectAttributes);
+    String view = orderController.saveOrder(order, null, null, null, model, redirectAttributes);
 
     assertThat(view).isEqualTo("redirect:/login");
   }
@@ -141,7 +167,11 @@ class OrderControllerTest {
     updatedOrder.setProductName("Updated Widget");
     RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
 
-    String view = orderController.updateOrder(15L, updatedOrder, redirectAttributes);
+    Model model = new ConcurrentModel();
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+
+    String view =
+        orderController.updateOrder(15L, updatedOrder, null, null, null, model, redirectAttributes);
 
     assertThat(view).isEqualTo("redirect:/orders");
     assertThat(redirectAttributes.getFlashAttributes().get("message"))
@@ -250,5 +280,4 @@ class OrderControllerTest {
     assertThat(view).isEqualTo("redirect:/orders");
   }
 }
-
 

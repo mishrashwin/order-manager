@@ -1,13 +1,17 @@
 package com.example.ordermanager.order.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import com.example.ordermanager.admin.dto.ClientOrderStatDTO;
 import com.example.ordermanager.client.entity.Client;
+import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.order.entity.Order;
+import com.example.ordermanager.order.entity.OrderItem;
 import com.example.ordermanager.order.entity.OrderStatus;
 import com.example.ordermanager.order.repository.OrderRepository;
 import com.example.ordermanager.company.service.CompanyService;
@@ -256,5 +260,97 @@ class OrderServiceTest {
         orderService.getOrdersByClientAndDateRange(1L, null, null, START, END, "ALL");
 
     assertThat(result).isEmpty();
+  }
+
+  @Test
+  void createOrderWithCompany_derivesQuantityAndTotalAmountFromOrderItems() {
+    Order order = new Order();
+    OrderItem first = item(order, "Steel Rod", 2, 10.5);
+    OrderItem second = item(order, "Cement", 3, 5.0);
+    order.getOrderItems().add(first);
+    order.getOrderItems().add(second);
+
+    Company company = new Company();
+    company.setId(5L);
+
+    when(companyService.getCompanyById(5L)).thenReturn(java.util.Optional.of(company));
+    when(helper.toTitleCase("Steel Rod, Cement")).thenReturn("Steel Rod, Cement");
+    when(orderRepository.save(any(Order.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    Order savedOrder = orderService.createOrderWithCompany(order, 5L);
+
+    assertThat(savedOrder.getQuantity()).isEqualTo(5);
+    assertThat(savedOrder.getTotalAmount()).isEqualTo(36.0);
+    assertThat(savedOrder.getProductName()).isEqualTo("Steel Rod, Cement");
+    assertThat(savedOrder.getCompany()).isEqualTo(company);
+  }
+
+  @Test
+  void patchOrder_withOrderItems_recalculatesQuantityAndTotalAmount() {
+    Order existingOrder = new Order();
+    existingOrder.setId(9L);
+    existingOrder.setProductName("Old Product");
+    existingOrder.setQuantity(1);
+    existingOrder.setTotalAmount(25.0);
+
+    Order partialOrder = new Order();
+    OrderItem first = item(partialOrder, "Steel Rod", 4, 12.5);
+    OrderItem second = item(partialOrder, "Paint", 2, 7.25);
+    partialOrder.getOrderItems().add(first);
+    partialOrder.getOrderItems().add(second);
+
+    when(orderRepository.findById(9L)).thenReturn(java.util.Optional.of(existingOrder));
+    when(helper.toTitleCase("Steel Rod, Paint")).thenReturn("Steel Rod, Paint");
+    when(orderRepository.save(any(Order.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    Order savedOrder = orderService.patchOrder(9L, partialOrder);
+
+    assertThat(savedOrder.getQuantity()).isEqualTo(6);
+    assertThat(savedOrder.getTotalAmount()).isEqualTo(64.5);
+    assertThat(savedOrder.getProductName()).isEqualTo("Steel Rod, Paint");
+    assertThat(savedOrder.getOrderItems()).hasSize(2);
+    assertThat(savedOrder.getOrderItems()).allMatch(item -> item.getOrder() == savedOrder);
+  }
+
+  @Test
+  void createOrderWithCompany_whenDeliveryDateOnOrAfterOrderDate_savesSuccessfully() {
+    Order order = new Order();
+    order.setOrderDate(LocalDate.of(2026, 3, 27));
+    order.setDeliveryDate(LocalDate.of(2026, 3, 27));
+
+    Company company = new Company();
+    company.setId(5L);
+
+    when(companyService.getCompanyById(5L)).thenReturn(java.util.Optional.of(company));
+    when(orderRepository.save(any(Order.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    Order savedOrder = orderService.createOrderWithCompany(order, 5L);
+
+    assertThat(savedOrder.getCompany()).isEqualTo(company);
+    assertThat(savedOrder.getOrderDate()).isEqualTo(LocalDate.of(2026, 3, 27));
+    assertThat(savedOrder.getDeliveryDate()).isEqualTo(LocalDate.of(2026, 3, 27));
+  }
+
+  @Test
+  void createOrderWithCompany_whenDeliveryDateBeforeOrderDate_throwsValidationError() {
+    Order order = new Order();
+    order.setOrderDate(LocalDate.of(2026, 3, 27));
+    order.setDeliveryDate(LocalDate.of(2026, 3, 26));
+
+    assertThatThrownBy(() -> orderService.createOrderWithCompany(order, 5L))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Delivery date must be on or after order date.");
+  }
+
+  private OrderItem item(Order order, String productName, int quantity, double unitPrice) {
+    OrderItem item = new OrderItem();
+    item.setOrder(order);
+    item.setProductName(productName);
+    item.setQuantity(quantity);
+    item.setUnitPrice(unitPrice);
+    return item;
   }
 }

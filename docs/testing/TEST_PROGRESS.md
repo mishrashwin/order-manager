@@ -147,3 +147,96 @@ Use this file as the session-to-session handoff log for test implementation.
   - edge assertion that phone widget ids/init call remain unchanged
 
 
+
+## Batch Completed (2026-03-27 — Product Feature + Multi-Product Orders)
+- Added `Product` entity (`product/entity/Product.java`) with fields: name, similarName, description, brand, category, price, vendor (ManyToOne), company (ManyToOne).
+- Added `OrderItem` entity (`order/entity/OrderItem.java`) for multi-product orders: order, product (nullable), productName, quantity, unitPrice.
+- Added `Order.orderItems` (`@OneToMany(cascade=ALL, orphanRemoval=true)`).
+- Added `ProductRepository` (`product/repository/ProductRepository.java`) and `OrderItemRepository` (`order/repository/OrderItemRepository.java`).
+- Added `ProductService` with company-scoped CRUD, title-case formatting, vendor resolution.
+- Added `ProductController` with list (+ orderUsageMap), new/edit/save/delete endpoints.
+- Added `ProductOrderRef` DTO for order link display in product list.
+- Modified `OrderController`: added `ProductService` dependency; `showCreateForm`, `showEditForm`, `duplicateOrder` now pass products; `saveOrder` and `updateOrder` accept `itemProductIds[]`, `itemQuantities[]`, `itemUnitPrices[]` arrays and call `buildOrderItems()`.
+- Modified `OrderService.createOrderWithCompany()` and `patchOrder()` to call `syncLegacyFieldsFromItems()` which syncs `productName` and `quantity` legacy fields from orderItems for dashboard/list display.
+- Added Flyway migration `V13__add_products_and_order_items.sql`.
+- Added `products/list.html` with search bar, vendor column, order usage link column, delete modal.
+- Added `products/form.html` with name, similarName, description, brand, category, price, and vendor dropdown.
+- Updated `orders/form.html`: replaced product text field with dynamic multi-product rows (dropdown + qty + unit price), JS for add/remove rows and price auto-fill.
+- Updated `dashboard.html`: truncate product name on card to 8 chars via `#strings.abbreviate`; full product name still shown in double-click modal.
+- Updated `fragments/unified-navbar.html`: added Products nav link.
+- Updated `OrderControllerTest` to pass `ProductService` mock and new `saveOrder`/`updateOrder` method signatures.
+- Added `ProductControllerTest` with 7 test cases covering list, add/update success, error path, and delete happy/failure paths.
+- Updated `CONTROLLER_SERVICE_TEST_CASES.md` with PRD-01 through PRD-06.
+
+## Batch Completed (2026-03-27 — Nested Create Return Flow + Draft Resume)
+- Updated `orders/form.html` with session-based draft persistence (`sessionStorage`) so in-progress order fields and dynamic product rows are restored after navigating away.
+- Updated order form Add Product action to save draft and navigate to `/products/new?returnTo=...`.
+- Updated `ProductController` (`newProductForm`, `editProduct`, `saveProduct`) to accept `returnTo`, validate allowed internal prefixes, and redirect back to order/product context on successful save.
+- Updated `products/form.html` with hidden `returnTo`, session-based draft persistence, and Add Vendor action that navigates to `/vendors/new?returnTo=...` while preserving product draft.
+- Updated `VendorController` (`newVendorForm`, `editVendor`, `saveVendor`) to accept `returnTo`, validate allowed internal prefixes, and redirect back to product context on successful save.
+- Updated `vendors/form.html` with hidden `returnTo` and context-aware Back/Cancel links.
+- Extended tests:
+  - `src/test/java/com/example/ordermanager/product/controller/ProductControllerTest.java` (returnTo happy + invalid-edge redirects, model propagation)
+  - `src/test/java/com/example/ordermanager/vendor/controller/VendorControllerTest.java` (returnTo happy + invalid-edge redirects, model propagation)
+  - `src/test/java/com/example/ordermanager/order/controller/OrderFormTemplateTest.java` (draft + Add Product link hooks)
+  - `src/test/java/com/example/ordermanager/product/controller/ProductFormTemplateTest.java` (returnTo hidden field + Add Vendor hook)
+  - `src/test/java/com/example/ordermanager/vendor/controller/VendorFormTemplateTest.java` (returnTo hidden field + context link expression)
+
+## Batch Completed (2026-03-27 — Follow-up ReturnTo Regression Fix)
+- Fixed product-save redirect reliability by hardening `ProductController.sanitizeReturnTo` to normalize URL-encoded `returnTo` values (for example `%2Forders%2Fedit%2F42`).
+- Updated `products/form.html` to include `returnTo` in form action query params in addition to hidden field, so context survives even if hidden payload is missed.
+- Updated `orders/form.html` so both New Product links are server-rendered with `returnTo` context; removed the old target-blank path that could bypass context.
+- Kept JS draft-save behavior but now navigates using rendered link URL to avoid rebuilding/losing context.
+- Added regression coverage:
+  - `ProductControllerTest.saveProduct_withEncodedReturnTo_redirectsToDecodedOrderPath`
+  - `OrderFormTemplateTest` assertion for returnTo-aware New Product links
+  - `ProductFormTemplateTest` assertion for returnTo-aware form action
+
+## Batch Completed (2026-03-27 — Hotfix for Comma-Joined ReturnTo Values)
+- Fixed live 500 path issue (`/orders/edit/{id},/orders/edit/{id}`) caused by duplicate `returnTo` values being merged into a comma-joined string by request binding.
+- Updated `ProductController` and `VendorController` sanitization to decode and normalize `returnTo`, then collapse comma-joined duplicates to a single canonical path before allowlist checks.
+- Added/updated regression tests:
+  - `ProductControllerTest.saveProduct_withDuplicateCommaJoinedReturnTo_redirectsToSingleOrderPath`
+  - `VendorControllerTest.saveVendor_withDuplicateCommaJoinedReturnTo_redirectsToSingleProductPath`
+  - Updated vendor returnTo expectations to normalized decoded values.
+
+## Batch Completed (2026-03-27 — Derived Order Totals + Edit Draft Fix)
+- Updated `OrderService.createOrderWithCompany()` and `patchOrder()` to derive persisted order-level `quantity` and `totalAmount` from `orderItems` instead of trusting manual form entry.
+- Added transient `Order` display helpers for item-based summaries so views can render `Product A [2], Product B [5]` without duplicating logic.
+- Updated `orders/form.html` to remove manual order-level Qty/Total inputs, add live calculated summary fields, and replace fragile `innerHTML` draft persistence with structured row data.
+- Fixed the edit-after-save blank product/qty bug by clearing order draft state on submit and restoring row values from structured data rather than stale HTML.
+- Updated `orders/list.html` and `admin/order-statistics.html` to remove the separate Qty column and show per-product quantities inline in the product summary.
+- Updated `dashboard.html` and `DashboardController` so dashboard cards/urgent payloads use item-based product summaries with quantities in brackets.
+- Added/updated regression coverage:
+  - `OrderServiceTest` for create/update derived totals (`ORS-12`, `ORS-13`)
+  - `DashboardControllerTest` for item-summary urgent payload
+  - `DashboardUrgentNotificationSanitizationTest` for summary-only notification text
+  - `OrderFormTemplateTest` for calculated summary UI + structured draft persistence
+- Verified with targeted Maven test suite: `OrderServiceTest`, `OrderControllerTest`, `OrderFormTemplateTest`, `DashboardControllerTest`, `DashboardUrgentNotificationSanitizationTest`, `ProductControllerTest`, `VendorControllerTest`, `ProductFormTemplateTest`, `VendorFormTemplateTest` (56 tests passing).
+
+## Batch Completed (2026-03-27 — Order Date Validation Guard)
+- Added service-level validation in `OrderService` so `deliveryDate` cannot be before `orderDate` for both create and update flows.
+- Updated `OrderController` create/update error handling to surface validation errors back on `orders/form` and populate `dateError` for inline date feedback.
+- Updated `orders/form.html` to show `dateError` directly below the Delivery Date input with invalid styling.
+- Added/updated regression coverage:
+  - `OrderServiceTest` happy + failure cases for valid/invalid order-vs-delivery date combinations.
+  - `OrderControllerTest` validation failure path asserting both top-level error and inline `dateError` model attribute.
+- Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with `ORDC-10` and `ORS-14`.
+
+## Batch Completed (2026-03-27 — Client-Side Date Guard UX)
+- Updated `orders/form.html` with client-side `validateOrderDatesOnClient()` pre-submit/date-change validation so delivery date cannot be earlier than order date.
+- Added inline client feedback container `dateClientError` adjacent to the Delivery Date input, aligned with backend validation message text.
+- Extended `OrderFormTemplateTest` assertions for client-side date-validation hook presence (`dateClientError`, validation function, and error copy).
+- Refined `ORDC-10` in `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` to explicitly cover both client-side and server-side validation paths.
+
+## Batch Completed (2026-03-27 — Order Statistics Total Value Summaries)
+- Updated `AdminController.showOrderStatistics()` to add:
+  - `totalOrderValue` (sum across grouped client stats)
+  - `selectedClientTotalValue` (sum for drill-down order list)
+- Updated `admin/order-statistics.html` to render total value summaries in both places:
+  - top summary pills for grouped "Orders by Client"
+  - drill-down header for selected client orders list
+- Extended `AdminControllerTest` coverage with total-value assertions for default, grouped, and drill-down cases (including null order amounts).
+- Added `src/test/java/com/example/ordermanager/admin/controller/AdminOrderStatisticsTemplateTest.java` to lock template bindings for `totalOrderValue` and `selectedClientTotalValue`.
+- Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with `ADM-19` and `ADM-20`.
+

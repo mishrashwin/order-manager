@@ -88,7 +88,6 @@
                     <th class="om-sortable">Client</th>
                     <th class="om-sortable">PO/Order No</th>
                     <th class="om-sortable">Product</th>
-                    <th class="text-end om-sortable">Qty</th>
                     <th class="text-end om-sortable">Order Value</th>
                     <th class="om-sortable">Status</th>
                     <th class="om-sortable">Order Date</th>
@@ -101,10 +100,9 @@
                     <td th:text="${iterStat.index + 1}"></td>
                     <td><strong th:text="${order.customerName}"></strong></td>
                     <td th:text="${order.poOrderNo != null ? order.poOrderNo : '-'}"></td>
-                    <td th:text="${order.productName}"></td>
-                    <td class="text-end" th:text="${order.quantity}"></td>
+                    <td th:text="${order.displayProductSummary}"></td>
                     <td class="text-end">
-                        <strong th:text="${'₹' + #numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 2, 'POINT')}"></strong>
+                        <strong th:text="${'₹' + #numbers.formatDecimal(order.totalAmount != null ? order.totalAmount : 0, 0, 'COMMA', 2, 'POINT')}"></strong>
                     </td>
                     <td>
                         <span th:class="'badge badge-custom bg-' + ${order.status.badgeColor}"
