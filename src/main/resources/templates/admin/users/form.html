@@ -36,13 +36,11 @@
             <div class="col-md-6">
                 <label class="form-label"><i class="bi bi-person"></i> First Name</label>
                 <input type="text" class="form-control form-control-custom" th:field="*{firstName}" required>
-                <div class="form-text">User's first name</div>
             </div>
 
             <div class="col-md-6">
                 <label class="form-label"><i class="bi bi-person"></i> Last Name</label>
                 <input type="text" class="form-control form-control-custom" th:field="*{lastName}" required>
-                <div class="form-text">User's last name</div>
             </div>
 
             <div class="col-md-6">
@@ -52,8 +50,9 @@
             </div>
 
             <div class="col-md-6">
-                <label class="form-label"><i class="bi bi-envelope"></i> Email</label>
-                <input type="email" class="form-control form-control-custom" th:field="*{email}" required>
+                <label class="form-label"><i class="bi bi-lock"></i> Password</label>
+                <input type="password" class="form-control form-control-custom" th:field="*{password}" required>
+                <div class="form-text">Users can change their password after email verification from the login page.</div>
             </div>
 
             <div class="col-md-6">
@@ -69,8 +68,9 @@
             </div>
 
             <div class="col-md-6">
-                <label class="form-label"><i class="bi bi-lock"></i> Password</label>
-                <input type="password" class="form-control form-control-custom" th:field="*{password}" required>
+                <label class="form-label"><i class="bi bi-envelope"></i> Email</label>
+                <input type="email" class="form-control form-control-custom" th:field="*{email}" required>
+                <div class="form-text">A verification email will be sent to this address</div>
             </div>
 
             <div class="col-md-6">

@@ -25,6 +25,11 @@
     <h1 class="dashboard-title"><i class="bi bi-speedometer2"></i> Order Dashboard</h1>
 
     <form method="get" action="/dashboard" class="dashboard-filter">
+      <div class="dashboard-search-group" role="search" aria-label="Search dashboard orders">
+        <i class="bi bi-search"></i>
+        <input type="text" class="form-control form-control-sm" id="dashboardSearchInput"
+               placeholder="🔍 Search client, PO, product...">
+      </div>
       <input type="date" class="form-control form-control-sm date-input" id="startDate" name="startDate"
              th:value="${#temporals.format(startDate, 'yyyy-MM-dd')}"
              title="Start Date" required>
@@ -254,6 +259,40 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+      const searchInput = document.getElementById('dashboardSearchInput');
+
+      // Precompute a normalized searchable string for each card once on load.
+      const orderCards = document.querySelectorAll('.order-card');
+      orderCards.forEach(function (card) {
+          const d = card.dataset;
+          card.dataset.searchText = [d.customerName, d.poOrderNo, d.productName, d.quantity]
+              .filter(Boolean)
+              .join(' ')
+              .toLowerCase();
+      });
+
+      function debounce(fn, delay) {
+          let timeoutId;
+          return function () {
+              const ctx = this, args = arguments;
+              clearTimeout(timeoutId);
+              timeoutId = setTimeout(function () { fn.apply(ctx, args); }, delay);
+          };
+      }
+
+      const applyDashboardCardFilter = function () {
+          const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
+          orderCards.forEach(function (card) {
+              card.style.display =
+                  query === '' || (card.dataset.searchText || '').includes(query) ? '' : 'none';
+          });
+      };
+
+      if (searchInput) {
+          searchInput.addEventListener('input', debounce(applyDashboardCardFilter, 150));
+          applyDashboardCardFilter();
+      }
+
       // Initialize urgent order notifications from Thymeleaf-inlined data.
       try {
         const urgentOrders = /*[[${urgentOrders}]]*/ [];

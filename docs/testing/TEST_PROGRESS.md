@@ -138,4 +138,12 @@ Use this file as the session-to-session handoff log for test implementation.
 - Added `src/test/java/com/example/ordermanager/dashboard/controller/DashboardControllerTest.java` with happy + edge coverage for date-range-aligned urgent notifications.
 - Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with `DASH-05` and `DASH-06`.
 
+## Batch Completed (2026-03-27 — Add User Form Field Layout)
+- Updated `src/main/resources/templates/admin/users/form.html` layout to show:
+  - row 1: `username` + `password`
+  - row 2: `mobileNumber` + `email`
+- Added `src/test/java/com/example/ordermanager/admin/controller/AdminUserFormTemplateTest.java` with:
+  - happy-path assertion for source field order (`username -> password -> mobileNumber -> email`)
+  - edge assertion that phone widget ids/init call remain unchanged
+
 

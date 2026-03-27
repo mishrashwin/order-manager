@@ -18,9 +18,14 @@
     <!-- Header -->
     <div class="content-header">
         <h1><i class="bi bi-people"></i> Manage Users</h1>
-        <a class="btn btn-success-custom" th:href="@{/admin/users/add}">
-            <i class="bi bi-plus-circle"></i> Add New User
-        </a>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary" th:href="@{/admin/dashboard}">
+                <i class="bi bi-arrow-left"></i> Back to Admin Panel
+            </a>
+            <a class="btn btn-success-custom" th:href="@{/admin/users/add}">
+                <i class="bi bi-plus-circle"></i> Add New User
+            </a>
+        </div>
     </div>
 
     <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
