@@ -51,7 +51,7 @@ class ProductControllerTest {
     product.setId(1L);
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(3L);
     when(productService.getProductsByCompanyId(3L)).thenReturn(List.of(product));
-    when(orderItemRepository.findByProductId(1L)).thenReturn(Collections.emptyList());
+    when(orderItemRepository.findByProductCompanyId(3L)).thenReturn(Collections.emptyList());
 
     Model model = new ConcurrentModel();
     String view = productController.listProducts(model);

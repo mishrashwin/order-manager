@@ -4,6 +4,7 @@ import com.example.ordermanager.admin.dto.ClientOrderStatDTO;
 import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.order.entity.Order;
+import com.example.ordermanager.order.entity.OrderItem;
 import com.example.ordermanager.order.entity.OrderStatus;
 import com.example.ordermanager.order.exception.OrderNotFoundException;
 import com.example.ordermanager.order.repository.OrderRepository;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class OrderService {
@@ -144,9 +146,8 @@ public class OrderService {
     if (order.getOrderItems() == null || order.getOrderItems().isEmpty()) {
       return;
     }
-    String names = order.getOrderItems().stream()
-        .map(item -> item.getProductName() != null ? item.getProductName() : "")
-        .filter(n -> !n.isEmpty()).reduce((a, b) -> a + ", " + b).orElse("");
+    String names = order.getOrderItems().stream().map(OrderItem::getProductName)
+        .filter(n -> n != null && !n.isEmpty()).collect(java.util.stream.Collectors.joining(", "));
     if (!names.isEmpty()) {
       order.setProductName(names);
     }

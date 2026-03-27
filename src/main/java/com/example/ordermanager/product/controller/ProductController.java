@@ -16,7 +16,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/products")
@@ -43,14 +42,23 @@ public class ProductController {
     Long companyId = securityContextHelper.getCompanyIdFromContext();
     List<Product> products = productService.getProductsByCompanyId(companyId);
 
-    // Build order usage map: productId -> list of order refs
+    // Build order usage map in a single query (avoids N+1): productId -> list of order refs
     Map<Long, List<ProductOrderRef>> orderUsageMap = new HashMap<>();
-    for (Product product : products) {
-      List<ProductOrderRef> refs = orderItemRepository.findByProductId(product.getId()).stream()
-          .map(item -> new ProductOrderRef(item.getOrder().getId(), item.getOrder().getPoOrderNo()))
-          .distinct().collect(Collectors.toList());
-      orderUsageMap.put(product.getId(), refs);
+    for (Product p : products) {
+      orderUsageMap.put(p.getId(), new java.util.ArrayList<>());
     }
+    orderItemRepository.findByProductCompanyId(companyId).forEach(item -> {
+      Long productId = item.getProduct().getId();
+      if (orderUsageMap.containsKey(productId)) {
+        ProductOrderRef ref =
+            new ProductOrderRef(item.getOrder().getId(), item.getOrder().getPoOrderNo());
+        List<ProductOrderRef> refs = orderUsageMap.get(productId);
+        boolean duplicate = refs.stream().anyMatch(r -> r.getOrderId().equals(ref.getOrderId()));
+        if (!duplicate) {
+          refs.add(ref);
+        }
+      }
+    });
 
     model.addAttribute("products", products);
     model.addAttribute("orderUsageMap", orderUsageMap);

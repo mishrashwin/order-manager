@@ -219,7 +219,6 @@
             <div class="col-md-5">
                 <select class="form-select form-control-custom" name="itemProductIds">
                     <option value="">-- Select Product --</option>
-                    ${Object.keys(productPriceMap).length === 0 ? '' : ''}
                 </select>
             </div>
             <div class="col-md-2">
@@ -253,7 +252,7 @@
                 const row = e.target.closest('.product-row');
                 const priceInput = row ? row.querySelector('input[name="itemUnitPrices"]') : null;
                 const selectedId = parseInt(e.target.value);
-                if (priceInput && selectedId && productPriceMap[selectedId] != null) {
+                if (priceInput && selectedId && selectedId in productPriceMap && productPriceMap[selectedId] != null) {
                     priceInput.value = productPriceMap[selectedId];
                 }
             }

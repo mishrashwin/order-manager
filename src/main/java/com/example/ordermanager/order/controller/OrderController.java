@@ -197,6 +197,10 @@ public class OrderController {
         continue; // skip empty rows
       }
 
+      if (qty == null || qty <= 0) {
+        continue; // skip rows with no valid quantity
+      }
+
       OrderItem item = new OrderItem();
       item.setOrder(order);
 
