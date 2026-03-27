@@ -240,3 +240,12 @@ Use this file as the session-to-session handoff log for test implementation.
 - Added `src/test/java/com/example/ordermanager/admin/controller/AdminOrderStatisticsTemplateTest.java` to lock template bindings for `totalOrderValue` and `selectedClientTotalValue`.
 - Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with `ADM-19` and `ADM-20`.
 
+## Batch Completed (2026-03-27 — Owner Pending Approval Contact Details)
+- Updated `OwnerManagementService.getPendingCompanySummaries()` to include first admin contact details (first name, last name, email, phone) per pending company.
+- Extended `OwnerCompanySummary` with admin contact fields used by owner views.
+- Updated `owner/dashboard.html` pending approvals table to replace the `Users` column with an `Admin Contact` column showing name/email/phone and a null-safe fallback message.
+- Added/updated regression coverage:
+  - `src/test/java/com/example/ordermanager/owner/OwnerManagementServiceTest.java` for pending-summary admin-contact happy + edge (missing-admin) paths.
+  - `src/test/java/com/example/ordermanager/owner/OwnerDashboardTemplateTest.java` for pending table column/content bindings.
+- Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with `OWN-06` and `OMS-04`.
+

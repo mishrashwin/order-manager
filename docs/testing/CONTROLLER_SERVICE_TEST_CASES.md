@@ -112,6 +112,7 @@ This file is the living test inventory for controller and service methods.
 - `OWN-03` approve/reject success and `IllegalArgumentException` branches set flash messages
 - `OWN-04` toggle-access deactivates active company
 - `OWN-05` toggle-access blocks re-enable unless approval status is `APPROVED`
+- `OWN-06` pending approvals table shows first admin contact details (name/email/phone) instead of generic user count
 
 ### `ErrorPageController`
 - `ERR-01` no reason defaults to `forbidden` reason key and fallback message
@@ -179,6 +180,7 @@ This file is the living test inventory for controller and service methods.
 - `OMS-01` dashboard metrics compute inactive as `total-active`
 - `OMS-02` summaries sorted by `createdAt` descending with nulls last
 - `OMS-03` user count map handles empty company list and missing company counts as `0`
+- `OMS-04` pending summaries enrich each company with first admin contact details; missing admin yields null-safe fallback fields
 
 ### `UserService`
 - `USR-01` admin create hashes password, sets company, disables user, triggers verification email
