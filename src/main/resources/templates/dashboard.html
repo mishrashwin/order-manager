@@ -261,20 +261,35 @@
   document.addEventListener("DOMContentLoaded", function () {
       const searchInput = document.getElementById('dashboardSearchInput');
 
+      // Precompute a normalized searchable string for each card once on load.
+      const orderCards = document.querySelectorAll('.order-card');
+      orderCards.forEach(function (card) {
+          const d = card.dataset;
+          card.dataset.searchText = [d.customerName, d.poOrderNo, d.productName, d.quantity]
+              .filter(Boolean)
+              .join(' ')
+              .toLowerCase();
+      });
+
+      function debounce(fn, delay) {
+          let timeoutId;
+          return function () {
+              const ctx = this, args = arguments;
+              clearTimeout(timeoutId);
+              timeoutId = setTimeout(function () { fn.apply(ctx, args); }, delay);
+          };
+      }
+
       const applyDashboardCardFilter = function () {
           const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
-          document.querySelectorAll('.order-card').forEach(function (card) {
-              const d = card.dataset;
-              const searchableText = [d.customerName, d.poOrderNo, d.productName, d.quantity]
-                  .filter(Boolean)
-                  .join(' ')
-                  .toLowerCase();
-              card.style.display = query === '' || searchableText.includes(query) ? '' : 'none';
+          orderCards.forEach(function (card) {
+              card.style.display =
+                  query === '' || (card.dataset.searchText || '').includes(query) ? '' : 'none';
           });
       };
 
       if (searchInput) {
-          searchInput.addEventListener('input', applyDashboardCardFilter);
+          searchInput.addEventListener('input', debounce(applyDashboardCardFilter, 150));
           applyDashboardCardFilter();
       }
 
