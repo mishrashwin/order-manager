@@ -11,6 +11,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.Parameter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +26,8 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/orders")
 @Tag(name = "Order Management", description = "Endpoints for managing customer orders")
 public class OrderRestController {
+
+  private static final Logger log = LoggerFactory.getLogger(OrderRestController.class);
 
   private final OrderService orderService;
   private final OrderActivityService orderActivityService;
@@ -74,7 +78,10 @@ public class OrderRestController {
             newStatus.getDisplayName(), actor.getUsername(),
             actor.getFirstName() + " " + actor.getLastName(), companyId);
       }
-    } catch (Exception ignored) {
+    } catch (Exception e) {
+      // Keep status update successful even if audit write fails.
+      log.warn("Audit logging failed for order status patch. orderId={}, companyId={}", id,
+          companyId, e);
     }
 
     Map<String, String> response = new HashMap<>();

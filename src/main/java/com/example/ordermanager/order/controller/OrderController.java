@@ -10,6 +10,8 @@ import com.example.ordermanager.product.entity.Product;
 import com.example.ordermanager.product.service.ProductService;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.utils.SecurityContextHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -24,6 +26,8 @@ import java.util.List;
 @Controller
 @RequestMapping("/orders")
 public class OrderController {
+
+  private static final Logger log = LoggerFactory.getLogger(OrderController.class);
 
   private final OrderService orderService;
   private final OrderActivityService orderActivityService;
@@ -88,7 +92,9 @@ public class OrderController {
         User actor = securityContextHelper.getUserFromContext();
         orderActivityService.logCreated(savedOrder, actor.getUsername(),
             actor.getFirstName() + " " + actor.getLastName(), companyId);
-      } catch (Exception ignored) {
+      } catch (Exception e) {
+        log.warn("Audit logging failed for order creation. orderId={}, companyId={}",
+            savedOrder.getId(), companyId, e);
       }
       redirectAttributes.addFlashAttribute("message", "Order created successfully");
       return "redirect:/orders";
@@ -153,7 +159,9 @@ public class OrderController {
         User actor = securityContextHelper.getUserFromContext();
         orderActivityService.logUpdated(oldOrderSnapshot, savedOrder, actor.getUsername(),
             actor.getFirstName() + " " + actor.getLastName(), companyId);
-      } catch (Exception ignored) {
+      } catch (Exception e) {
+        log.warn("Audit logging failed for order update. orderId={}, companyId={}", id, companyId,
+            e);
       }
 
       redirectAttributes.addFlashAttribute("message", "Order updated successfully");
@@ -193,7 +201,9 @@ public class OrderController {
         capturedPoNo = existing.getPoOrderNo();
         capturedClientName = existing.getCustomerName();
       }
-    } catch (Exception ignored) {
+    } catch (Exception e) {
+      log.warn("Failed to capture pre-delete audit context. orderId={}, companyId={}", id,
+          capturedCompanyId, e);
     }
 
     orderService.deleteOrder(id);
@@ -203,7 +213,9 @@ public class OrderController {
       User actor = securityContextHelper.getUserFromContext();
       orderActivityService.logDeleted(id, capturedPoNo, capturedClientName, actor.getUsername(),
           actor.getFirstName() + " " + actor.getLastName(), capturedCompanyId);
-    } catch (Exception ignored) {
+    } catch (Exception e) {
+      log.warn("Audit logging failed for order deletion. orderId={}, companyId={}", id,
+          capturedCompanyId, e);
     }
 
     redirectAttributes.addFlashAttribute("message", "Order deleted successfully");
