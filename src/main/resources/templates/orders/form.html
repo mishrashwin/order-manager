@@ -38,7 +38,7 @@
 
             <!-- Customer Selection -->
             <div class="mb-4">
-                <label class="form-label"><i class="bi bi-person"></i> Customer Name</label>
+                <label class="form-label"><i class="bi bi-person"></i> Customer Name <span class="text-danger">*</span></label>
                 <div class="input-group">
                     <select class="form-select form-control-custom" th:field="*{client.id}" required>
                         <option value="">-- Select Client --</option>
@@ -58,19 +58,19 @@
 
             <!-- PO/Order No -->
             <div class="mb-4">
-                <label class="form-label"><i class="bi bi-receipt"></i> PO/Order No</label>
-                <input type="text" class="form-control form-control-custom" th:field="*{poOrderNo}" placeholder="e.g., PO-2026-001">
+                <label class="form-label"><i class="bi bi-receipt"></i> PO/Order No <span class="text-danger">*</span></label>
+                <input type="text" class="form-control form-control-custom" th:field="*{poOrderNo}" placeholder="e.g., PO-2026-001" required>
             </div>
 
             <!-- Product Items -->
             <div class="mb-4">
-                <label class="form-label"><i class="bi bi-boxes"></i> Products</label>
+                <label class="form-label"><i class="bi bi-boxes"></i> Products <span class="text-danger">*</span></label>
                 <div id="productRows">
                     <!-- Existing order items (for edit) -->
                     <div th:each="item, itemStat : ${order.orderItems}"
                          class="product-row row g-2 mb-2 align-items-center">
                         <div class="col-md-5">
-                            <select class="form-select form-control-custom" name="itemProductIds">
+                            <select class="form-select form-control-custom" name="itemProductIds" required>
                                 <option value="">-- Select Product --</option>
                                 <option th:each="p : ${products}"
                                         th:value="${p.id}"
@@ -82,14 +82,14 @@
                         </div>
                         <div class="col-md-2">
                             <input type="number" class="form-control form-control-custom"
-                                   name="itemQuantities" min="1" placeholder="Qty"
+                                   name="itemQuantities" min="1" placeholder="Qty" required
                                    th:value="${item.quantity}">
                         </div>
                         <div class="col-md-3">
                             <div class="input-group">
                                 <span class="input-group-text">₹</span>
                                 <input type="number" class="form-control form-control-custom"
-                                       name="itemUnitPrices" step="0.01" min="0" placeholder="Unit Price"
+                                       name="itemUnitPrices" step="0.01" min="0" placeholder="Unit Price" required
                                        th:value="${item.unitPrice}">
                             </div>
                         </div>
@@ -103,7 +103,7 @@
                     <div th:if="${order.orderItems == null or order.orderItems.isEmpty()}"
                          class="product-row row g-2 mb-2 align-items-center">
                         <div class="col-md-5">
-                            <select class="form-select form-control-custom" name="itemProductIds">
+                            <select class="form-select form-control-custom" name="itemProductIds" required>
                                 <option value="">-- Select Product --</option>
                                 <option th:each="p : ${products}"
                                         th:value="${p.id}"
@@ -114,13 +114,13 @@
                         </div>
                         <div class="col-md-2">
                             <input type="number" class="form-control form-control-custom"
-                                   name="itemQuantities" min="1" placeholder="Qty">
+                                   name="itemQuantities" min="1" placeholder="Qty" required>
                         </div>
                         <div class="col-md-3">
                             <div class="input-group">
                                 <span class="input-group-text">₹</span>
                                 <input type="number" class="form-control form-control-custom"
-                                       name="itemUnitPrices" step="0.01" min="0" placeholder="Unit Price">
+                                       name="itemUnitPrices" step="0.01" min="0" placeholder="Unit Price" required>
                             </div>
                         </div>
                         <div class="col-md-2">
@@ -162,7 +162,7 @@
                 </div>
 
                 <div class="col-md-4 mb-4">
-                    <label class="form-label"><i class="bi bi-tag"></i> Status</label>
+                    <label class="form-label"><i class="bi bi-tag"></i> Status <span class="text-danger">*</span></label>
                     <select class="form-select form-control-custom" th:field="*{status}" required>
                         <option value="">-- Select Status --</option>
                         <option th:each="status : ${statuses}"
@@ -176,18 +176,18 @@
             <!-- Dates Row -->
             <div class="row">
                 <div class="col-md-6 mb-4">
-                    <label class="form-label"><i class="bi bi-calendar"></i> Order Date</label>
+                    <label class="form-label"><i class="bi bi-calendar"></i> Order Date <span class="text-danger">*</span></label>
                     <input type="date" class="form-control form-control-custom"
                            th:field="*{orderDate}"
-                           th:value="${#temporals.format(order.orderDate, 'yyyy-MM-dd')}">
+                           th:value="${#temporals.format(order.orderDate, 'yyyy-MM-dd')}" required>
                 </div>
 
                 <div class="col-md-6 mb-4">
-                    <label class="form-label"><i class="bi bi-calendar-check"></i> Delivery Date</label>
+                    <label class="form-label"><i class="bi bi-calendar-check"></i> Delivery Date <span class="text-danger">*</span></label>
                     <input type="date" class="form-control form-control-custom"
                            th:classappend="${dateError} ? ' is-invalid' : ''"
                            th:field="*{deliveryDate}"
-                           th:value="${#temporals.format(order.deliveryDate, 'yyyy-MM-dd')}">
+                           th:value="${#temporals.format(order.deliveryDate, 'yyyy-MM-dd')}" required>
                     <div th:if="${dateError}" class="invalid-feedback d-block" th:text="${dateError}"></div>
                     <div id="dateClientError" class="invalid-feedback d-block" style="display: none;">
                         Delivery date must be on or after order date.
@@ -207,7 +207,7 @@
                 <a class="btn btn-outline-secondary" th:href="@{/orders}">
                     <i class="bi bi-x-circle"></i> Cancel
                 </a>
-                <button type="submit" class="btn btn-success-custom">
+                <button id="orderSubmitBtn" type="submit" class="btn btn-success-custom" disabled>
                     <i class="bi bi-check-circle"></i> <span th:text="${order.id == null ? 'Save Order' : 'Update Order'}"></span>
                 </button>
             </div>
@@ -295,19 +295,19 @@
     const productRowTemplate = `
         <div class="product-row row g-2 mb-2 align-items-center">
             <div class="col-md-5">
-                <select class="form-select form-control-custom" name="itemProductIds">
+                <select class="form-select form-control-custom" name="itemProductIds" required>
                     <option value="">-- Select Product --</option>
                 </select>
             </div>
             <div class="col-md-2">
                 <input type="number" class="form-control form-control-custom"
-                       name="itemQuantities" min="1" placeholder="Qty">
+                       name="itemQuantities" min="1" placeholder="Qty" required>
             </div>
             <div class="col-md-3">
                 <div class="input-group">
                     <span class="input-group-text">₹</span>
                     <input type="number" class="form-control form-control-custom"
-                           name="itemUnitPrices" step="0.01" min="0" placeholder="Unit Price">
+                           name="itemUnitPrices" step="0.01" min="0" placeholder="Unit Price" required>
                 </div>
             </div>
             <div class="col-md-2">
@@ -429,18 +429,67 @@
         return true;
     }
 
+    function areMandatoryOrderFieldsFilled() {
+        const clientSelect = document.querySelector('#orderForm select[name="client.id"]');
+        const poInput = document.getElementById('poOrderNo');
+        const statusSelect = document.getElementById('status');
+        const orderDateInput = document.getElementById('orderDate');
+        const deliveryDateInput = document.getElementById('deliveryDate');
+
+        const headerFieldsValid = !!(clientSelect && clientSelect.value
+            && poInput && poInput.value.trim()
+            && statusSelect && statusSelect.value
+            && orderDateInput && orderDateInput.value
+            && deliveryDateInput && deliveryDateInput.value);
+
+        if (!headerFieldsValid) {
+            return false;
+        }
+
+        const rows = document.querySelectorAll('#productRows .product-row');
+        if (!rows.length) {
+            return false;
+        }
+
+        return Array.from(rows).every(function (row) {
+            const productSelect = row.querySelector('select[name="itemProductIds"]');
+            const qtyInput = row.querySelector('input[name="itemQuantities"]');
+            const priceInput = row.querySelector('input[name="itemUnitPrices"]');
+
+            return !!(productSelect && productSelect.value
+                && qtyInput && qtyInput.value && Number(qtyInput.value) > 0
+                && priceInput && priceInput.value !== '' && Number(priceInput.value) >= 0);
+        });
+    }
+
+    function updateOrderSubmitState() {
+        const submitButton = document.getElementById('orderSubmitBtn');
+        if (!submitButton) {
+            return;
+        }
+        submitButton.disabled = !(areMandatoryOrderFieldsFilled() && validateOrderDatesOnClient());
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         restoreOrderDraft();
         recalculateOrderSummary();
+        updateOrderSubmitState();
 
         const orderForm = document.getElementById('orderForm');
         if (orderForm) {
             orderForm.addEventListener('input', saveOrderDraft);
             orderForm.addEventListener('change', saveOrderDraft);
+            orderForm.addEventListener('input', updateOrderSubmitState);
+            orderForm.addEventListener('change', updateOrderSubmitState);
             orderForm.addEventListener('submit', function (event) {
                 if (!validateOrderDatesOnClient()) {
                     event.preventDefault();
                     document.getElementById('deliveryDate').reportValidity();
+                    return;
+                }
+                if (!areMandatoryOrderFieldsFilled()) {
+                    event.preventDefault();
+                    updateOrderSubmitState();
                     return;
                 }
                 recalculateOrderSummary();
@@ -451,7 +500,10 @@
         ['orderDate', 'deliveryDate'].forEach(function (fieldId) {
             const field = document.getElementById(fieldId);
             if (field) {
-                field.addEventListener('change', validateOrderDatesOnClient);
+                field.addEventListener('change', function () {
+                    validateOrderDatesOnClient();
+                    updateOrderSubmitState();
+                });
             }
         });
 
@@ -467,12 +519,14 @@
                 }
                 recalculateOrderSummary();
                 saveOrderDraft();
+                updateOrderSubmitState();
             }
         });
 
         document.getElementById('productRows').addEventListener('input', function () {
             recalculateOrderSummary();
             saveOrderDraft();
+            updateOrderSubmitState();
         });
 
         // Remove product row
@@ -483,6 +537,7 @@
                     e.target.closest('.product-row').remove();
                     recalculateOrderSummary();
                     saveOrderDraft();
+                    updateOrderSubmitState();
                 }
             }
         });
@@ -493,6 +548,7 @@
             container.appendChild(createProductRow({}, getProductOptions()));
             recalculateOrderSummary();
             saveOrderDraft();
+            updateOrderSubmitState();
         });
 
         const addProductLink = document.getElementById('addProductLink');

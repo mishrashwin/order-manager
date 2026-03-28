@@ -80,6 +80,7 @@ This file is the living test inventory for controller and service methods.
 - `ORDC-10` order date validation blocks `deliveryDate < orderDate` (client-side pre-submit + server-side `POST /orders` fallback) and shows inline warning
 - `ORDC-11` edit/duplicate use tenant-scoped order lookup (`id + companyId`) and redirect to `/orders` when order is missing or outside tenant scope
 - `ORDC-12` order form update uses tenant-scoped patching and redirects `/orders` with flash `error` when the order is missing/outside tenant scope
+- `ORDC-13` order form marks all create fields except notes as mandatory and keeps submit disabled until required header fields + product rows are complete
 
 ### `OrderRestController`
 - `ORDA-01` `POST /api/orders` delegates create and returns created payload
@@ -93,6 +94,7 @@ This file is the living test inventory for controller and service methods.
 - `CLI-03` save unauthenticated path returns form with specific login-required error
 - `CLI-04` `ClientHasActiveOrdersException` renders order count in flash error message
 - `CLI-05` generic delete error returns fallback flash error
+- `CLI-06` client form requires name/contact/email/phone (address optional) and keeps submit disabled until mandatory fields are filled
 
 ### `VendorController`
 - `VEN-01` list endpoint uses tenant-scoped `getVendorsByCompanyId`
@@ -101,6 +103,7 @@ This file is the living test inventory for controller and service methods.
 - `VEN-04` edit route delegates by id; delete success/failure redirects `/vendors` with flash `message`/`error`
 - `VEN-05` `GET /vendors/new` and `POST /vendors` preserve/validate `returnTo` so nested vendor creation can return to product form safely
 - `VEN-06` vendor `returnTo` sanitization normalizes encoded/duplicate comma-joined values (for example query+form duplicates) to a single safe path
+- `VEN-07` vendor form requires company/contact/email/phone (address optional) and keeps submit disabled until mandatory fields are filled
 
 ### `ProductController`
 - `PRD-01` list endpoint uses tenant-scoped `getProductsByCompanyId` and populates `orderUsageMap`

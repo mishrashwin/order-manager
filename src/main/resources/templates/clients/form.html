@@ -30,33 +30,33 @@
     <div class="unified-card">
         <div class="alert alert-danger" role="alert" th:if="${error}" th:text="${error}"></div>
 
-        <form th:action="@{/clients(returnTo=${returnTo})}" th:object="${client}" method="post">
+        <form id="clientForm" th:action="@{/clients(returnTo=${returnTo})}" th:object="${client}" method="post">
             <input type="hidden" th:field="*{id}">
             <input type="hidden" name="returnTo" th:value="${returnTo}">
 
             <div class="mb-4">
-                <label class="form-label"><i class="bi bi-building"></i> Client Name</label>
+                <label class="form-label"><i class="bi bi-building"></i> Client Name <span class="text-danger">*</span></label>
                 <input type="text" class="form-control form-control-custom" th:field="*{name}" required>
             </div>
 
             <div class="mb-4">
-                <label class="form-label"><i class="bi bi-person"></i> Contact Person</label>
-                <input type="text" class="form-control form-control-custom" th:field="*{contactPerson}">
+                <label class="form-label"><i class="bi bi-person"></i> Contact Person <span class="text-danger">*</span></label>
+                <input type="text" class="form-control form-control-custom" th:field="*{contactPerson}" required>
             </div>
 
             <div class="row">
                 <div class="col-md-6 mb-4">
-                    <label class="form-label"><i class="bi bi-envelope"></i> Email</label>
-                    <input type="email" class="form-control form-control-custom" th:field="*{email}">
+                    <label class="form-label"><i class="bi bi-envelope"></i> Email <span class="text-danger">*</span></label>
+                    <input type="email" class="form-control form-control-custom" th:field="*{email}" required>
                 </div>
 
                 <div class="col-md-6 mb-4">
-                    <label class="form-label"><i class="bi bi-telephone"></i> Phone</label>
+                    <label class="form-label"><i class="bi bi-telephone"></i> Phone <span class="text-danger">*</span></label>
                     <input type="hidden" id="clientPhone" th:field="*{phone}">
                     <div class="d-flex gap-2">
-                        <select id="clientPhoneCountry" class="form-select form-control-custom" aria-label="Country code"></select>
+                        <select id="clientPhoneCountry" class="form-select form-control-custom" aria-label="Country code" required></select>
                         <input type="tel" id="clientPhoneLocal" class="form-control form-control-custom"
-                               th:classappend="${phoneError} ? ' is-invalid' : ''" placeholder="Phone number">
+                               th:classappend="${phoneError} ? ' is-invalid' : ''" placeholder="Phone number" required>
                     </div>
                     <div class="invalid-feedback d-block" th:if="${phoneError}" th:text="${phoneError}"></div>
                 </div>
@@ -72,7 +72,7 @@
                 <a class="btn btn-outline-secondary" th:href="${returnTo != null ? returnTo : '/clients'}">
                     <i class="bi bi-x-circle"></i> Cancel
                 </a>
-                <button type="submit" class="btn btn-success-custom">
+                <button id="clientSubmitBtn" type="submit" class="btn btn-success-custom" disabled>
                     <i class="bi bi-check-circle"></i> <span th:text="${client.id == null ? 'Save Client' : 'Update Client'}"></span>
                 </button>
             </div>
@@ -86,7 +86,45 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script th:src="@{/js/phone-input-widget.js}"></script>
 <script>
-    initPhoneInput('clientPhone', 'clientPhoneCountry', 'clientPhoneLocal');
+    function areMandatoryClientFieldsFilled() {
+        const name = document.getElementById('name');
+        const contactPerson = document.getElementById('contactPerson');
+        const email = document.getElementById('email');
+        const phoneLocal = document.getElementById('clientPhoneLocal');
+
+        return !!(name && name.value.trim()
+            && contactPerson && contactPerson.value.trim()
+            && email && email.value.trim()
+            && phoneLocal && phoneLocal.value.trim());
+    }
+
+    function updateClientSubmitState() {
+        const submitButton = document.getElementById('clientSubmitBtn');
+        if (!submitButton) {
+            return;
+        }
+        submitButton.disabled = !areMandatoryClientFieldsFilled();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        initPhoneInput('clientPhone', 'clientPhoneCountry', 'clientPhoneLocal');
+        updateClientSubmitState();
+
+        const clientForm = document.getElementById('clientForm');
+        if (clientForm) {
+            clientForm.addEventListener('input', updateClientSubmitState);
+            clientForm.addEventListener('change', updateClientSubmitState);
+        }
+
+        const clientPhoneCountry = document.getElementById('clientPhoneCountry');
+        const clientPhoneLocal = document.getElementById('clientPhoneLocal');
+        if (clientPhoneCountry) {
+            clientPhoneCountry.addEventListener('change', updateClientSubmitState);
+        }
+        if (clientPhoneLocal) {
+            clientPhoneLocal.addEventListener('input', updateClientSubmitState);
+        }
+    });
 </script>
 </body>
 </html>
