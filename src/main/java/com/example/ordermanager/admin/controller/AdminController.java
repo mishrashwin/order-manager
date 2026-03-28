@@ -9,6 +9,7 @@ import com.example.ordermanager.order.service.OrderActivityService;
 import com.example.ordermanager.order.service.OrderService;
 import com.example.ordermanager.payment.entity.Payment;
 import com.example.ordermanager.payment.service.PaymentService;
+import com.example.ordermanager.payment.service.PaymentService.PaymentReminderInfo;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.service.UserService;
 import com.example.ordermanager.utils.PasswordVerificationService;
@@ -65,6 +66,8 @@ public class AdminController {
   public String adminDashboard(Model model) {
     Long companyId = securityContextHelper.getCompanyIdFromContext();
     model.addAttribute("companyId", companyId);
+    PaymentReminderInfo reminder = paymentService.getPaymentReminderInfo(companyId);
+    model.addAttribute("paymentReminder", reminder);
     return "admin/dashboard";
   }
 

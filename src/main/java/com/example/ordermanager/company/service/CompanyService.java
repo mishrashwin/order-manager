@@ -268,6 +268,16 @@ public class CompanyService {
         && CompanyApprovalStatus.APPROVED.equals(company.getApprovalStatus());
   }
 
+  /**
+   * Set the monthly subscription fee for a company. Only the owner should call this.
+   */
+  public Company setMonthlyFee(Long companyId, Double fee) {
+    Company company = companyRepository.findById(companyId).orElseThrow(
+        () -> new IllegalArgumentException("Company with ID " + companyId + " not found"));
+    company.setMonthlyFee(fee);
+    return companyRepository.save(company);
+  }
+
   private void notifyCompanyApproval(Company company) {
     User primaryAdmin = resolvePrimaryAdmin(company, "approved");
     if (primaryAdmin == null) {

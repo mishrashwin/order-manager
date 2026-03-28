@@ -147,6 +147,18 @@ public class OwnerController {
     }
     return "redirect:/owner/companies";
   }
+
+  @PostMapping("/companies/{id}/set-fee")
+  public String setCompanyFee(@PathVariable Long id,
+      @RequestParam(required = false) Double monthlyFee, RedirectAttributes redirectAttributes) {
+    try {
+      companyService.setMonthlyFee(id, monthlyFee);
+      redirectAttributes.addFlashAttribute("message", "Monthly fee updated successfully.");
+    } catch (IllegalArgumentException ex) {
+      redirectAttributes.addFlashAttribute("error", ex.getMessage());
+    }
+    return "redirect:/owner/companies";
+  }
 }
 
 

@@ -13,6 +13,45 @@
 <!-- Unified Navbar -->
 <div th:replace="~{fragments/unified-navbar :: unified-navbar}"></div>
 
+<!-- Payment Reminder Ticker Tape -->
+<div th:if="${paymentReminder != null and paymentReminder.active}"
+     class="payment-ticker-wrap">
+    <!--
+      The inner content below is intentionally repeated twice inside .payment-ticker-track.
+      The CSS animation scrolls the track by -50% so that when the first copy exits the viewport
+      the second copy takes over seamlessly, creating a continuous loop.
+    -->
+    <div class="payment-ticker-track">
+        <span class="payment-ticker-icon"><i class="bi bi-bell-fill"></i></span>
+        <span class="payment-ticker-text">
+            <th:block th:if="${paymentReminder.monthlyFee != null}">
+                Payment Reminder &mdash; Your subscription fee of
+                <strong th:text="'₹' + ${#numbers.formatDecimal(paymentReminder.monthlyFee, 1, 2)}">₹0.00</strong>
+                for <strong th:text="${paymentReminder.monthYearLabel}">Month Year</strong> is due.
+            </th:block>
+            <th:block th:if="${paymentReminder.monthlyFee == null}">
+                Payment Reminder &mdash; Your subscription payment for
+                <strong th:text="${paymentReminder.monthYearLabel}">Month Year</strong> is due.
+            </th:block>
+            Please <a th:href="@{/admin/payments}" class="payment-ticker-link">submit your payment</a> to avoid interruption.
+        </span>
+        <span class="payment-ticker-separator">&#9679;</span>
+        <span class="payment-ticker-icon"><i class="bi bi-bell-fill"></i></span>
+        <span class="payment-ticker-text">
+            <th:block th:if="${paymentReminder.monthlyFee != null}">
+                Payment Reminder &mdash; Your subscription fee of
+                <strong th:text="'₹' + ${#numbers.formatDecimal(paymentReminder.monthlyFee, 1, 2)}">₹0.00</strong>
+                for <strong th:text="${paymentReminder.monthYearLabel}">Month Year</strong> is due.
+            </th:block>
+            <th:block th:if="${paymentReminder.monthlyFee == null}">
+                Payment Reminder &mdash; Your subscription payment for
+                <strong th:text="${paymentReminder.monthYearLabel}">Month Year</strong> is due.
+            </th:block>
+            Please <a th:href="@{/admin/payments}" class="payment-ticker-link">submit your payment</a> to avoid interruption.
+        </span>
+    </div>
+</div>
+
 <div class="main-content">
     <div class="content-header">
         <h1><i class="bi bi-shield-check"></i> Admin Dashboard</h1>

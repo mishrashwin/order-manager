@@ -132,5 +132,45 @@ class CompanyServiceTest {
     assertThat(companyService.canUsersLogin(inactive)).isFalse();
     assertThat(companyService.canUsersLogin(null)).isFalse();
   }
+
+  @Test
+  void setMonthlyFee_updatesCompanyFee() {
+    Company company = new Company();
+    company.setId(5L);
+    company.setName("FEETEST");
+
+    when(companyRepository.findById(5L)).thenReturn(Optional.of(company));
+    when(companyRepository.save(any(Company.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    Company updated = companyService.setMonthlyFee(5L, 1500.0);
+
+    assertThat(updated.getMonthlyFee()).isEqualTo(1500.0);
+  }
+
+  @Test
+  void setMonthlyFee_clearsFeeWhenNullPassed() {
+    Company company = new Company();
+    company.setId(5L);
+    company.setName("FEETEST");
+    company.setMonthlyFee(500.0);
+
+    when(companyRepository.findById(5L)).thenReturn(Optional.of(company));
+    when(companyRepository.save(any(Company.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    Company updated = companyService.setMonthlyFee(5L, null);
+
+    assertThat(updated.getMonthlyFee()).isNull();
+  }
+
+  @Test
+  void setMonthlyFee_throwsWhenCompanyNotFound() {
+    when(companyRepository.findById(99L)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> companyService.setMonthlyFee(99L, 500.0))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Company with ID 99 not found");
+  }
 }
 

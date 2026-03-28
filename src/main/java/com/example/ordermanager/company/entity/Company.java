@@ -50,6 +50,9 @@ public class Company {
   @Column(name = "approved_by", length = 100)
   private String approvedBy;
 
+  @Column(name = "monthly_fee", precision = 10, scale = 2)
+  private Double monthlyFee;
+
   // Constructor with name
   public Company(String name) {
     this.name = name;

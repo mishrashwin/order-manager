@@ -68,7 +68,8 @@ public class OwnerManagementService {
 
   private OwnerCompanySummary toSummary(Company company, long adminCount, long userCount) {
     return new OwnerCompanySummary(company.getId(), company.getName(), company.getApprovalStatus(),
-        company.isActive(), adminCount, userCount, company.getCreatedAt(), null, null, null, null);
+        company.isActive(), adminCount, userCount, company.getCreatedAt(), null, null, null, null,
+        company.getMonthlyFee());
   }
 
   private OwnerCompanySummary toPendingSummary(Company company, long adminCount, long userCount) {
@@ -79,6 +80,6 @@ public class OwnerManagementService {
         firstAdmin != null ? firstAdmin.getFirstName() : null,
         firstAdmin != null ? firstAdmin.getLastName() : null,
         firstAdmin != null ? firstAdmin.getEmail() : null,
-        firstAdmin != null ? firstAdmin.getMobileNumber() : null);
+        firstAdmin != null ? firstAdmin.getMobileNumber() : null, company.getMonthlyFee());
   }
 }

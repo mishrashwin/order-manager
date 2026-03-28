@@ -14,4 +14,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
   List<Payment> findAllByOrderByCreatedAtDesc();
 
   Optional<Payment> findByIdAndCompanyId(Long id, Long companyId);
+
+  boolean existsByCompanyIdAndPaymentMonthAndPaymentYear(Long companyId, int paymentMonth,
+      int paymentYear);
 }
