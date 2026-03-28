@@ -110,11 +110,11 @@ public class OrderController {
 
   @GetMapping("/edit/{id}")
   public String showEditForm(@PathVariable Long id, Model model) {
-    Order order = orderService.getOrderById(id);
+    Long companyId = securityContextHelper.getCompanyIdFromContext();
+    Order order = orderService.getOrderByIdAndCompanyId(id, companyId);
     if (order == null) {
       return "redirect:/orders";
     }
-    Long companyId = securityContextHelper.getCompanyIdFromContext();
     model.addAttribute("order", order);
     model.addAttribute("clients", clientService.getClientsByCompanyId(companyId));
     model.addAttribute("products", productService.getProductsByCompanyId(companyId));
@@ -165,7 +165,8 @@ public class OrderController {
 
   @GetMapping("/duplicate/{id}")
   public String duplicateOrder(@PathVariable Long id, Model model) {
-    Order existingOrder = orderService.getOrderById(id);
+    Long companyId = securityContextHelper.getCompanyIdFromContext();
+    Order existingOrder = orderService.getOrderByIdAndCompanyId(id, companyId);
     if (existingOrder == null) {
       return "redirect:/orders";
     }
@@ -192,7 +193,6 @@ public class OrderController {
       newOrder.getOrderItems().add(newItem);
     }
 
-    Long companyId = securityContextHelper.getCompanyIdFromContext();
     model.addAttribute("order", newOrder);
     model.addAttribute("clients", clientService.getClientsByCompanyId(companyId));
     model.addAttribute("products", productService.getProductsByCompanyId(companyId));

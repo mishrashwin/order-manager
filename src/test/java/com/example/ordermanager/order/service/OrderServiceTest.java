@@ -300,7 +300,7 @@ class OrderServiceTest {
     partialOrder.getOrderItems().add(first);
     partialOrder.getOrderItems().add(second);
 
-    when(orderRepository.findById(9L)).thenReturn(java.util.Optional.of(existingOrder));
+    when(orderRepository.findDetailedById(9L)).thenReturn(java.util.Optional.of(existingOrder));
     when(helper.toTitleCase("Steel Rod, Paint")).thenReturn("Steel Rod, Paint");
     when(orderRepository.save(any(Order.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
@@ -343,6 +343,27 @@ class OrderServiceTest {
     assertThatThrownBy(() -> orderService.createOrderWithCompany(order, 5L))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Delivery date must be on or after order date.");
+  }
+
+  @Test
+  void getOrderByIdAndCompanyId_whenFound_returnsOrder() {
+    Order order = new Order();
+    order.setId(44L);
+
+    when(orderRepository.findByIdAndCompanyId(44L, 5L)).thenReturn(java.util.Optional.of(order));
+
+    Order result = orderService.getOrderByIdAndCompanyId(44L, 5L);
+
+    assertThat(result).isEqualTo(order);
+  }
+
+  @Test
+  void getOrderByIdAndCompanyId_whenNotFound_returnsNull() {
+    when(orderRepository.findByIdAndCompanyId(99L, 5L)).thenReturn(java.util.Optional.empty());
+
+    Order result = orderService.getOrderByIdAndCompanyId(99L, 5L);
+
+    assertThat(result).isNull();
   }
 
   private OrderItem item(Order order, String productName, int quantity, double unitPrice) {

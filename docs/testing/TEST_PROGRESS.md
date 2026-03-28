@@ -249,3 +249,18 @@ Use this file as the session-to-session handoff log for test implementation.
   - `src/test/java/com/example/ordermanager/owner/OwnerDashboardTemplateTest.java` for pending table column/content bindings.
 - Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with `OWN-06` and `OMS-04`.
 
+## Batch Completed (2026-03-28 — Dashboard Lazy-Load No-Session Fix)
+- Fixed production `/dashboard` 500 (`failed to lazily initialize ... Order.orderItems`) by eager-loading order items for dashboard/list/urgent repository reads.
+- Updated `OrderRepository` with `@EntityGraph` coverage for:
+  - `findByCompanyIdAndOrderDateBetween`
+  - `findByCompanyIdAndDeliveryDateLessThanEqual`
+  - new `findByIdAndCompanyId`
+  - new `findDetailedById`
+- Updated `OrderService` to use `findDetailedById` in `patchOrder` and `getOrderById`, and added tenant-aware `getOrderByIdAndCompanyId`.
+- Updated `OrderController` edit/duplicate flows to resolve orders via `getOrderByIdAndCompanyId` (tenant-safe and item-ready for form rendering).
+- Added/updated regression coverage:
+  - `OrderServiceTest`: patched lookup mock (`findDetailedById`) and added happy+edge tests for `getOrderByIdAndCompanyId`.
+  - `OrderControllerTest`: edit/duplicate tests now assert tenant-scoped lookup behavior.
+- Verified with targeted suite: `OrderServiceTest`, `OrderControllerTest`, `DashboardControllerTest` (34 tests passing).
+- Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with `ORDC-11` and `ORS-15`.
+

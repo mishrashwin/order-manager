@@ -37,35 +37,29 @@ public class BrevoEmailService {
 
   public void sendVerificationEmail(String to, String verificationUrl) {
     String subject = "Verify Your Email - Order Manager";
-    String htmlContent = "<html><body style=\"font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Poppins, sans-serif; color: #333;\">"
-        + "<div style=\"max-width: 600px; margin: 0 auto; padding: 20px;\">"
-        + "<h2 style=\"color: #1f2937; margin-bottom: 20px;\">Welcome to Order Manager!</h2>"
-        + "<p style=\"color: #555; font-size: 16px; line-height: 1.6; margin-bottom: 20px;\">"
-        + "Thank you for signing up. We're excited to have you on board."
-        + "</p>"
-        + "<p style=\"color: #555; font-size: 16px; line-height: 1.6; margin-bottom: 30px;\">"
-        + "To get started, please verify your email address by clicking the button below:"
-        + "</p>"
-        + "<div style=\"text-align: center; margin: 30px 0;\">"
-        + "<a href=\"" + escapeHtml(verificationUrl) + "\" style=\"display: inline-block; padding: 14px 32px; background: #007bff; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;\">"
-        + "Verify Email Address"
-        + "</a>"
-        + "</div>"
-        + "<p style=\"color: #888; font-size: 14px; line-height: 1.6; margin-top: 30px;\">"
-        + "Or copy and paste this link in your browser:"
-        + "</p>"
-        + "<p style=\"color: #007bff; font-size: 13px; word-break: break-all;\">"
-        + escapeHtml(verificationUrl)
-        + "</p>"
-        + "<hr style=\"border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;\">"
-        + "<p style=\"color: #888; font-size: 13px; line-height: 1.6;\">"
-        + "<strong>Security note:</strong> This verification link will expire in 24 hours. "
-        + "If you didn't create an account, please ignore this email or contact our support team."
-        + "</p>"
-        + "<p style=\"color: #888; font-size: 13px; line-height: 1.6;\">"
-        + "With Order Manager, you'll be able to manage orders, clients, and vendors all in one place — with better visibility, faster operations, and seamless collaboration with your team."
-        + "</p>"
-        + getEmailSignature() + "</div></body></html>";
+    String htmlContent =
+        "<html><body style=\"font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Poppins, sans-serif; color: #333;\">"
+            + "<div style=\"max-width: 600px; margin: 0 auto; padding: 20px;\">"
+            + "<h2 style=\"color: #1f2937; margin-bottom: 20px;\">Welcome to Order Manager!</h2>"
+            + "<p style=\"color: #555; font-size: 16px; line-height: 1.6; margin-bottom: 20px;\">"
+            + "Thank you for signing up. We're excited to have you on board." + "</p>"
+            + "<p style=\"color: #555; font-size: 16px; line-height: 1.6; margin-bottom: 30px;\">"
+            + "To get started, please verify your email address by clicking the button below:"
+            + "</p>" + "<div style=\"text-align: center; margin: 30px 0;\">" + "<a href=\""
+            + escapeHtml(verificationUrl)
+            + "\" style=\"display: inline-block; padding: 14px 32px; background: #007bff; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;\">"
+            + "Verify Email Address" + "</a>" + "</div>"
+            + "<p style=\"color: #888; font-size: 14px; line-height: 1.6; margin-top: 30px;\">"
+            + "Or copy and paste this link in your browser:" + "</p>"
+            + "<p style=\"color: #007bff; font-size: 13px; word-break: break-all;\">"
+            + escapeHtml(verificationUrl) + "</p>"
+            + "<hr style=\"border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;\">"
+            + "<p style=\"color: #888; font-size: 13px; line-height: 1.6;\">"
+            + "<strong>Security note:</strong> This verification link will expire in 24 hours. "
+            + "If you didn't create an account, please ignore this email or contact our support team."
+            + "</p>" + "<p style=\"color: #888; font-size: 13px; line-height: 1.6;\">"
+            + "With Order Manager, you'll be able to manage orders, clients, and vendors all in one place — with better visibility, faster operations, and seamless collaboration with your team."
+            + "</p>" + getEmailSignature() + "</div></body></html>";
 
     sendEmail(to, subject, htmlContent);
   }

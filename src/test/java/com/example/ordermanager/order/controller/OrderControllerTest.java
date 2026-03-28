@@ -211,8 +211,8 @@ class OrderControllerTest {
     order.setProductName("Widget");
     List<Client> clients = Arrays.asList(new Client());
 
-    when(orderService.getOrderById(15L)).thenReturn(order);
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    when(orderService.getOrderByIdAndCompanyId(15L, 5L)).thenReturn(order);
     when(clientService.getClientsByCompanyId(5L)).thenReturn(clients);
 
     Model model = new ConcurrentModel();
@@ -226,7 +226,8 @@ class OrderControllerTest {
 
   @Test
   void showEditForm_orderNotFound_redirectsToOrders() {
-    when(orderService.getOrderById(999L)).thenReturn(null);
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    when(orderService.getOrderByIdAndCompanyId(999L, 5L)).thenReturn(null);
 
     Model model = new ConcurrentModel();
     String view = orderController.showEditForm(999L, model);
@@ -250,8 +251,8 @@ class OrderControllerTest {
 
     List<Client> clients = Arrays.asList(new Client());
 
-    when(orderService.getOrderById(15L)).thenReturn(existingOrder);
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    when(orderService.getOrderByIdAndCompanyId(15L, 5L)).thenReturn(existingOrder);
     when(clientService.getClientsByCompanyId(5L)).thenReturn(clients);
 
     Model model = new ConcurrentModel();
@@ -272,7 +273,8 @@ class OrderControllerTest {
 
   @Test
   void duplicateOrder_orderNotFound_redirectsToOrders() {
-    when(orderService.getOrderById(999L)).thenReturn(null);
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    when(orderService.getOrderByIdAndCompanyId(999L, 5L)).thenReturn(null);
 
     Model model = new ConcurrentModel();
     String view = orderController.duplicateOrder(999L, model);

@@ -91,7 +91,7 @@ public class CompanyController {
           "Company '" + savedCompany.getName()
               + "' registered successfully! Verification email sent to "
               + registrationDTO.getOwnerEmail()
-              + ". Please verify your email and wait for owner approval before logging in.");
+              + ". Please verify your email and wait for owner approval mail before logging in.");
       return "redirect:/login?registered=true";
 
     } catch (IllegalArgumentException e) {

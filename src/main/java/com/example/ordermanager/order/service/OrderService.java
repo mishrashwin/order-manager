@@ -82,7 +82,7 @@ public class OrderService {
   }
 
   public Order patchOrder(Long id, Order partialOrder) {
-    return orderRepository.findById(id).map(existingOrder -> {
+    return orderRepository.findDetailedById(id).map(existingOrder -> {
       // Update client relationship first (this auto-syncs customerName via setter)
       if (partialOrder.getClient() != null) {
         existingOrder.setClient(partialOrder.getClient());
@@ -179,7 +179,14 @@ public class OrderService {
   }
 
   public Order getOrderById(Long id) {
-    return orderRepository.findById(id).orElse(null);
+    return orderRepository.findDetailedById(id).orElse(null);
+  }
+
+  /**
+   * TENANT-AWARE: Get a single order by id for the authenticated company.
+   */
+  public Order getOrderByIdAndCompanyId(Long id, Long companyId) {
+    return orderRepository.findByIdAndCompanyId(id, companyId).orElse(null);
   }
 
 

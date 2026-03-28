@@ -2,6 +2,7 @@ package com.example.ordermanager.order.repository;
 
 import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.entity.OrderStatus;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,13 +11,22 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
   List<Order> findByCompanyId(Long companyId);
 
+  @EntityGraph(attributePaths = {"orderItems", "orderItems.product"})
   List<Order> findByCompanyIdAndOrderDateBetween(Long companyId, LocalDate startDate,
       LocalDate endDate);
+
+  @EntityGraph(attributePaths = {"orderItems", "orderItems.product"})
+  Optional<Order> findByIdAndCompanyId(Long id, Long companyId);
+
+  @EntityGraph(attributePaths = {"orderItems", "orderItems.product"})
+  @Query("SELECT o FROM Order o WHERE o.id = :id")
+  Optional<Order> findDetailedById(@Param("id") Long id);
 
   /**
    * Count orders associated with a specific client. Used for validation before client deletion.
@@ -47,6 +57,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
    *        excluded by JPA
    * @return List of orders with delivery date less than or equal to the cutoff
    */
+  @EntityGraph(attributePaths = {"orderItems", "orderItems.product"})
   List<Order> findByCompanyIdAndDeliveryDateLessThanEqual(Long companyId, LocalDate toDate);
 
   /**

@@ -74,6 +74,7 @@ This file is the living test inventory for controller and service methods.
 - `ORDC-08` order form template includes draft-resume hooks and Add Product link wiring to preserve in-progress edits before navigation
 - `ORDC-09` order form uses line-item qty/unit price as source of truth, shows calculated total/qty summary, and clears stale draft state on submit
 - `ORDC-10` order date validation blocks `deliveryDate < orderDate` (client-side pre-submit + server-side `POST /orders` fallback) and shows inline warning
+- `ORDC-11` edit/duplicate use tenant-scoped order lookup (`id + companyId`) and redirect to `/orders` when order is missing or outside tenant scope
 
 ### `OrderRestController`
 - `ORDA-01` `POST /api/orders` delegates create and returns created payload
@@ -160,6 +161,7 @@ This file is the living test inventory for controller and service methods.
 - `ORS-12` create flow derives persisted `quantity` and `totalAmount` from order items instead of trusting manual order-level inputs
 - `ORS-13` patch/update flow recalculates persisted `quantity` and `totalAmount` from order items when items are submitted
 - `ORS-14` create/update date validation rejects orders where `deliveryDate` is before `orderDate`
+- `ORS-15` dashboard/list/urgent read paths return orders with initialized `orderItems` summaries so rendering works when `spring.jpa.open-in-view=false`
 
 ### `ClientService`
 - `CLS-01` save assigns company by id and enforces uppercase client name
