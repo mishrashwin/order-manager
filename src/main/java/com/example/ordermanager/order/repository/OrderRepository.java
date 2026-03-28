@@ -17,14 +17,14 @@ import java.util.Optional;
 public interface OrderRepository extends JpaRepository<Order, Long> {
   List<Order> findByCompanyId(Long companyId);
 
-  @EntityGraph(attributePaths = {"orderItems", "orderItems.product"})
+  @EntityGraph(attributePaths = {"client", "orderItems", "orderItems.product"})
   List<Order> findByCompanyIdAndOrderDateBetween(Long companyId, LocalDate startDate,
       LocalDate endDate);
 
-  @EntityGraph(attributePaths = {"orderItems", "orderItems.product"})
+  @EntityGraph(attributePaths = {"client", "orderItems", "orderItems.product"})
   Optional<Order> findByIdAndCompanyId(Long id, Long companyId);
 
-  @EntityGraph(attributePaths = {"orderItems", "orderItems.product"})
+  @EntityGraph(attributePaths = {"client", "orderItems", "orderItems.product"})
   @Query("SELECT o FROM Order o WHERE o.id = :id")
   Optional<Order> findDetailedById(@Param("id") Long id);
 
@@ -57,7 +57,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
    *        excluded by JPA
    * @return List of orders with delivery date less than or equal to the cutoff
    */
-  @EntityGraph(attributePaths = {"orderItems", "orderItems.product"})
+  @EntityGraph(attributePaths = {"client", "orderItems", "orderItems.product"})
   List<Order> findByCompanyIdAndDeliveryDateLessThanEqual(Long companyId, LocalDate toDate);
 
   /**
