@@ -5,6 +5,7 @@ import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.payment.entity.Payment;
 import com.example.ordermanager.user.entity.User;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -163,6 +164,31 @@ public class BrevoEmailService {
     sendEmail(to, "Your Order Manager company access has been restored", htmlContent);
   }
 
+  public void sendSupportEmail(String to, String senderName, String senderEmail,
+      String senderMobile, String subject, String description, byte[] attachmentContent,
+      String attachmentFilename, String attachmentContentType) {
+    String emailSubject = "Support Request: " + subject;
+    String attachmentNote = attachmentFilename != null && !attachmentFilename.isBlank()
+        ? "<p><strong>Attachment:</strong> " + escapeHtml(attachmentFilename) + "</p>"
+        : "";
+    String htmlContent = "<html><body>"
+        + "<p>A new support request has been submitted via the Order Manager support form.</p>"
+        + "<hr style=\"border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;\">"
+        + "<p><strong>Name:</strong> " + escapeHtml(senderName) + "</p>"
+        + "<p><strong>Email:</strong> " + escapeHtml(senderEmail) + "</p>"
+        + "<p><strong>Mobile:</strong> " + escapeHtml(senderMobile) + "</p>"
+        + "<p><strong>Subject:</strong> " + escapeHtml(subject) + "</p>"
+        + "<p><strong>Description:</strong></p>"
+        + "<p style=\"white-space: pre-wrap; background:#f9fafb; border:1px solid #e5e7eb; border-radius:6px; padding:12px;\">"
+        + escapeHtml(description) + "</p>" + attachmentNote
+        + "<hr style=\"border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;\">"
+        + "<p style=\"font-size:12px; color:#888;\">This message was submitted from the public Support page.</p>"
+        + getEmailSignature() + "</body></html>";
+
+    sendEmailWithAttachment(to, emailSubject, htmlContent, attachmentContent, attachmentFilename,
+        attachmentContentType);
+  }
+
   public void sendPaymentNotificationEmail(String to, Payment payment, Company company) {
     String monthYear = java.time.Month.of(payment.getPaymentMonth()).getDisplayName(
         java.time.format.TextStyle.FULL, java.util.Locale.ENGLISH) + " " + payment.getPaymentYear();
@@ -183,12 +209,18 @@ public class BrevoEmailService {
   }
 
   private void sendEmail(String to, String subject, String htmlContent) {
+    sendEmailWithAttachment(to, subject, htmlContent, null, null, null);
+  }
+
+  private void sendEmailWithAttachment(String to, String subject, String htmlContent,
+      byte[] attachmentContent, String attachmentFilename, String attachmentContentType) {
     if (brevoApiKey == null || brevoApiKey.isEmpty()) {
       throw new BrevoEmailException("Brevo API key is not configured");
     }
 
     try {
-      String requestBody = buildBrevoRequest(to, subject, htmlContent);
+      String requestBody = buildBrevoRequest(to, subject, htmlContent, attachmentContent,
+          attachmentFilename, attachmentContentType);
 
       webClient.post().uri("/v3/smtp/email").header("api-key", brevoApiKey)
           .header("Content-Type", "application/json").bodyValue(requestBody).retrieve()
@@ -226,7 +258,28 @@ public class BrevoEmailService {
   }
 
   private String buildBrevoRequest(String to, String subject, String htmlContent) {
+    return buildBrevoRequest(to, subject, htmlContent, null, null, null);
+  }
+
+  private String buildBrevoRequest(String to, String subject, String htmlContent,
+      byte[] attachmentContent, String attachmentFilename, String attachmentContentType) {
     try {
+      String attachmentJson = "";
+      if (attachmentContent != null && attachmentContent.length > 0 && attachmentFilename != null
+          && !attachmentFilename.isBlank()) {
+        String base64Content = Base64.getEncoder().encodeToString(attachmentContent);
+        String mimeType = attachmentContentType != null && !attachmentContentType.isBlank()
+            ? attachmentContentType
+            : "application/octet-stream";
+        attachmentJson = """
+            , "attachment": [
+              {
+                "content": "%s",
+                "name": "%s",
+                "type": "%s"
+              }
+            ]""".formatted(base64Content, escapeJson(attachmentFilename), escapeJson(mimeType));
+      }
       return """
           {
             "sender": {
@@ -239,10 +292,10 @@ public class BrevoEmailService {
               }
             ],
             "subject": "%s",
-            "htmlContent": "%s"
+            "htmlContent": "%s"%s
           }
           """.formatted(escapeJson(fromEmail), escapeJson(to), escapeJson(subject),
-          escapeJson(htmlContent));
+          escapeJson(htmlContent), attachmentJson);
     } catch (Exception e) {
       log.error("Error building Brevo request", e);
       throw new RuntimeException("Error building email request: " + e.getMessage(), e);
