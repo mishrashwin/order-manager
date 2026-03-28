@@ -19,6 +19,21 @@ Use this file as the session-to-session handoff log for test implementation.
 - Added complete test-case inventory:
   - `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md`
 
+## Batch Completed (2026-03-28 - Mandatory Form Fields + Disabled Submit UX)
+- Updated form UX to enforce required fields with disabled submit-until-complete behavior:
+  - `src/main/resources/templates/orders/form.html`
+  - `src/main/resources/templates/clients/form.html`
+  - `src/main/resources/templates/vendors/form.html`
+  - `src/main/resources/templates/products/form.html`
+- Order form now treats all fields except notes as mandatory (including product rows, PO/order no, dates, status, client) and keeps submit disabled until complete.
+- Client and Vendor forms now require all fields except address; Product form now requires product name, brand, category, and vendor.
+- Added/updated template tests:
+  - `src/test/java/com/example/ordermanager/client/controller/ClientFormTemplateTest.java` (new)
+  - `src/test/java/com/example/ordermanager/order/controller/OrderFormTemplateTest.java`
+  - `src/test/java/com/example/ordermanager/vendor/controller/VendorFormTemplateTest.java`
+  - `src/test/java/com/example/ordermanager/product/controller/ProductFormTemplateTest.java`
+- Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with ORDC-13, CLI-06, VEN-07, PRD-09.
+
 ## What Is Covered Now
 - Automated workflow chain: company registration -> email verification -> owner approval -> admin user creation -> client creation -> vendor creation -> order create/edit.
 - Field formatting assertions included:

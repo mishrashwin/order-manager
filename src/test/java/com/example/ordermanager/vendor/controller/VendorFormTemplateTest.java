@@ -19,6 +19,13 @@ class VendorFormTemplateTest {
 
     assertThat(template).contains("name=\"returnTo\"");
     assertThat(template).contains("${returnTo != null ? returnTo : '/vendors'}");
+    assertThat(template).contains("th:field=\"*{companyName}\" required");
+    assertThat(template).contains("th:field=\"*{contactPerson}\" required");
+    assertThat(template).contains("th:field=\"*{email}\" required");
+    assertThat(template).contains("id=\"vendorPhoneLocal\"");
+    assertThat(template).contains("id=\"vendorSubmitBtn\"");
+    assertThat(template).contains("function areMandatoryVendorFieldsFilled()");
+    assertThat(template).contains("function updateVendorSubmitState()");
   }
 }
 

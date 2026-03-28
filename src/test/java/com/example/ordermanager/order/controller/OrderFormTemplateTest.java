@@ -30,7 +30,20 @@ class OrderFormTemplateTest {
     assertThat(template).contains("th:if=\"${dateError}\"");
     assertThat(template).contains("id=\"dateClientError\"");
     assertThat(template).contains("function validateOrderDatesOnClient()");
+    assertThat(template).contains("function areMandatoryOrderFieldsFilled()");
+    assertThat(template).contains("function updateOrderSubmitState()");
     assertThat(template).contains("Delivery date must be on or after order date.");
+    assertThat(template)
+        .contains("th:field=\"*{poOrderNo}\" placeholder=\"e.g., PO-2026-001\" required");
+    assertThat(template).contains("th:field=\"*{orderDate}\"");
+    assertThat(template).contains("th:field=\"*{deliveryDate}\"");
+    assertThat(template).contains("name=\"itemProductIds\" required");
+    assertThat(template).contains("name=\"itemQuantities\" min=\"1\" placeholder=\"Qty\" required");
+    assertThat(template).contains(
+        "name=\"itemUnitPrices\" step=\"0.01\" min=\"0\" placeholder=\"Unit Price\" required");
+    assertThat(template).contains("id=\"orderSubmitBtn\"");
+    assertThat(template).contains(
+        "submitButton.disabled = !(areMandatoryOrderFieldsFilled() && validateOrderDatesOnClient())");
     assertThat(template).doesNotContain("th:field=\"*{quantity}\" min=\"1\" required");
     assertThat(template)
         .doesNotContain("th:field=\"*{totalAmount}\" step=\"0.01\" min=\"0\" required");
