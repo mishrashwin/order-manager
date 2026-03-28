@@ -9,20 +9,21 @@ import static org.mockito.Mockito.when;
 
 import com.example.ordermanager.client.entity.Client;
 import com.example.ordermanager.client.service.ClientService;
-import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.entity.OrderStatus;
+import com.example.ordermanager.order.service.OrderActivityService;
 import com.example.ordermanager.order.service.OrderService;
 import com.example.ordermanager.product.service.ProductService;
+import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.utils.PasswordVerificationService;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import java.time.LocalDate;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ui.ConcurrentModel;
@@ -36,9 +37,9 @@ class OrderControllerTest {
   @Mock
   private OrderService orderService;
   @Mock
-  private ClientService clientService;
+  private OrderActivityService orderActivityService;
   @Mock
-  private CompanyService companyService;
+  private ClientService clientService;
   @Mock
   private ProductService productService;
   @Mock
@@ -50,7 +51,7 @@ class OrderControllerTest {
 
   @BeforeEach
   void setUp() {
-    orderController = new OrderController(orderService, clientService, companyService,
+    orderController = new OrderController(orderService, orderActivityService, clientService,
         productService, securityContextHelper, passwordVerificationService);
   }
 
@@ -69,7 +70,7 @@ class OrderControllerTest {
 
   @Test
   void showCreateForm_success_returnsFormWithClientsAndStatuses() {
-    List<Client> clients = Arrays.asList(new Client());
+    List<Client> clients = List.of(new Client());
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
     when(clientService.getClientsByCompanyId(5L)).thenReturn(clients);
 
@@ -107,7 +108,7 @@ class OrderControllerTest {
     order.setProductName("Widget");
     Model model = new ConcurrentModel();
     RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
-    List<Client> clients = Arrays.asList(new Client());
+    List<Client> clients = List.of(new Client());
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
     doThrow(new IllegalArgumentException("Product name cannot be null")).when(orderService)
@@ -130,7 +131,7 @@ class OrderControllerTest {
     order.setDeliveryDate(LocalDate.of(2026, 3, 26));
     Model model = new ConcurrentModel();
     RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
-    List<Client> clients = Arrays.asList(new Client());
+    List<Client> clients = List.of(new Client());
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
     doThrow(new IllegalArgumentException("Delivery date must be on or after order date."))
@@ -162,6 +163,8 @@ class OrderControllerTest {
 
   @Test
   void updateOrder_success_redirectsToOrdersWithFlashMessage() {
+    Order existingOrder = new Order();
+    existingOrder.setId(15L);
     Order updatedOrder = new Order();
     updatedOrder.setId(15L);
     updatedOrder.setProductName("Updated Widget");
@@ -169,6 +172,8 @@ class OrderControllerTest {
 
     Model model = new ConcurrentModel();
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    when(orderService.getOrderByIdAndCompanyId(15L, 5L)).thenReturn(existingOrder);
+    when(orderService.patchOrderForCompany(15L, updatedOrder, 5L)).thenReturn(updatedOrder);
 
     String view =
         orderController.updateOrder(15L, updatedOrder, null, null, null, model, redirectAttributes);
@@ -176,7 +181,77 @@ class OrderControllerTest {
     assertThat(view).isEqualTo("redirect:/orders");
     assertThat(redirectAttributes.getFlashAttributes().get("message"))
         .isEqualTo("Order updated successfully");
-    verify(orderService).patchOrder(15L, updatedOrder);
+    verify(orderService).patchOrderForCompany(15L, updatedOrder, 5L);
+  }
+
+  @Test
+  void updateOrder_logsAuditUsingPreUpdateSnapshot() {
+    Order existingOrder = new Order();
+    existingOrder.setId(15L);
+    existingOrder.setPoOrderNo("PO-OLD");
+    existingOrder.setOrderNote("Old note");
+    existingOrder.setStatus(OrderStatus.CREATED);
+
+    Client existingClient = new Client();
+    existingClient.setId(3L);
+    existingClient.setName("OLD CLIENT");
+    existingOrder.setClient(existingClient);
+
+    Order updatedOrder = new Order();
+    updatedOrder.setId(15L);
+    updatedOrder.setPoOrderNo("PO-NEW");
+    updatedOrder.setOrderNote("New note");
+    updatedOrder.setStatus(OrderStatus.DISPATCHED);
+    updatedOrder.setClient(existingClient);
+
+    User actor = new User();
+    actor.setUsername("admin1");
+    actor.setFirstName("Ava");
+    actor.setLastName("Shah");
+
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+    Model model = new ConcurrentModel();
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    when(securityContextHelper.getUserFromContext()).thenReturn(actor);
+    when(orderService.getOrderByIdAndCompanyId(15L, 5L)).thenReturn(existingOrder);
+    when(orderService.patchOrderForCompany(15L, updatedOrder, 5L)).thenReturn(updatedOrder);
+
+    String view =
+        orderController.updateOrder(15L, updatedOrder, null, null, null, model, redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/orders");
+
+    ArgumentCaptor<Order> beforeCaptor = ArgumentCaptor.forClass(Order.class);
+    ArgumentCaptor<Order> afterCaptor = ArgumentCaptor.forClass(Order.class);
+    verify(orderActivityService).logUpdated(beforeCaptor.capture(), afterCaptor.capture(),
+        org.mockito.ArgumentMatchers.eq("admin1"), org.mockito.ArgumentMatchers.eq("Ava Shah"),
+        org.mockito.ArgumentMatchers.eq(5L));
+
+    Order before = beforeCaptor.getValue();
+    Order after = afterCaptor.getValue();
+    assertThat(before).isNotSameAs(existingOrder);
+    assertThat(before.getPoOrderNo()).isEqualTo("PO-OLD");
+    assertThat(before.getOrderNote()).isEqualTo("Old note");
+    assertThat(before.getStatus()).isEqualTo(OrderStatus.CREATED);
+    assertThat(after.getPoOrderNo()).isEqualTo("PO-NEW");
+    assertThat(after.getOrderNote()).isEqualTo("New note");
+    assertThat(after.getStatus()).isEqualTo(OrderStatus.DISPATCHED);
+  }
+
+  @Test
+  void updateOrder_whenOrderNotFound_redirectsToOrdersWithError() {
+    Order updatedOrder = new Order();
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+    Model model = new ConcurrentModel();
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    when(orderService.getOrderByIdAndCompanyId(15L, 5L)).thenReturn(null);
+
+    String view =
+        orderController.updateOrder(15L, updatedOrder, null, null, null, model, redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/orders");
+    assertThat(redirectAttributes.getFlashAttributes().get("error")).isEqualTo("Order not found.");
   }
 
   @Test
@@ -209,7 +284,7 @@ class OrderControllerTest {
     Order order = new Order();
     order.setId(15L);
     order.setProductName("Widget");
-    List<Client> clients = Arrays.asList(new Client());
+    List<Client> clients = List.of(new Client());
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
     when(orderService.getOrderByIdAndCompanyId(15L, 5L)).thenReturn(order);
@@ -239,7 +314,10 @@ class OrderControllerTest {
   void duplicateOrder_success_returnsFormWithNewOrderData() {
     Order existingOrder = new Order();
     existingOrder.setId(15L);
-    existingOrder.setCustomerName("Acme Corp");
+    Client client = new Client();
+    client.setId(3L);
+    client.setName("Acme Corp");
+    existingOrder.setClient(client);
     existingOrder.setProductName("Widget");
     existingOrder.setQuantity(10);
     existingOrder.setTotalAmount(100.0);
@@ -249,7 +327,7 @@ class OrderControllerTest {
     existingOrder.setOrderNote("Rush order");
     existingOrder.setStatus(OrderStatus.CREATED);
 
-    List<Client> clients = Arrays.asList(new Client());
+    List<Client> clients = List.of(new Client());
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
     when(orderService.getOrderByIdAndCompanyId(15L, 5L)).thenReturn(existingOrder);
@@ -260,7 +338,9 @@ class OrderControllerTest {
 
     assertThat(view).isEqualTo("orders/form");
     Order newOrder = (Order) model.getAttribute("order");
-    assertThat(newOrder.getCustomerName()).isEqualTo("Acme Corp");
+    assertThat(newOrder.getClient()).isNotNull();
+    assertThat(newOrder.getClient().getName()).isEqualTo("Acme Corp");
+    assertThat(newOrder.getClient()).isEqualTo(client);
     assertThat(newOrder.getProductName()).isEqualTo("Widget");
     assertThat(newOrder.getQuantity()).isEqualTo(10);
     assertThat(newOrder.getTotalAmount()).isEqualTo(100.0);

@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.example.ordermanager.admin.dto.ClientOrderStatDTO;
 import com.example.ordermanager.client.entity.Client;
+import com.example.ordermanager.client.repository.ClientRepository;
 import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.entity.OrderItem;
@@ -34,6 +35,8 @@ class OrderServiceTest {
   @Mock
   private OrderRepository orderRepository;
   @Mock
+  private ClientRepository clientRepository;
+  @Mock
   private CompanyService companyService;
   @Mock
   private Helper helper;
@@ -45,7 +48,7 @@ class OrderServiceTest {
 
   @BeforeEach
   void setUp() {
-    orderService = new OrderService(orderRepository, companyService, helper);
+    orderService = new OrderService(orderRepository, clientRepository, companyService, helper);
   }
 
   // ── helpers ──────────────────────────────────────────────────────────────────
@@ -66,12 +69,6 @@ class OrderServiceTest {
     return o;
   }
 
-  /** Build an Object[] row as returned by the aggregate repository query. */
-  private Object[] statsRow(Long clientId, String clientName, String customerName, long count,
-      double amount) {
-    return new Object[] {clientId, clientName, customerName, count, amount};
-  }
-
   // ── getClientOrderStats ───────────────────────────────────────────────────────
 
   @Test
@@ -87,7 +84,7 @@ class OrderServiceTest {
   @Test
   void getClientOrderStats_singleClient_returns100Percent() {
     when(orderRepository.findClientOrderStats(eq(1L), eq(START), eq(END), anyCollection()))
-        .thenReturn(List.<Object[]>of(statsRow(10L, "ACME", "ACME", 2L, 500.0)));
+        .thenReturn(List.<Object[]>of(new Object[] {10L, "ACME", 2L, 500.0}));
 
     List<ClientOrderStatDTO> stats = orderService.getClientOrderStats(1L, START, END, "ALL");
 
@@ -103,9 +100,8 @@ class OrderServiceTest {
   @Test
   void getClientOrderStats_multipleClients_sumsToApproximately100() {
     when(orderRepository.findClientOrderStats(eq(1L), eq(START), eq(END), anyCollection()))
-        .thenReturn(List.<Object[]>of(statsRow(1L, "ALPHA", "ALPHA", 2L, 200.0),
-            statsRow(2L, "BETA", "BETA", 1L, 50.0),
-            statsRow(3L, "GAMMA", "GAMMA", 1L, 50.0)));
+        .thenReturn(List.<Object[]>of(new Object[] {1L, "ALPHA", 2L, 200.0},
+            new Object[] {2L, "BETA", 1L, 50.0}, new Object[] {3L, "GAMMA", 1L, 50.0}));
 
     List<ClientOrderStatDTO> stats = orderService.getClientOrderStats(1L, START, END, "ALL");
 
@@ -124,7 +120,7 @@ class OrderServiceTest {
   void getClientOrderStats_statusFilterActive_passesOnlyActiveStatuses() {
     // The repository is called with active-only statuses; returns pre-filtered rows
     when(orderRepository.findClientOrderStats(eq(1L), eq(START), eq(END), anyCollection()))
-        .thenReturn(List.<Object[]>of(statsRow(1L, "ALPHA", "ALPHA", 1L, 100.0)));
+        .thenReturn(List.<Object[]>of(new Object[] {1L, "ALPHA", 1L, 100.0}));
 
     List<ClientOrderStatDTO> stats = orderService.getClientOrderStats(1L, START, END, "ACTIVE");
 
@@ -137,7 +133,7 @@ class OrderServiceTest {
   void getClientOrderStats_statusFilterCompleted_passesOnlyFinalStatuses() {
     // The repository is called with final-only statuses; returns pre-filtered rows
     when(orderRepository.findClientOrderStats(eq(1L), eq(START), eq(END), anyCollection()))
-        .thenReturn(List.<Object[]>of(statsRow(1L, "ALPHA", "ALPHA", 1L, 200.0)));
+        .thenReturn(List.<Object[]>of(new Object[] {1L, "ALPHA", 1L, 200.0}));
 
     List<ClientOrderStatDTO> stats = orderService.getClientOrderStats(1L, START, END, "COMPLETED");
 
@@ -150,8 +146,8 @@ class OrderServiceTest {
   void getClientOrderStats_sortedByOrderCountDescending() {
     // DB already returns rows sorted by count DESC; service preserves that order
     when(orderRepository.findClientOrderStats(eq(1L), eq(START), eq(END), anyCollection()))
-        .thenReturn(List.<Object[]>of(statsRow(2L, "BETA", "BETA", 3L, 150.0),
-            statsRow(1L, "ALPHA", "ALPHA", 1L, 100.0)));
+        .thenReturn(List.<Object[]>of(new Object[] {2L, "BETA", 3L, 150.0},
+            new Object[] {1L, "ALPHA", 1L, 100.0}));
 
     List<ClientOrderStatDTO> stats = orderService.getClientOrderStats(1L, START, END, "ALL");
 
@@ -160,16 +156,15 @@ class OrderServiceTest {
   }
 
   @Test
-  void getClientOrderStats_legacyOrder_usesCustomerNameWhenClientNameNull() {
-    // Row where client is null (legacy order): r[0]=null, r[1]=null, r[2]=customerName
+  void getClientOrderStats_noClientGroup_usesUnknownWhenClientNameNull() {
     when(orderRepository.findClientOrderStats(eq(1L), eq(START), eq(END), anyCollection()))
-        .thenReturn(List.<Object[]>of(statsRow(null, null, "Legacy Customer", 1L, 50.0)));
+        .thenReturn(List.<Object[]>of(new Object[] {null, null, 1L, 50.0}));
 
     List<ClientOrderStatDTO> stats = orderService.getClientOrderStats(1L, START, END, "ALL");
 
     assertThat(stats).hasSize(1);
     assertThat(stats.get(0).getClientId()).isNull();
-    assertThat(stats.get(0).getClientName()).isEqualTo("Legacy Customer");
+    assertThat(stats.get(0).getClientName()).isEqualTo("Unknown");
   }
 
   // ── getOrdersByClientAndDateRange ─────────────────────────────────────────────
@@ -238,17 +233,17 @@ class OrderServiceTest {
   }
 
   @Test
-  void getOrdersByClientAndDateRange_legacyOrder_usesCustomerNameQuery() {
+  void getOrdersByClientAndDateRange_unknownClientGroup_usesNoClientQuery() {
     Order legacy = new Order();
     legacy.setStatus(OrderStatus.CREATED);
     legacy.setTotalAmount(75.0);
     legacy.setOrderDate(LocalDate.of(2025, 1, 15));
 
-    when(orderRepository.findByCompanyAndDateRangeAndCustomerName(eq(1L), eq(START), eq(END),
-        eq("OLD CUSTOMER"), anyCollection())).thenReturn(List.of(legacy));
+    when(orderRepository.findByCompanyAndDateRangeAndNoClient(eq(1L), eq(START), eq(END),
+        anyCollection())).thenReturn(List.of(legacy));
 
     List<Order> result =
-        orderService.getOrdersByClientAndDateRange(1L, null, "OLD CUSTOMER", START, END, "ALL");
+        orderService.getOrdersByClientAndDateRange(1L, null, "Unknown", START, END, "ALL");
 
     assertThat(result).hasSize(1);
     assertThat(result.get(0)).isEqualTo(legacy);
@@ -265,6 +260,8 @@ class OrderServiceTest {
   @Test
   void createOrderWithCompany_derivesQuantityAndTotalAmountFromOrderItems() {
     Order order = new Order();
+    Client selectedClient = client(12L, "ALPHA");
+    order.setClient(selectedClient);
     OrderItem first = item(order, "Steel Rod", 2, 10.5);
     OrderItem second = item(order, "Cement", 3, 5.0);
     order.getOrderItems().add(first);
@@ -274,6 +271,8 @@ class OrderServiceTest {
     company.setId(5L);
 
     when(companyService.getCompanyById(5L)).thenReturn(java.util.Optional.of(company));
+    when(clientRepository.findByIdAndCompanyId(12L, 5L))
+        .thenReturn(java.util.Optional.of(selectedClient));
     when(helper.toTitleCase("Steel Rod, Cement")).thenReturn("Steel Rod, Cement");
     when(orderRepository.save(any(Order.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
@@ -284,6 +283,7 @@ class OrderServiceTest {
     assertThat(savedOrder.getTotalAmount()).isEqualTo(36.0);
     assertThat(savedOrder.getProductName()).isEqualTo("Steel Rod, Cement");
     assertThat(savedOrder.getCompany()).isEqualTo(company);
+    assertThat(savedOrder.getCustomerName()).isEqualTo("ALPHA");
   }
 
   @Test
@@ -343,6 +343,49 @@ class OrderServiceTest {
     assertThatThrownBy(() -> orderService.createOrderWithCompany(order, 5L))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Delivery date must be on or after order date.");
+  }
+
+  @Test
+  void patchOrderForCompany_whenOrderBelongsToCompany_updatesOrder() {
+    Order existingOrder = new Order();
+    existingOrder.setId(22L);
+    existingOrder.setStatus(OrderStatus.CREATED);
+    Company company = new Company();
+    company.setId(5L);
+    existingOrder.setCompany(company);
+
+    Client resolvedClient = client(2L, "OMEGA");
+
+    Order partialOrder = new Order();
+    partialOrder.setStatus(OrderStatus.DISPATCHED);
+    partialOrder.setOrderNote("Moved from dashboard");
+    Client submittedClient = new Client();
+    submittedClient.setId(2L);
+    partialOrder.setClient(submittedClient);
+
+    when(orderRepository.findByIdAndCompanyId(22L, 5L))
+        .thenReturn(java.util.Optional.of(existingOrder));
+    when(clientRepository.findByIdAndCompanyId(2L, 5L))
+        .thenReturn(java.util.Optional.of(resolvedClient));
+    when(orderRepository.save(any(Order.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    Order savedOrder = orderService.patchOrderForCompany(22L, partialOrder, 5L);
+
+    assertThat(savedOrder.getStatus()).isEqualTo(OrderStatus.DISPATCHED);
+    assertThat(savedOrder.getOrderNote()).isEqualTo("Moved from dashboard");
+    assertThat(savedOrder.getClient().getName()).isEqualTo("OMEGA");
+  }
+
+  @Test
+  void patchOrderForCompany_whenOrderDoesNotBelongToCompany_throwsOrderNotFound() {
+    Order partialOrder = new Order();
+    partialOrder.setStatus(OrderStatus.DISPATCHED);
+
+    when(orderRepository.findByIdAndCompanyId(22L, 5L)).thenReturn(java.util.Optional.empty());
+
+    assertThatThrownBy(() -> orderService.patchOrderForCompany(22L, partialOrder, 5L))
+        .isInstanceOf(com.example.ordermanager.order.exception.OrderNotFoundException.class);
   }
 
   @Test

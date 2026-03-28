@@ -4,13 +4,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import com.example.ordermanager.admin.dto.ClientOrderStatDTO;
 import com.example.ordermanager.company.service.CompanyService;
+import com.example.ordermanager.order.entity.OrderActivity;
 import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.entity.OrderStatus;
+import com.example.ordermanager.order.service.OrderActivityService;
 import com.example.ordermanager.order.service.OrderService;
 import com.example.ordermanager.payment.service.PaymentService;
 import com.example.ordermanager.user.entity.User;
@@ -24,6 +27,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.ui.Model;
 import org.springframework.ui.ConcurrentModel;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -44,6 +50,8 @@ class AdminControllerTest {
   @Mock
   private OrderService orderService;
   @Mock
+  private OrderActivityService orderActivityService;
+  @Mock
   private PaymentService paymentService;
   private PasswordVerificationService passwordVerificationService;
 
@@ -51,8 +59,9 @@ class AdminControllerTest {
 
   @BeforeEach
   void setUp() {
-    adminController = new AdminController(userService, companyService, securityContextHelper,
-        orderService, passwordVerificationService, paymentService, "test-upi-id");
+    adminController =
+        new AdminController(userService, companyService, securityContextHelper, orderService,
+            orderActivityService, passwordVerificationService, paymentService, "test-upi-id");
   }
 
   @Test
@@ -354,6 +363,41 @@ class AdminControllerTest {
     adminController.showOrderStatistics(null, null, 10L, "ACME CORP", "ALL", model);
 
     assertThat(model.getAttribute("selectedClientTotalValue")).isEqualTo(325.5);
+  }
+
+  @Test
+  void showOrderActivity_returnsPagedRowsAndPaginationAttributes() {
+    OrderActivity activity = new OrderActivity();
+    activity.setId(1L);
+    Page<OrderActivity> page = new PageImpl<>(List.of(activity), PageRequest.of(0, 20), 35);
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    when(orderActivityService.getActivitiesPage(eq(5L), any(LocalDate.class), any(LocalDate.class),
+        eq("invoice"), eq(0))).thenReturn(page);
+
+    Model model = new ConcurrentModel();
+    String view = adminController.showOrderActivity(null, null, "invoice", 1, model);
+
+    assertThat(view).isEqualTo("admin/order-activity");
+    assertThat(model.getAttribute("activities")).isEqualTo(List.of(activity));
+    assertThat(model.getAttribute("totalCount")).isEqualTo(35L);
+    assertThat(model.getAttribute("currentPage")).isEqualTo(1);
+    assertThat(model.getAttribute("totalPages")).isEqualTo(2);
+  }
+
+  @Test
+  void showOrderActivity_whenPageIsInvalid_defaultsToFirstPage() {
+    Page<OrderActivity> page = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    when(orderActivityService.getActivitiesPage(eq(5L), any(LocalDate.class), any(LocalDate.class),
+        isNull(), eq(0))).thenReturn(page);
+
+    Model model = new ConcurrentModel();
+    adminController.showOrderActivity(null, null, null, 0, model);
+
+    assertThat(model.getAttribute("currentPage")).isEqualTo(1);
+    assertThat(model.getAttribute("totalPages")).isEqualTo(1);
   }
 
 }

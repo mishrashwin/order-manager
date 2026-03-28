@@ -255,6 +255,14 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+      const statusMeta = Object.fromEntries([
+          /*[# th:each="status : ${statuses}"]*/
+          ['[[${status.name()}]]', {
+              displayName: '[[${status.displayName}]]',
+              badgeColor: '[[${status.badgeColor}]]'
+          }],
+          /*[/]*/
+      ]);
       const searchInput = document.getElementById('dashboardSearchInput');
 
       // Precompute a normalized searchable string for each card once on load.
@@ -350,7 +358,11 @@
                   const orderId = evt.item.dataset.id;
                   const newStatus = evt.to.id.replace("list-", "");
                   axios.patch(`/api/orders/${orderId}`, { status: newStatus })
-                      .then(() => {
+                      .then((response) => {
+                          const payload = response && response.data ? response.data : {};
+                          const meta = statusMeta[newStatus] || {};
+                          evt.item.dataset.statusDisplay = payload.displayName || meta.displayName || newStatus;
+                          evt.item.dataset.badgeColor = payload.badgeColor || meta.badgeColor || 'secondary';
                           if (window._debug) console.log(`✅ Order ${orderId} moved to ${newStatus}`);
                       })
                       .catch(err => {

@@ -3,12 +3,15 @@ package com.example.ordermanager.order.controller;
 import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.entity.OrderItem;
 import com.example.ordermanager.order.entity.OrderStatus;
+import com.example.ordermanager.order.service.OrderActivityService;
 import com.example.ordermanager.client.service.ClientService;
-import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.order.service.OrderService;
 import com.example.ordermanager.product.entity.Product;
 import com.example.ordermanager.product.service.ProductService;
+import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.utils.SecurityContextHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -24,20 +27,22 @@ import java.util.List;
 @RequestMapping("/orders")
 public class OrderController {
 
+  private static final Logger log = LoggerFactory.getLogger(OrderController.class);
+
   private final OrderService orderService;
+  private final OrderActivityService orderActivityService;
   private final ClientService clientService;
-  private final CompanyService companyService;
   private final ProductService productService;
   private final SecurityContextHelper securityContextHelper;
   private final PasswordVerificationService passwordVerificationService;
 
-  public OrderController(OrderService orderService, ClientService clientService,
-      CompanyService companyService, ProductService productService,
+  public OrderController(OrderService orderService, OrderActivityService orderActivityService,
+      ClientService clientService, ProductService productService,
       SecurityContextHelper securityContextHelper,
       PasswordVerificationService passwordVerificationService) {
     this.orderService = orderService;
+    this.orderActivityService = orderActivityService;
     this.clientService = clientService;
-    this.companyService = companyService;
     this.productService = productService;
     this.securityContextHelper = securityContextHelper;
     this.passwordVerificationService = passwordVerificationService;
@@ -80,8 +85,17 @@ public class OrderController {
         order.setStatus(OrderStatus.CREATED);
       }
       Long companyId = securityContextHelper.getCompanyIdFromContext();
-      buildOrderItems(order, itemProductIds, itemQuantities, itemUnitPrices, companyId);
-      orderService.createOrderWithCompany(order, companyId);
+      buildOrderItems(order, itemProductIds, itemQuantities, itemUnitPrices);
+      Order savedOrder = orderService.createOrderWithCompany(order, companyId);
+      // ── audit ──
+      try {
+        User actor = securityContextHelper.getUserFromContext();
+        orderActivityService.logCreated(savedOrder, actor.getUsername(),
+            actor.getFirstName() + " " + actor.getLastName(), companyId);
+      } catch (Exception e) {
+        log.warn("Audit logging failed for order creation. orderId={}, companyId={}",
+            savedOrder.getId(), companyId, e);
+      }
       redirectAttributes.addFlashAttribute("message", "Order created successfully");
       return "redirect:/orders";
     } catch (IllegalStateException e) {
@@ -130,8 +144,26 @@ public class OrderController {
       RedirectAttributes redirectAttributes) {
     try {
       Long companyId = securityContextHelper.getCompanyIdFromContext();
-      buildOrderItems(updatedOrder, itemProductIds, itemQuantities, itemUnitPrices, companyId);
-      orderService.patchOrder(id, updatedOrder);
+      Order oldOrder = orderService.getOrderByIdAndCompanyId(id, companyId);
+      if (oldOrder == null) {
+        redirectAttributes.addFlashAttribute("error", "Order not found.");
+        return "redirect:/orders";
+      }
+      Order oldOrderSnapshot = createAuditSnapshot(oldOrder);
+
+      buildOrderItems(updatedOrder, itemProductIds, itemQuantities, itemUnitPrices);
+      Order savedOrder = orderService.patchOrderForCompany(id, updatedOrder, companyId);
+
+      // ── audit ──
+      try {
+        User actor = securityContextHelper.getUserFromContext();
+        orderActivityService.logUpdated(oldOrderSnapshot, savedOrder, actor.getUsername(),
+            actor.getFirstName() + " " + actor.getLastName(), companyId);
+      } catch (Exception e) {
+        log.warn("Audit logging failed for order update. orderId={}, companyId={}", id, companyId,
+            e);
+      }
+
       redirectAttributes.addFlashAttribute("message", "Order updated successfully");
       return "redirect:/orders";
     } catch (IllegalStateException e) {
@@ -158,7 +190,34 @@ public class OrderController {
       redirectAttributes.addFlashAttribute("error", "Incorrect password. Order was not deleted.");
       return "redirect:/orders";
     }
+    // Capture info before deletion for the audit log
+    String capturedPoNo = null;
+    String capturedClientName = null;
+    Long capturedCompanyId = null;
+    try {
+      capturedCompanyId = securityContextHelper.getCompanyIdFromContext();
+      Order existing = orderService.getOrderByIdAndCompanyId(id, capturedCompanyId);
+      if (existing != null) {
+        capturedPoNo = existing.getPoOrderNo();
+        capturedClientName = existing.getCustomerName();
+      }
+    } catch (Exception e) {
+      log.warn("Failed to capture pre-delete audit context. orderId={}, companyId={}", id,
+          capturedCompanyId, e);
+    }
+
     orderService.deleteOrder(id);
+
+    // ── audit ──
+    try {
+      User actor = securityContextHelper.getUserFromContext();
+      orderActivityService.logDeleted(id, capturedPoNo, capturedClientName, actor.getUsername(),
+          actor.getFirstName() + " " + actor.getLastName(), capturedCompanyId);
+    } catch (Exception e) {
+      log.warn("Audit logging failed for order deletion. orderId={}, companyId={}", id,
+          capturedCompanyId, e);
+    }
+
     redirectAttributes.addFlashAttribute("message", "Order deleted successfully");
     return "redirect:/orders";
   }
@@ -172,7 +231,7 @@ public class OrderController {
     }
 
     Order newOrder = new Order();
-    newOrder.setCustomerName(existingOrder.getCustomerName());
+    newOrder.setClient(existingOrder.getClient());
     newOrder.setProductName(existingOrder.getProductName());
     newOrder.setQuantity(existingOrder.getQuantity());
     newOrder.setTotalAmount(existingOrder.getTotalAmount());
@@ -205,7 +264,7 @@ public class OrderController {
    * by ID (if provided) and syncs productName and unitPrice from the Product entity.
    */
   private void buildOrderItems(Order order, List<Long> itemProductIds, List<Integer> itemQuantities,
-      List<Double> itemUnitPrices, Long companyId) {
+      List<Double> itemUnitPrices) {
     order.getOrderItems().clear();
 
     if (itemProductIds == null || itemProductIds.isEmpty()) {
@@ -245,5 +304,37 @@ public class OrderController {
       item.setUnitPrice(unitPrice);
       order.getOrderItems().add(item);
     }
+  }
+
+  /**
+   * Creates a detached copy used for audit diffs so before/after comparisons are stable even when
+   * JPA returns the same managed instance for subsequent reads in the same request.
+   */
+  private Order createAuditSnapshot(Order source) {
+    Order copy = new Order();
+    copy.setId(source.getId());
+    copy.setClient(source.getClient());
+    copy.setPoOrderNo(source.getPoOrderNo());
+    copy.setProductName(source.getProductName());
+    copy.setQuantity(source.getQuantity());
+    copy.setTotalAmount(source.getTotalAmount());
+    copy.setStatus(source.getStatus());
+    copy.setOrderDate(source.getOrderDate());
+    copy.setDeliveryDate(source.getDeliveryDate());
+    copy.setOrderNote(source.getOrderNote());
+
+    if (source.getOrderItems() != null) {
+      for (OrderItem item : source.getOrderItems()) {
+        OrderItem itemCopy = new OrderItem();
+        itemCopy.setProduct(item.getProduct());
+        itemCopy.setProductName(item.getProductName());
+        itemCopy.setQuantity(item.getQuantity());
+        itemCopy.setUnitPrice(item.getUnitPrice());
+        itemCopy.setOrder(copy);
+        copy.getOrderItems().add(itemCopy);
+      }
+    }
+
+    return copy;
   }
 }

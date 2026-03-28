@@ -1,6 +1,8 @@
 package com.example.ordermanager.order.service;
 
 import com.example.ordermanager.admin.dto.ClientOrderStatDTO;
+import com.example.ordermanager.client.entity.Client;
+import com.example.ordermanager.client.repository.ClientRepository;
 import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.order.entity.Order;
@@ -19,12 +21,14 @@ import java.util.List;
 public class OrderService {
 
   private final OrderRepository orderRepository;
+  private final ClientRepository clientRepository;
   private final CompanyService companyService;
   private final Helper helper;
 
-  public OrderService(OrderRepository orderRepository, CompanyService companyService,
-      Helper helper) {
+  public OrderService(OrderRepository orderRepository, ClientRepository clientRepository,
+      CompanyService companyService, Helper helper) {
     this.orderRepository = orderRepository;
+    this.clientRepository = clientRepository;
     this.companyService = companyService;
     this.helper = helper;
   }
@@ -65,11 +69,7 @@ public class OrderService {
             "Company not found. Cannot create order without a company."));
 
     order.setCompany(company);
-
-    // Sync customerName from client relationship for data integrity
-    if (order.getClient() != null) {
-      order.setCustomerName(order.getClient().getName());
-    }
+    resolveClientForCompany(order, companyId);
 
     // Sync legacy summary fields and derived total from order items if present
     syncDerivedFieldsFromItems(order);
@@ -82,58 +82,18 @@ public class OrderService {
   }
 
   public Order patchOrder(Long id, Order partialOrder) {
-    return orderRepository.findDetailedById(id).map(existingOrder -> {
-      // Update client relationship first (this auto-syncs customerName via setter)
-      if (partialOrder.getClient() != null) {
-        existingOrder.setClient(partialOrder.getClient());
-      }
+    return orderRepository.findDetailedById(id)
+        .map(existingOrder -> applyPatch(existingOrder, partialOrder))
+        .orElseThrow(() -> new OrderNotFoundException(id));
+  }
 
-      // Legacy support: if customerName is provided without client
-      if (partialOrder.getCustomerName() != null && partialOrder.getClient() == null) {
-        existingOrder.setCustomerName(partialOrder.getCustomerName());
-      }
-
-      // Update order items if provided
-      if (partialOrder.getOrderItems() != null && !partialOrder.getOrderItems().isEmpty()) {
-        existingOrder.getOrderItems().clear();
-        for (var item : partialOrder.getOrderItems()) {
-          item.setOrder(existingOrder);
-          existingOrder.getOrderItems().add(item);
-        }
-        syncDerivedFieldsFromItems(existingOrder);
-        if (existingOrder.getProductName() != null)
-          existingOrder.setProductName(helper.toTitleCase(existingOrder.getProductName()));
-      } else if (partialOrder.getProductName() != null) {
-        existingOrder.setProductName(helper.toTitleCase(partialOrder.getProductName()));
-      }
-
-      if (partialOrder.getQuantity() != null
-          && (partialOrder.getOrderItems() == null || partialOrder.getOrderItems().isEmpty()))
-        existingOrder.setQuantity(partialOrder.getQuantity());
-
-      if (partialOrder.getTotalAmount() != null
-          && (partialOrder.getOrderItems() == null || partialOrder.getOrderItems().isEmpty()))
-        existingOrder.setTotalAmount(partialOrder.getTotalAmount());
-
-      if (partialOrder.getStatus() != null)
-        existingOrder.setStatus(partialOrder.getStatus());
-
-      if (partialOrder.getOrderDate() != null)
-        existingOrder.setOrderDate(partialOrder.getOrderDate());
-
-      if (partialOrder.getDeliveryDate() != null)
-        existingOrder.setDeliveryDate(partialOrder.getDeliveryDate());
-
-      if (partialOrder.getPoOrderNo() != null)
-        existingOrder.setPoOrderNo(partialOrder.getPoOrderNo());
-
-      if (partialOrder.getOrderNote() != null)
-        existingOrder.setOrderNote(partialOrder.getOrderNote());
-
-      validateOrderDates(existingOrder);
-
-      return orderRepository.save(existingOrder);
-    }).orElseThrow(() -> new OrderNotFoundException(id));
+  /**
+   * TENANT-AWARE: Patch an order only if it belongs to the given company.
+   */
+  public Order patchOrderForCompany(Long id, Order partialOrder, Long companyId) {
+    return orderRepository.findByIdAndCompanyId(id, companyId)
+        .map(existingOrder -> applyPatch(existingOrder, partialOrder))
+        .orElseThrow(() -> new OrderNotFoundException(id));
   }
 
   private void validateOrderDates(Order order) {
@@ -178,8 +138,81 @@ public class OrderService {
     order.setTotalAmount(totalAmount);
   }
 
-  public Order getOrderById(Long id) {
-    return orderRepository.findDetailedById(id).orElse(null);
+  private Order applyPatch(Order existingOrder, Order partialOrder) {
+    // Update client relationship first using a tenant-resolved Client entity.
+    if (partialOrder.getClient() != null) {
+      Long companyId =
+          existingOrder.getCompany() != null ? existingOrder.getCompany().getId() : null;
+      if (companyId == null) {
+        throw new IllegalArgumentException("Order is missing company information.");
+      }
+      existingOrder.setClient(resolveClientForCompany(partialOrder.getClient(), companyId));
+    }
+
+    // Update order items if provided
+    if (partialOrder.getOrderItems() != null && !partialOrder.getOrderItems().isEmpty()) {
+      existingOrder.getOrderItems().clear();
+      for (var item : partialOrder.getOrderItems()) {
+        item.setOrder(existingOrder);
+        existingOrder.getOrderItems().add(item);
+      }
+      syncDerivedFieldsFromItems(existingOrder);
+      if (existingOrder.getProductName() != null) {
+        existingOrder.setProductName(helper.toTitleCase(existingOrder.getProductName()));
+      }
+    } else if (partialOrder.getProductName() != null) {
+      existingOrder.setProductName(helper.toTitleCase(partialOrder.getProductName()));
+    }
+
+    if (partialOrder.getQuantity() != null
+        && (partialOrder.getOrderItems() == null || partialOrder.getOrderItems().isEmpty())) {
+      existingOrder.setQuantity(partialOrder.getQuantity());
+    }
+
+    if (partialOrder.getTotalAmount() != null
+        && (partialOrder.getOrderItems() == null || partialOrder.getOrderItems().isEmpty())) {
+      existingOrder.setTotalAmount(partialOrder.getTotalAmount());
+    }
+
+    if (partialOrder.getStatus() != null) {
+      existingOrder.setStatus(partialOrder.getStatus());
+    }
+
+    if (partialOrder.getOrderDate() != null) {
+      existingOrder.setOrderDate(partialOrder.getOrderDate());
+    }
+
+    if (partialOrder.getDeliveryDate() != null) {
+      existingOrder.setDeliveryDate(partialOrder.getDeliveryDate());
+    }
+
+    if (partialOrder.getPoOrderNo() != null) {
+      existingOrder.setPoOrderNo(partialOrder.getPoOrderNo());
+    }
+
+    if (partialOrder.getOrderNote() != null) {
+      existingOrder.setOrderNote(partialOrder.getOrderNote());
+    }
+
+    validateOrderDates(existingOrder);
+
+    return orderRepository.save(existingOrder);
+  }
+
+  private void resolveClientForCompany(Order order, Long companyId) {
+    if (order.getClient() == null) {
+      return;
+    }
+    order.setClient(resolveClientForCompany(order.getClient(), companyId));
+  }
+
+  private Client resolveClientForCompany(Client client, Long companyId) {
+    if (client == null || client.getId() == null) {
+      throw new IllegalArgumentException("Client is required.");
+    }
+
+    return clientRepository.findByIdAndCompanyId(client.getId(), companyId).orElseThrow(
+        () -> new IllegalArgumentException("Selected client was not found for this company."));
   }
 
   /**
@@ -212,13 +245,13 @@ public class OrderService {
       return List.of();
     }
 
-    long total = rows.stream().mapToLong(r -> (Long) r[3]).sum();
+    long total = rows.stream().mapToLong(r -> (Long) r[2]).sum();
 
     return rows.stream().map(r -> {
       Long clientId = (Long) r[0];
-      String clientName = r[1] != null ? (String) r[1] : (r[2] != null ? (String) r[2] : "Unknown");
-      long count = (Long) r[3];
-      double amount = ((Number) r[4]).doubleValue();
+      String clientName = r[1] != null ? (String) r[1] : "Unknown";
+      long count = (Long) r[2];
+      double amount = ((Number) r[3]).doubleValue();
       double pct = Math.round((count * 10000.0 / total)) / 100.0;
       return new ClientOrderStatDTO(clientId, clientName, count, amount, pct);
     }).toList();
@@ -243,11 +276,14 @@ public class OrderService {
       return orderRepository.findByCompanyAndDateRangeAndClientId(companyId, startDate, endDate,
           clientId, statuses);
     }
-    if (clientName == null) {
+    if (clientName == null || clientName.isBlank()) {
       return List.of();
     }
-    return orderRepository.findByCompanyAndDateRangeAndCustomerName(companyId, startDate, endDate,
-        clientName, statuses);
+    if ("Unknown".equalsIgnoreCase(clientName)) {
+      return orderRepository.findByCompanyAndDateRangeAndNoClient(companyId, startDate, endDate,
+          statuses);
+    }
+    return List.of();
   }
 
   /**

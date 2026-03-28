@@ -42,6 +42,8 @@ This file is the living test inventory for controller and service methods.
 - `ADM-18` `POST /admin/users/{id}/toggle-status` user not in company sets flash `error`
 - `ADM-19` `GET /admin/order-statistics` computes and exposes overall total order value for the selected date/status filters
 - `ADM-20` drill-down (`clientId`/`clientName`) computes selected-client total order value and ignores null order amounts
+- `ADM-21` `GET /admin/order-activity` returns paginated activity list (20 rows/page) scoped to tenant, applies default 1-month date range, and passes search/page to service
+- `ADM-22` `GET /admin/order-activity` normalizes invalid page numbers to page 1 and returns stable pagination attributes (`currentPage`, `totalPages`, `totalCount`)
 
 ### `CompanyController`
 - `COM-01` `GET /company/register` initializes `registrationData`
@@ -75,10 +77,11 @@ This file is the living test inventory for controller and service methods.
 - `ORDC-09` order form uses line-item qty/unit price as source of truth, shows calculated total/qty summary, and clears stale draft state on submit
 - `ORDC-10` order date validation blocks `deliveryDate < orderDate` (client-side pre-submit + server-side `POST /orders` fallback) and shows inline warning
 - `ORDC-11` edit/duplicate use tenant-scoped order lookup (`id + companyId`) and redirect to `/orders` when order is missing or outside tenant scope
+- `ORDC-12` order form update uses tenant-scoped patching and redirects `/orders` with flash `error` when the order is missing/outside tenant scope
 
 ### `OrderRestController`
 - `ORDA-01` `POST /api/orders` delegates create and returns created payload
-- `ORDA-02` `PATCH /api/orders/{id}` updates only supplied fields and propagates `OrderNotFoundException`
+- `ORDA-02` `PATCH /api/orders/{id}` updates only supplied fields, is tenant-scoped via company context, and returns a small status metadata payload for dashboard drag-drop (`status`, `displayName`, `badgeColor`)
 - `ORDA-03` `DELETE /api/orders/{id}` returns `204 No Content`
 - `ORDA-04` `GET /api/orders/api/order-statuses` includes enum `name`, `displayName`, `isFinal`
 
@@ -162,6 +165,8 @@ This file is the living test inventory for controller and service methods.
 - `ORS-13` patch/update flow recalculates persisted `quantity` and `totalAmount` from order items when items are submitted
 - `ORS-14` create/update date validation rejects orders where `deliveryDate` is before `orderDate`
 - `ORS-15` dashboard/list/urgent read paths return orders with initialized `orderItems` summaries so rendering works when `spring.jpa.open-in-view=false`
+- `ORS-16` `patchOrderForCompany` updates only orders belonging to the current tenant and throws `OrderNotFoundException` for cross-tenant/missing ids
+- `ORS-17` create/update resolve the submitted `client.id` to a real tenant-scoped `Client` entity so computed customer name and audit logs use the actual client name
 
 ### `ClientService`
 - `CLS-01` save assigns company by id and enforces uppercase client name
@@ -225,6 +230,18 @@ This file is the living test inventory for controller and service methods.
 - `BVO-02` request timeout maps to timeout-specific message
 - `BVO-03` HTTP 4xx/5xx responses map to API rejection message
 - `BVO-04` request payload escapes JSON/HTML-sensitive characters
+
+### `OrderActivityService`
+- `ACT-01` `logCreated` persists CREATED activity with orderId, poNo, clientName, actor, companyId, and non-null activityAt
+- `ACT-02` `logCreated` with null PO number produces description without "PO:" segment
+- `ACT-03` `logStatusChanged` persists STATUS_CHANGED with fieldChanged="status", oldValue, newValue, and formatted description
+- `ACT-04` `logUpdated` persists UPDATED activity with multiline before/after descriptions for each changed tracked field (client, PO, products, status, dates, note, total)
+- `ACT-05` `logDeleted` persists DELETED activity using denormalized data (survives order row removal)
+- `ACT-06` `logDeleted` with null PO number produces description without "PO:" segment
+- `ACT-07` `getActivities` passes companyId, full start-of-day/end-of-day time window, and null term to repository when search is blank
+- `ACT-08` `getActivities` trims non-blank search term before passing to repository
+- `ACT-09` each write (`logCreated`/`logStatusChanged`/`logUpdated`/`logDeleted`) enforces retention by trimming company logs to latest 100 rows
+- `ACT-10` paged retrieval normalizes negative page values to first page and returns 20-row pages sorted newest-first
 
 ## Minimum Rule For New Code
 - For every new or changed controller/service method, add or update tests in the same PR.

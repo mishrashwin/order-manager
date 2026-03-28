@@ -77,7 +77,7 @@ class CompanyLifecycleWorkflowTest {
     Helper helper = new Helper();
     clientService = new ClientService(clientRepository, orderRepository, companyService, helper);
     vendorService = new VendorService(vendorRepository, companyService, helper);
-    orderService = new OrderService(orderRepository, companyService, helper);
+    orderService = new OrderService(orderRepository, clientRepository, companyService, helper);
   }
 
   @Test
@@ -201,6 +201,8 @@ class CompanyLifecycleWorkflowTest {
     assertThat(client.getName()).isEqualTo("ACME RETAIL");
     assertThat(client.getContactPerson()).isEqualTo("John Doe");
     assertThat(client.getCompany().getId()).isEqualTo(10L);
+    when(clientRepository.findByIdAndCompanyId(client.getId(), 10L))
+        .thenReturn(Optional.of(client));
 
     Vendor vendor = new Vendor();
     vendor.setCompanyName("beta supply");
@@ -241,7 +243,7 @@ class CompanyLifecycleWorkflowTest {
     assertThat(createdOrder.getCustomerName()).isEqualTo("ACME RETAIL");
     assertThat(createdOrder.getProductName()).isEqualTo("Steel Rods");
 
-    when(orderRepository.findById(900L)).thenReturn(Optional.of(createdOrder));
+    when(orderRepository.findDetailedById(900L)).thenReturn(Optional.of(createdOrder));
 
     Order patch = new Order();
     patch.setProductName("premium steel rods");

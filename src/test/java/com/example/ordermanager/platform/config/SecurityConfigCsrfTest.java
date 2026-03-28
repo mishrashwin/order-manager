@@ -18,6 +18,7 @@ import com.example.ordermanager.config.SecurityConfig;
 import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.controller.OrderRestController;
+import com.example.ordermanager.order.service.OrderActivityService;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.order.service.OrderService;
 import com.example.ordermanager.user.repository.UserRepository;
@@ -47,6 +48,9 @@ class SecurityConfigCsrfTest {
 
   @MockBean
   private OrderService orderService;
+
+  @MockBean
+  private OrderActivityService orderActivityService;
 
   @MockBean
   private CustomUserDetailsService customUserDetailsService;
