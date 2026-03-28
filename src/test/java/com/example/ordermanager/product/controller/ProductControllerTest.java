@@ -5,7 +5,10 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.example.ordermanager.order.entity.Order;
+import com.example.ordermanager.order.entity.OrderItem;
 import com.example.ordermanager.order.repository.OrderItemRepository;
+import com.example.ordermanager.product.dto.ProductOrderRef;
 import com.example.ordermanager.product.entity.Product;
 import com.example.ordermanager.product.service.ProductService;
 import com.example.ordermanager.utils.PasswordVerificationService;
@@ -60,6 +63,30 @@ class ProductControllerTest {
     assertThat(view).isEqualTo("products/list");
     assertThat(model.getAttribute("products")).isEqualTo(List.of(product));
     assertThat(model.getAttribute("orderUsageMap")).isNotNull();
+  }
+
+  @Test
+  void listProducts_keepsOnlyLatestThreeUniqueOrderRefsPerProduct() {
+    Product product = new Product("Steel Rod", null, null, "SAIL", "Raw Material", 50.0);
+    product.setId(1L);
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(3L);
+    when(productService.getProductsByCompanyId(3L)).thenReturn(List.of(product));
+    when(orderItemRepository.findByProductCompanyId(3L))
+        .thenReturn(List.of(orderItem(product, 10L, "PO-010"), orderItem(product, 7L, "PO-007"),
+            orderItem(product, 9L, "PO-009"), orderItem(product, 8L, "PO-008"),
+            orderItem(product, 9L, "PO-009")));
+
+    Model model = new ConcurrentModel();
+    productController.listProducts(model);
+
+    @SuppressWarnings("unchecked")
+    Map<Long, List<ProductOrderRef>> orderUsageMap =
+        (Map<Long, List<ProductOrderRef>>) model.getAttribute("orderUsageMap");
+
+    assertThat(orderUsageMap).containsKey(1L);
+    assertThat(orderUsageMap.get(1L)).extracting(ProductOrderRef::getOrderId).containsExactly(10L,
+        9L, 8L);
   }
 
   @Test
@@ -230,5 +257,16 @@ class ProductControllerTest {
     assertThat(redirectAttributes.getFlashAttributes().get("error"))
         .isEqualTo("Error deleting product: Product not found");
     verify(productService).deleteProduct(99L);
+  }
+
+  private OrderItem orderItem(Product product, Long orderId, String poNo) {
+    Order order = new Order();
+    order.setId(orderId);
+    order.setPoOrderNo(poNo);
+
+    OrderItem item = new OrderItem();
+    item.setOrder(order);
+    item.setProduct(product);
+    return item;
   }
 }

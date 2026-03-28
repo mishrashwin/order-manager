@@ -20,6 +20,7 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
+import org.springframework.security.web.csrf.CsrfException;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import java.io.IOException;
@@ -118,6 +119,9 @@ public class SecurityConfig {
   public AccessDeniedHandler accessDeniedHandler(UserRepository userRepository) {
     return (request, response, accessDeniedException) -> {
       String reason = "forbidden";
+      if (accessDeniedException instanceof CsrfException) {
+        reason = "csrf";
+      }
       var authentication = SecurityContextHolder.getContext().getAuthentication();
       if (authentication != null && authentication.isAuthenticated()
           && !(authentication instanceof AnonymousAuthenticationToken)) {

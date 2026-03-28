@@ -400,4 +400,16 @@ class AdminControllerTest {
     assertThat(model.getAttribute("totalPages")).isEqualTo(1);
   }
 
+  @Test
+  void adminDashboard_addsCompanyIdOnly() {
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+
+    Model model = new ConcurrentModel();
+    String view = adminController.adminDashboard(model);
+
+    assertThat(view).isEqualTo("admin/dashboard");
+    assertThat(model.getAttribute("paymentReminder")).isNull();
+    assertThat(model.getAttribute("companyId")).isEqualTo(5L);
+  }
+
 }

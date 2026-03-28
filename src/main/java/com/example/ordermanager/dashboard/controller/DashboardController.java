@@ -5,6 +5,9 @@ import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.entity.OrderStatus;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.order.service.OrderService;
+import com.example.ordermanager.payment.service.PaymentService;
+import com.example.ordermanager.payment.service.PaymentService.PaymentReminderInfo;
+import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -21,12 +24,14 @@ public class DashboardController {
 
   private final OrderService orderService;
   private final CompanyService companyService;
+  private final PaymentService paymentService;
   private final SecurityContextHelper securityContextHelper;
 
   public DashboardController(OrderService orderService, CompanyService companyService,
-      SecurityContextHelper securityContextHelper) {
+      PaymentService paymentService, SecurityContextHelper securityContextHelper) {
     this.orderService = orderService;
     this.companyService = companyService;
+    this.paymentService = paymentService;
     this.securityContextHelper = securityContextHelper;
   }
 
@@ -50,6 +55,12 @@ public class DashboardController {
 
     model.addAttribute("orders",
         orderService.getOrdersByCompanyIdAndDateRange(companyId, start, end));
+
+    User currentUser = securityContextHelper.getUserFromContext();
+    PaymentReminderInfo reminder = "ADMIN".equalsIgnoreCase(currentUser.getRole())
+        ? paymentService.getPaymentReminderInfo(companyId)
+        : new PaymentReminderInfo(false, 0, 0, null, null);
+    model.addAttribute("paymentReminder", reminder);
 
     var urgentOrderNotifications = orderService.getUrgentOrdersByCompanyId(companyId).stream()
         .filter(order -> isWithinSelectedDateRange(order, start, end))

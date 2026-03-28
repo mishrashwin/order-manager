@@ -14,9 +14,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.time.LocalDateTime;
 
 /**
  * Service for managing companies (tenants) in the multi-tenant system.
@@ -266,6 +267,16 @@ public class CompanyService {
   public boolean canUsersLogin(Company company) {
     return company != null && company.isActive()
         && CompanyApprovalStatus.APPROVED.equals(company.getApprovalStatus());
+  }
+
+  /**
+   * Set the monthly subscription fee for a company. Only the owner should call this.
+   */
+  public Company setMonthlyFee(Long companyId, BigDecimal fee) {
+    Company company = companyRepository.findById(companyId).orElseThrow(
+        () -> new IllegalArgumentException("Company with ID " + companyId + " not found"));
+    company.setMonthlyFee(fee);
+    return companyRepository.save(company);
   }
 
   private void notifyCompanyApproval(Company company) {

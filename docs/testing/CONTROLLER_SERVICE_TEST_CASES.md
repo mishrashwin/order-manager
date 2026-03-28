@@ -44,6 +44,7 @@ This file is the living test inventory for controller and service methods.
 - `ADM-20` drill-down (`clientId`/`clientName`) computes selected-client total order value and ignores null order amounts
 - `ADM-21` `GET /admin/order-activity` returns paginated activity list (20 rows/page) scoped to tenant, applies default 1-month date range, and passes search/page to service
 - `ADM-22` `GET /admin/order-activity` normalizes invalid page numbers to page 1 and returns stable pagination attributes (`currentPage`, `totalPages`, `totalCount`)
+- `ADM-23` admin payments form posts to `/admin/payments/add` with CSRF hidden token so payment submit is not blocked by access-denied
 
 ### `CompanyController`
 - `COM-01` `GET /company/register` initializes `registrationData`
@@ -63,6 +64,7 @@ This file is the living test inventory for controller and service methods.
 - `DASH-05` urgent alerts include only orders whose `orderDate` falls within the selected dashboard date range
 - `DASH-06` urgent alerts exclude entries with null `orderDate` to prevent out-of-range notification leakage
 - `DASH-07` dashboard urgent payload and cards use item-based product summaries with per-product quantities in brackets
+- `DASH-08` dashboard includes admin payment reminder ticker model binding and renders ticker CTA to `/admin/payments` when reminder is active
 
 ### `OrderController`
 - `ORDC-01` list endpoint uses tenant id and date range defaults and shows flash `message`/`error` alerts
@@ -112,7 +114,7 @@ This file is the living test inventory for controller and service methods.
 - `PRD-06` delete correct password but service throws returns flash `error`
 - `PRD-07` `GET /products/new|edit` and `POST /products` preserve/validate `returnTo` so product creation can return to order flow safely
 - `PRD-08` product `returnTo` sanitization normalizes encoded/duplicate comma-joined values (for example query+form duplicates) to a single safe path
-- `PRD-09` product form requires name, brand, category, and vendor; submit stays disabled until mandatory fields are filled
+- `PRD-09` product list order-usage references are capped to the latest 3 unique orders per product (newest first) to prevent unbounded growth
 
 ### `OwnerController`
 - `OWN-01` dashboard model includes owner page markers and metrics/pending lists
@@ -121,6 +123,7 @@ This file is the living test inventory for controller and service methods.
 - `OWN-04` toggle-access deactivates active company
 - `OWN-05` toggle-access blocks re-enable unless approval status is `APPROVED`
 - `OWN-06` pending approvals table shows first admin contact details (name/email/phone) instead of generic user count
+- `OWN-07` company fee modal submits with CSRF token and uses server-rendered `/owner/companies/{id}/set-fee` action URL (no hardcoded JS path)
 
 ### `ErrorPageController`
 - `ERR-01` no reason defaults to `forbidden` reason key and fallback message

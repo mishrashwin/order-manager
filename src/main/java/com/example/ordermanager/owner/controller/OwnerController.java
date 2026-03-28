@@ -7,6 +7,7 @@ import com.example.ordermanager.owner.service.OwnerManagementService;
 import com.example.ordermanager.payment.entity.Payment;
 import com.example.ordermanager.payment.service.PaymentService;
 import com.example.ordermanager.utils.PasswordVerificationService;
+import java.math.BigDecimal;
 import java.security.Principal;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -142,6 +143,19 @@ public class OwnerController {
     try {
       companyService.deleteCompany(id);
       redirectAttributes.addFlashAttribute("message", "Company deleted successfully.");
+    } catch (IllegalArgumentException ex) {
+      redirectAttributes.addFlashAttribute("error", ex.getMessage());
+    }
+    return "redirect:/owner/companies";
+  }
+
+  @PostMapping("/companies/{id}/set-fee")
+  public String setCompanyFee(@PathVariable Long id,
+      @RequestParam(required = false) BigDecimal monthlyFee,
+      RedirectAttributes redirectAttributes) {
+    try {
+      companyService.setMonthlyFee(id, monthlyFee);
+      redirectAttributes.addFlashAttribute("message", "Monthly fee updated successfully.");
     } catch (IllegalArgumentException ex) {
       redirectAttributes.addFlashAttribute("error", ex.getMessage());
     }

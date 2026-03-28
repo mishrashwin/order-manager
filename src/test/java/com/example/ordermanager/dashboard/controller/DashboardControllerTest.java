@@ -9,7 +9,11 @@ import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.entity.OrderItem;
 import com.example.ordermanager.order.entity.OrderStatus;
 import com.example.ordermanager.order.service.OrderService;
+import com.example.ordermanager.payment.service.PaymentService;
+import com.example.ordermanager.payment.service.PaymentService.PaymentReminderInfo;
+import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.utils.SecurityContextHelper;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -30,14 +34,16 @@ class DashboardControllerTest {
   @Mock
   private CompanyService companyService;
   @Mock
+  private PaymentService paymentService;
+  @Mock
   private SecurityContextHelper securityContextHelper;
 
   private DashboardController dashboardController;
 
   @BeforeEach
   void setUp() {
-    dashboardController =
-        new DashboardController(orderService, companyService, securityContextHelper);
+    dashboardController = new DashboardController(orderService, companyService, paymentService,
+        securityContextHelper);
   }
 
   @Test
@@ -49,7 +55,10 @@ class DashboardControllerTest {
     Order outOfRange = urgentOrder(2L, LocalDate.of(2026, 2, 10), LocalDate.of(2026, 2, 20));
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    when(securityContextHelper.getUserFromContext()).thenReturn(user("ADMIN"));
     when(companyService.getCompanyById(5L)).thenReturn(Optional.of(company("ACME")));
+    when(paymentService.getPaymentReminderInfo(5L))
+        .thenReturn(new PaymentReminderInfo(true, 4, 2026, "April 2026", new BigDecimal("999.00")));
     when(orderService.getOrdersByCompanyIdAndDateRange(5L, start, end)).thenReturn(List.of());
     when(orderService.getUrgentOrdersByCompanyId(5L)).thenReturn(List.of(inRange, outOfRange));
 
@@ -58,6 +67,7 @@ class DashboardControllerTest {
 
     assertThat(view).isEqualTo("dashboard");
     assertThat(model.getAttribute("companyName")).isEqualTo("ACME");
+    assertThat(model.getAttribute("paymentReminder")).isNotNull();
 
     @SuppressWarnings("unchecked")
     List<Map<String, Object>> urgentOrders =
@@ -78,7 +88,10 @@ class DashboardControllerTest {
     Order inRange = urgentOrder(2L, today.minusDays(2), today.minusDays(1));
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(7L);
+    when(securityContextHelper.getUserFromContext()).thenReturn(user("ADMIN"));
     when(companyService.getCompanyById(7L)).thenReturn(Optional.of(company("BETA")));
+    when(paymentService.getPaymentReminderInfo(7L))
+        .thenReturn(new PaymentReminderInfo(false, 0, 0, null, null));
     when(orderService.getOrdersByCompanyIdAndDateRange(7L, defaultStart, today))
         .thenReturn(List.of());
     when(orderService.getUrgentOrdersByCompanyId(7L)).thenReturn(List.of(nullOrderDate, inRange));
@@ -94,10 +107,36 @@ class DashboardControllerTest {
     assertThat(urgentOrders.get(0).get("id")).isEqualTo(2L);
   }
 
+  @Test
+  void dashboard_nonAdminUserGetsInactivePaymentReminder() {
+    LocalDate today = LocalDate.now();
+    LocalDate defaultStart = today.minusMonths(1);
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(9L);
+    when(securityContextHelper.getUserFromContext()).thenReturn(user("USER"));
+    when(companyService.getCompanyById(9L)).thenReturn(Optional.of(company("GAMMA")));
+    when(orderService.getOrdersByCompanyIdAndDateRange(9L, defaultStart, today))
+        .thenReturn(List.of());
+    when(orderService.getUrgentOrdersByCompanyId(9L)).thenReturn(List.of());
+
+    Model model = new ConcurrentModel();
+    dashboardController.dashboard(null, null, model);
+
+    PaymentReminderInfo reminder = (PaymentReminderInfo) model.getAttribute("paymentReminder");
+    assertThat(reminder).isNotNull();
+    assertThat(reminder.active()).isFalse();
+  }
+
   private Company company(String name) {
     Company company = new Company();
     company.setName(name);
     return company;
+  }
+
+  private User user(String role) {
+    User user = new User();
+    user.setRole(role);
+    return user;
   }
 
   private Order urgentOrder(Long id, LocalDate orderDate, LocalDate deliveryDate) {

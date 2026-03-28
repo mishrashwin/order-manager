@@ -1436,3 +1436,65 @@ footer strong {
   .content-header h1 { font-size: 1.05rem; }
 }
 
+/* ========================================
+   PAYMENT REMINDER TICKER TAPE
+   ======================================== */
+
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.payment-ticker-wrap {
+  background: linear-gradient(90deg, #b45309 0%, #d97706 50%, #b45309 100%);
+  color: #fff;
+  overflow: hidden;
+  white-space: nowrap;
+  padding: 0.45rem 0;
+  position: sticky;
+  top: 60px; /* sits just below the navbar */
+  z-index: 1040;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+}
+
+.payment-ticker-track {
+  display: inline-block;
+  animation: ticker-scroll 22s linear infinite;
+}
+
+.payment-ticker-wrap:hover .payment-ticker-track {
+  animation-play-state: paused;
+}
+
+.payment-ticker-text {
+  display: inline;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin: 0 1.5rem;
+}
+
+.payment-ticker-icon {
+  display: inline;
+  font-size: 0.9rem;
+  margin: 0 0.5rem;
+  vertical-align: middle;
+}
+
+.payment-ticker-separator {
+  display: inline;
+  margin: 0 1rem;
+  opacity: 0.6;
+  font-size: 0.6rem;
+  vertical-align: middle;
+}
+
+.payment-ticker-link {
+  color: #fde68a;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.payment-ticker-link:hover {
+  color: #fff;
+}
+

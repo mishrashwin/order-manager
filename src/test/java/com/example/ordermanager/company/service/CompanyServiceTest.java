@@ -15,6 +15,7 @@ import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.service.EmailService;
 import com.example.ordermanager.user.service.UserService;
 import java.util.Optional;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -131,6 +132,46 @@ class CompanyServiceTest {
     assertThat(companyService.canUsersLogin(pending)).isFalse();
     assertThat(companyService.canUsersLogin(inactive)).isFalse();
     assertThat(companyService.canUsersLogin(null)).isFalse();
+  }
+
+  @Test
+  void setMonthlyFee_updatesCompanyFee() {
+    Company company = new Company();
+    company.setId(5L);
+    company.setName("FEETEST");
+
+    when(companyRepository.findById(5L)).thenReturn(Optional.of(company));
+    when(companyRepository.save(any(Company.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    Company updated = companyService.setMonthlyFee(5L, new BigDecimal("1500.00"));
+
+    assertThat(updated.getMonthlyFee()).isEqualByComparingTo("1500.00");
+  }
+
+  @Test
+  void setMonthlyFee_clearsFeeWhenNullPassed() {
+    Company company = new Company();
+    company.setId(5L);
+    company.setName("FEETEST");
+    company.setMonthlyFee(new BigDecimal("500.00"));
+
+    when(companyRepository.findById(5L)).thenReturn(Optional.of(company));
+    when(companyRepository.save(any(Company.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    Company updated = companyService.setMonthlyFee(5L, null);
+
+    assertThat(updated.getMonthlyFee()).isNull();
+  }
+
+  @Test
+  void setMonthlyFee_throwsWhenCompanyNotFound() {
+    when(companyRepository.findById(99L)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> companyService.setMonthlyFee(99L, new BigDecimal("500.00")))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Company with ID 99 not found");
   }
 }
 
