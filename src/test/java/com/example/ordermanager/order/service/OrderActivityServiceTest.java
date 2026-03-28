@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.example.ordermanager.client.entity.Client;
 import com.example.ordermanager.order.entity.ActivityType;
 import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.entity.OrderActivity;
@@ -16,6 +17,9 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -58,6 +62,7 @@ class OrderActivityServiceTest {
     assertThat(saved.getCompanyId()).isEqualTo(1L);
     assertThat(saved.getDescription()).contains("Order created");
     assertThat(saved.getActivityAt()).isNotNull();
+    verify(orderActivityRepository).countByCompanyId(1L);
   }
 
   @Test
@@ -93,24 +98,37 @@ class OrderActivityServiceTest {
     assertThat(saved.getOldValue()).isEqualTo("Dispatched");
     assertThat(saved.getNewValue()).isEqualTo("Delivered");
     assertThat(saved.getDescription()).isEqualTo("Status changed from 'Dispatched' to 'Delivered'");
+    verify(orderActivityRepository).countByCompanyId(3L);
   }
 
   // ── logUpdated ────────────────────────────────────────────────────────────────
 
   @Test
-  void logUpdated_persistsUpdateActivityWithDescription() {
+  void logUpdated_persistsDetailedBeforeAfterDescription() {
     when(orderActivityRepository.save(any(OrderActivity.class)))
         .thenAnswer(inv -> inv.getArgument(0));
-    Order order = order(30L, "PO-003", "GAMMA", OrderStatus.CREATED);
+    Order before = order(30L, "PO-003", "GAMMA", OrderStatus.CREATED);
+    before.setOrderNote("Old note");
+    before.setTotalAmount(100.0);
 
-    orderActivityService.logUpdated(order, "bob", "Bob Brown", 4L);
+    Order after = order(30L, "PO-009", "OMEGA", OrderStatus.DISPATCHED);
+    after.setOrderNote("New note");
+    after.setTotalAmount(150.0);
+
+    orderActivityService.logUpdated(before, after, "bob", "Bob Brown", 4L);
 
     ArgumentCaptor<OrderActivity> cap = ArgumentCaptor.forClass(OrderActivity.class);
     verify(orderActivityRepository).save(cap.capture());
     OrderActivity saved = cap.getValue();
 
     assertThat(saved.getActivityType()).isEqualTo(ActivityType.UPDATED);
-    assertThat(saved.getDescription()).isEqualTo("Order details updated");
+    assertThat(saved.getOrderClientName()).isEqualTo("OMEGA");
+    assertThat(saved.getDescription()).contains("Updated fields:")
+        .contains("Client: 'GAMMA' → 'OMEGA'")
+        .contains("PO / Order No: 'PO-003' → 'PO-009'")
+        .contains("Status: 'Created' → 'Dispatched'")
+        .contains("Order Note: 'Old note' → 'New note'")
+        .contains("Total Amount: '₹100.00' → '₹150.00'");
     assertThat(saved.getOldValue()).isNull();
     assertThat(saved.getNewValue()).isNull();
   }
@@ -144,37 +162,71 @@ class OrderActivityServiceTest {
     assertThat(cap.getValue().getDescription()).doesNotContain("PO:");
   }
 
+  @Test
+  void logCreated_whenCompanyHasMoreThan100Rows_trimsOlderRows() {
+    when(orderActivityRepository.save(any(OrderActivity.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+    when(orderActivityRepository.countByCompanyId(9L)).thenReturn(120L);
+    when(orderActivityRepository.findLatestIdsByCompanyId(org.mockito.ArgumentMatchers.eq(9L),
+        org.mockito.ArgumentMatchers.any(PageRequest.class))).thenReturn(List.of(1L, 2L, 3L));
+
+    Order order = order(77L, "PO-TRIM", "TRIM CLIENT", OrderStatus.CREATED);
+    orderActivityService.logCreated(order, "admin", "Admin User", 9L);
+
+    verify(orderActivityRepository).deleteByCompanyIdAndIdNotIn(9L, List.of(1L, 2L, 3L));
+  }
+
   // ── getActivities ─────────────────────────────────────────────────────────────
 
   @Test
-  void getActivities_passesTenantAndTimeWindowToRepository() {
+  void getActivitiesPage_passesTenantAndTimeWindowToRepository() {
     LocalDate start = LocalDate.of(2026, 3, 1);
     LocalDate end = LocalDate.of(2026, 3, 31);
-    when(orderActivityRepository.findByCompanyAndDateRangeAndSearch(any(), any(), any(), any()))
-        .thenReturn(List.of());
+    when(orderActivityRepository.countByCompanyId(7L)).thenReturn(10L);
+    when(orderActivityRepository.findPageByCompanyAndDateRangeAndSearch(any(), any(), any(), any(),
+        any())).thenReturn(Page.empty());
 
-    List<OrderActivity> result = orderActivityService.getActivities(7L, start, end, null);
+    Page<OrderActivity> result = orderActivityService.getActivitiesPage(7L, start, end, null, 0);
 
-    assertThat(result).isEmpty();
+    assertThat(result.getContent()).isEmpty();
     ArgumentCaptor<LocalDateTime> startCap = ArgumentCaptor.forClass(LocalDateTime.class);
     ArgumentCaptor<LocalDateTime> endCap = ArgumentCaptor.forClass(LocalDateTime.class);
-    verify(orderActivityRepository).findByCompanyAndDateRangeAndSearch(
+    ArgumentCaptor<PageRequest> pageCap = ArgumentCaptor.forClass(PageRequest.class);
+    verify(orderActivityRepository).findPageByCompanyAndDateRangeAndSearch(
         org.mockito.ArgumentMatchers.eq(7L), startCap.capture(), endCap.capture(),
-        org.mockito.ArgumentMatchers.isNull());
+        org.mockito.ArgumentMatchers.isNull(), pageCap.capture());
     assertThat(startCap.getValue().toLocalDate()).isEqualTo(start);
     assertThat(endCap.getValue().toLocalDate()).isEqualTo(end);
+    assertThat(pageCap.getValue().getPageSize()).isEqualTo(20);
   }
 
   @Test
-  void getActivities_withBlankSearch_passesNullTermToRepository() {
-    when(orderActivityRepository.findByCompanyAndDateRangeAndSearch(any(), any(), any(), any()))
-        .thenReturn(List.of());
+  void getActivitiesPage_withBlankSearch_passesNullTermToRepository() {
+    when(orderActivityRepository.countByCompanyId(1L)).thenReturn(10L);
+    when(orderActivityRepository.findPageByCompanyAndDateRangeAndSearch(any(), any(), any(), any(),
+        any())).thenReturn(new PageImpl<>(List.of()));
 
-    orderActivityService.getActivities(1L, LocalDate.now().minusDays(7), LocalDate.now(), "  ");
+    orderActivityService.getActivitiesPage(1L, LocalDate.now().minusDays(7), LocalDate.now(), "  ",
+        0);
 
-    verify(orderActivityRepository).findByCompanyAndDateRangeAndSearch(
+    verify(orderActivityRepository).findPageByCompanyAndDateRangeAndSearch(
         org.mockito.ArgumentMatchers.eq(1L), any(), any(),
-        org.mockito.ArgumentMatchers.isNull());
+        org.mockito.ArgumentMatchers.isNull(), any());
+  }
+
+  @Test
+  void getActivitiesPage_whenPageIsNegative_normalizesToFirstPage() {
+    when(orderActivityRepository.countByCompanyId(4L)).thenReturn(10L);
+    when(orderActivityRepository.findPageByCompanyAndDateRangeAndSearch(any(), any(), any(), any(),
+        any())).thenReturn(Page.empty());
+
+    orderActivityService.getActivitiesPage(4L, LocalDate.now().minusDays(10), LocalDate.now(), null,
+        -8);
+
+    ArgumentCaptor<PageRequest> pageCap = ArgumentCaptor.forClass(PageRequest.class);
+    verify(orderActivityRepository).findPageByCompanyAndDateRangeAndSearch(
+        org.mockito.ArgumentMatchers.eq(4L), any(), any(), any(), pageCap.capture());
+    assertThat(pageCap.getValue().getPageNumber()).isEqualTo(0);
   }
 
   // ── helpers ───────────────────────────────────────────────────────────────────
@@ -183,7 +235,12 @@ class OrderActivityServiceTest {
     Order o = new Order();
     o.setId(id);
     o.setPoOrderNo(poNo);
-    o.setCustomerName(clientName);
+    if (clientName != null) {
+      Client client = new Client();
+      client.setId(id + 1000);
+      client.setName(clientName);
+      o.setClient(client);
+    }
     o.setStatus(status);
     return o;
   }

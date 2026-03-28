@@ -52,22 +52,23 @@ public class OrderRestController {
       value = {@ApiResponse(responseCode = "200", description = "Order updated successfully"),
           @ApiResponse(responseCode = "404", description = "Order not found")})
   @PatchMapping("/{id}")
-  public Order patchOrder(
+  public ResponseEntity<Map<String, String>> patchOrder(
       @Parameter(description = "ID of the order to be updated", required = true)
       @PathVariable Long id,
       @Parameter(description = "Partial order fields to update", required = true)
       @RequestBody Order partialOrder) {
+    Long companyId = securityContextHelper.getCompanyIdFromContext();
+
     // Capture old status for audit comparison
-    Order oldOrder = orderService.getOrderById(id);
+    Order oldOrder = orderService.getOrderByIdAndCompanyId(id, companyId);
     OrderStatus oldStatus = oldOrder != null ? oldOrder.getStatus() : null;
 
-    Order saved = orderService.patchOrder(id, partialOrder);
+    Order saved = orderService.patchOrderForCompany(id, partialOrder, companyId);
 
     // ── audit (best-effort; must not break the API response) ──
     try {
       OrderStatus newStatus = saved.getStatus();
       if (oldStatus != null && newStatus != null && !oldStatus.equals(newStatus)) {
-        Long companyId = securityContextHelper.getCompanyIdFromContext();
         User actor = securityContextHelper.getUserFromContext();
         orderActivityService.logStatusChanged(saved, oldStatus.getDisplayName(),
             newStatus.getDisplayName(), actor.getUsername(),
@@ -76,7 +77,11 @@ public class OrderRestController {
     } catch (Exception ignored) {
     }
 
-    return saved;
+    Map<String, String> response = new HashMap<>();
+    response.put("status", saved.getStatus().name());
+    response.put("displayName", saved.getStatus().getDisplayName());
+    response.put("badgeColor", saved.getStatus().getBadgeColor());
+    return ResponseEntity.ok(response);
   }
 
 

@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -373,7 +374,7 @@ public class AdminController {
   @GetMapping("/order-activity")
   public String showOrderActivity(@RequestParam(required = false) String startDate,
       @RequestParam(required = false) String endDate, @RequestParam(required = false) String search,
-      Model model) {
+      @RequestParam(required = false, defaultValue = "1") Integer page, Model model) {
     Long companyId = securityContextHelper.getCompanyIdFromContext();
 
     LocalDate start = (startDate != null && !startDate.isBlank()) ? LocalDate.parse(startDate)
@@ -381,14 +382,17 @@ public class AdminController {
     LocalDate end =
         (endDate != null && !endDate.isBlank()) ? LocalDate.parse(endDate) : LocalDate.now();
 
-    List<OrderActivity> activities =
-        orderActivityService.getActivities(companyId, start, end, search);
+    int currentPage = (page != null && page > 0) ? page : 1;
+    Page<OrderActivity> activitiesPage =
+        orderActivityService.getActivitiesPage(companyId, start, end, search, currentPage - 1);
 
-    model.addAttribute("activities", activities);
+    model.addAttribute("activities", activitiesPage.getContent());
     model.addAttribute("startDate", start);
     model.addAttribute("endDate", end);
     model.addAttribute("search", search != null ? search : "");
-    model.addAttribute("totalCount", activities.size());
+    model.addAttribute("totalCount", activitiesPage.getTotalElements());
+    model.addAttribute("currentPage", currentPage);
+    model.addAttribute("totalPages", Math.max(activitiesPage.getTotalPages(), 1));
     return "admin/order-activity";
   }
 }

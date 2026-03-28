@@ -269,6 +269,67 @@ Use this file as the session-to-session handoff log for test implementation.
 - Updated `OrderControllerTest` constructor with `OrderActivityService` mock.
 - Verified with targeted suite: 54 tests passing (OrderActivityServiceTest, OrderControllerTest, OrderServiceTest, AdminControllerTest).
 - Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with ADM-21 and ACT-01 through ACT-08.
+
+## Batch Completed (2026-03-28 — Dashboard Drag-Drop Status Revert Fix)
+- Fixed dashboard card snap-back after drag-drop where status actually saved but the UI reverted until refresh.
+- Root cause: `PATCH /api/orders/{id}` returned the full `Order` entity after recent eager-loading/audit changes, making the dashboard vulnerable to response serialization issues while the DB update itself still succeeded.
+- Updated `OrderRestController.patchOrder()` to:
+  - use tenant context (`companyId`) via `SecurityContextHelper`
+  - call new tenant-safe `OrderService.patchOrderForCompany(...)`
+  - return a small status metadata payload (`status`, `displayName`, `badgeColor`) instead of serializing the whole `Order`
+- Refactored `OrderService` patch logic into a shared helper and added `patchOrderForCompany(...)` for tenant-safe status updates.
+- Updated `dashboard.html` drag-drop JS to consume the small PATCH response and refresh card `data-status-display` / `data-badge-color` locally on success.
+- Added regression coverage:
+  - `OrderRestControllerTest` (happy path + cross-tenant/not-found edge)
+  - `OrderServiceTest` (`patchOrderForCompany` happy + edge)
+- Verified with targeted suite: `DashboardControllerTest`, `OrderControllerTest`, `OrderRestControllerTest`, `OrderServiceTest` (38 tests passing).
+- Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with `ORDA-02` contract change and `ORS-16`.
+
+## Batch Completed (2026-03-28 — Remove Legacy Order customer_name + Detailed Activity Diffs)
+- Removed persistence dependence on the legacy `orders.customer_name` field:
+  - `Order.customerName` is now transient-only compatibility state (computed from `client.name` when available)
+  - Added Flyway migration `V15__drop_legacy_order_customer_name.sql` to backfill `client_id` from `customer_name` where possible, then drop the old column
+- Updated `OrderRepository` statistics queries to stop referencing `o.customerName` and instead:
+  - group by `client.id` / `client.name`
+  - expose a nullable-client `Unknown` group for orphan legacy rows
+  - use a no-client drill-down query instead of customer-name matching
+- Updated `OrderService` to resolve posted `client.id` values through new tenant-scoped `ClientRepository.findByIdAndCompanyId(...)` during create/update so the saved order and audit log always use the real client name.
+- Updated `OrderController.updateOrder()` to use tenant-scoped `patchOrderForCompany(...)` and to log detailed diffs against the pre-update order snapshot.
+- Updated `OrderController.duplicateOrder()` to copy the `client` relationship directly instead of the old transient customer name.
+- Enhanced `OrderActivityService.logUpdated(...)` to store multiline before/after change descriptions for tracked fields:
+  - Client
+  - PO / Order No
+  - Products
+  - Status
+  - Order Date
+  - Delivery Date
+  - Order Note
+  - Total Amount
+- Updated `admin/order-activity.html` to render multiline descriptions with preserved line breaks.
+- Added/updated regression coverage:
+  - `OrderActivityServiceTest` now verifies detailed diff descriptions and client-backed activity names
+  - `OrderServiceTest` now verifies tenant-scoped client resolution and Unknown-group drill-down behavior
+  - `OrderControllerTest` now verifies missing-order redirect on update and tenant-scoped form patching
+  - `CompanyLifecycleWorkflowTest` updated for the new `OrderService` constructor + client resolution behavior
+- Verified with targeted suite: `OrderServiceTest`, `OrderActivityServiceTest`, `OrderControllerTest`, `OrderRestControllerTest`, `CompanyLifecycleWorkflowTest`, `AdminControllerTest`, `DashboardControllerTest` (62 tests passing).
+- Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with `ORDC-12`, `ORS-17`, and refined `ACT-04`.
+
+## Batch Completed (2026-03-28 — Activity Log Retention + Pagination)
+- Implemented per-company activity retention cap in `OrderActivityService`: only latest 100 rows are retained; older rows are deleted from DB.
+- Added repository support in `OrderActivityRepository` for:
+  - `countByCompanyId`
+  - fetching latest retained IDs (top 100)
+  - deleting rows outside retained ID set
+  - paged date/search query (`Page<OrderActivity>`) for activity listing
+- Updated all activity write flows (`logCreated`, `logStatusChanged`, `logUpdated`, `logDeleted`) to save + trim consistently.
+- Replaced list-based activity read with paged API (`getActivitiesPage`) using fixed page size 20 and page normalization.
+- Updated `AdminController.showOrderActivity` to accept `page` query param and expose `activities`, `totalCount`, `currentPage`, `totalPages`.
+- Updated `admin/order-activity.html` with pagination controls (Prev/Next + page numbers) while preserving date/search filters.
+- Added/updated tests:
+  - `OrderActivityServiceTest`: retention trimming, paged retrieval, blank-search normalization, negative page normalization.
+  - `AdminControllerTest`: paged activity response mapping and invalid-page normalization.
+- Verified targeted suite: `OrderActivityServiceTest`, `AdminControllerTest` (26 tests passing).
+- Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with `ADM-22`, `ACT-09`, and `ACT-10`.
 - Fixed production `/dashboard` 500 (`failed to lazily initialize ... Order.orderItems`) by eager-loading order items for dashboard/list/urgent repository reads.
 - Updated `OrderRepository` with `@EntityGraph` coverage for:
   - `findByCompanyIdAndOrderDateBetween`

@@ -29,8 +29,8 @@ public class Order {
   @JoinColumn(name = "client_id")
   private Client client;
 
-  // Legacy field - kept for backward compatibility
-  // This is now auto-populated from client.name
+  // Compatibility-only field for transient binding/serialization; no longer persisted.
+  @Transient
   private String customerName;
 
   private String productName;
