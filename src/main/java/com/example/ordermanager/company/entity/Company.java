@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -51,7 +52,7 @@ public class Company {
   private String approvedBy;
 
   @Column(name = "monthly_fee", precision = 10, scale = 2)
-  private Double monthlyFee;
+  private BigDecimal monthlyFee;
 
   // Constructor with name
   public Company(String name) {

@@ -8,6 +8,7 @@ import com.example.ordermanager.company.repository.CompanyRepository;
 import com.example.ordermanager.payment.repository.PaymentRepository;
 import com.example.ordermanager.payment.service.PaymentService.PaymentReminderInfo;
 import com.example.ordermanager.user.service.EmailService;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,7 +49,7 @@ class PaymentReminderInfoTest {
 
     Company company = new Company();
     company.setId(1L);
-    company.setMonthlyFee(999.0);
+    company.setMonthlyFee(new BigDecimal("999.00"));
 
     try (MockedStatic<LocalDate> mockedDate =
         Mockito.mockStatic(LocalDate.class, Mockito.CALLS_REAL_METHODS)) {
@@ -64,7 +65,7 @@ class PaymentReminderInfoTest {
       assertThat(info.targetMonth()).isEqualTo(nextMonth);
       assertThat(info.targetYear()).isEqualTo(nextYear);
       assertThat(info.monthYearLabel()).isEqualTo("April 2026");
-      assertThat(info.monthlyFee()).isEqualTo(999.0);
+      assertThat(info.monthlyFee()).isEqualByComparingTo("999.00");
     }
   }
 

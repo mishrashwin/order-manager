@@ -6,6 +6,7 @@ import com.example.ordermanager.payment.entity.Payment;
 import com.example.ordermanager.payment.repository.PaymentRepository;
 import com.example.ordermanager.user.service.EmailService;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.temporal.ChronoUnit;
@@ -114,7 +115,7 @@ public class PaymentService {
     }
 
     Company company = companyRepository.findById(companyId).orElse(null);
-    Double fee = company != null ? company.getMonthlyFee() : null;
+    BigDecimal fee = company != null ? company.getMonthlyFee() : null;
     String monthYearLabel = getMonthYearLabel(targetMonth, targetYear);
     return new PaymentReminderInfo(true, targetMonth, targetYear, monthYearLabel, fee);
   }
@@ -129,7 +130,7 @@ public class PaymentService {
    * @param monthlyFee the configured subscription fee for the company (may be {@code null})
    */
   public record PaymentReminderInfo(boolean active, int targetMonth, int targetYear,
-      String monthYearLabel, Double monthlyFee) {}
+      String monthYearLabel, BigDecimal monthlyFee) {}
 
   private void notifyOwnerOfNewPayment(Payment payment, Company company) {
     if (ownerEmail == null || ownerEmail.isBlank()) {

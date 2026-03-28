@@ -401,18 +401,14 @@ class AdminControllerTest {
   }
 
   @Test
-  void adminDashboard_addsPaymentReminderToModel() {
-    PaymentService.PaymentReminderInfo reminder =
-        new PaymentService.PaymentReminderInfo(true, 4, 2026, "April 2026", 999.0);
-
+  void adminDashboard_addsCompanyIdOnly() {
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
-    when(paymentService.getPaymentReminderInfo(5L)).thenReturn(reminder);
 
     Model model = new ConcurrentModel();
     String view = adminController.adminDashboard(model);
 
     assertThat(view).isEqualTo("admin/dashboard");
-    assertThat(model.getAttribute("paymentReminder")).isEqualTo(reminder);
+    assertThat(model.getAttribute("paymentReminder")).isNull();
     assertThat(model.getAttribute("companyId")).isEqualTo(5L);
   }
 

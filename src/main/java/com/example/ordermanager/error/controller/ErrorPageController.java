@@ -27,6 +27,9 @@ public class ErrorPageController {
     if ("rejected".equals(reason)) {
       return "Your company registration was not approved. Please contact support for further details.";
     }
+    if ("csrf".equals(reason)) {
+      return "Your form session expired or the security token was invalid. Please refresh the page and submit again.";
+    }
     return "You do not currently have permission to access this page.";
   }
 }

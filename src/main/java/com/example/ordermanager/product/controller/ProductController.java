@@ -15,6 +15,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +64,10 @@ public class ProductController {
         }
       }
     });
+
+    // Keep only the latest 3 created orders per product to avoid unbounded growth in the list.
+    orderUsageMap.replaceAll((productId, refs) -> refs.stream()
+        .sorted(Comparator.comparing(ProductOrderRef::getOrderId).reversed()).limit(3).toList());
 
     model.addAttribute("products", products);
     model.addAttribute("orderUsageMap", orderUsageMap);
