@@ -12,6 +12,7 @@ import com.example.ordermanager.client.service.ClientService;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.entity.OrderStatus;
+import com.example.ordermanager.order.service.OrderActivityService;
 import com.example.ordermanager.order.service.OrderService;
 import com.example.ordermanager.product.service.ProductService;
 import com.example.ordermanager.utils.PasswordVerificationService;
@@ -36,6 +37,8 @@ class OrderControllerTest {
   @Mock
   private OrderService orderService;
   @Mock
+  private OrderActivityService orderActivityService;
+  @Mock
   private ClientService clientService;
   @Mock
   private CompanyService companyService;
@@ -50,8 +53,8 @@ class OrderControllerTest {
 
   @BeforeEach
   void setUp() {
-    orderController = new OrderController(orderService, clientService, companyService,
-        productService, securityContextHelper, passwordVerificationService);
+    orderController = new OrderController(orderService, orderActivityService, clientService,
+        companyService, productService, securityContextHelper, passwordVerificationService);
   }
 
   @Test

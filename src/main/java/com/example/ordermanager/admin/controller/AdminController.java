@@ -4,6 +4,8 @@ import com.example.ordermanager.admin.dto.ClientOrderStatDTO;
 import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.order.entity.Order;
+import com.example.ordermanager.order.entity.OrderActivity;
+import com.example.ordermanager.order.service.OrderActivityService;
 import com.example.ordermanager.order.service.OrderService;
 import com.example.ordermanager.payment.entity.Payment;
 import com.example.ordermanager.payment.service.PaymentService;
@@ -38,18 +40,21 @@ public class AdminController {
   private final CompanyService companyService;
   private final SecurityContextHelper securityContextHelper;
   private final OrderService orderService;
+  private final OrderActivityService orderActivityService;
   private final PasswordVerificationService passwordVerificationService;
   private final PaymentService paymentService;
   private final String paymentUpiId;
 
   public AdminController(UserService userService, CompanyService companyService,
       SecurityContextHelper securityContextHelper, OrderService orderService,
+      OrderActivityService orderActivityService,
       PasswordVerificationService passwordVerificationService, PaymentService paymentService,
       @Value("${app.payment.upi-id:}") String paymentUpiId) {
     this.userService = userService;
     this.companyService = companyService;
     this.securityContextHelper = securityContextHelper;
     this.orderService = orderService;
+    this.orderActivityService = orderActivityService;
     this.passwordVerificationService = passwordVerificationService;
     this.paymentService = paymentService;
     this.paymentUpiId = paymentUpiId;
@@ -360,6 +365,31 @@ public class AdminController {
     return ResponseEntity.ok()
         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
         .contentType(MediaType.parseMediaType(contentType)).body(payment.getPaymentSsData());
+  }
+
+  /**
+   * TENANT-AWARE: Show the order activity audit log with date range and text search filters.
+   */
+  @GetMapping("/order-activity")
+  public String showOrderActivity(@RequestParam(required = false) String startDate,
+      @RequestParam(required = false) String endDate, @RequestParam(required = false) String search,
+      Model model) {
+    Long companyId = securityContextHelper.getCompanyIdFromContext();
+
+    LocalDate start = (startDate != null && !startDate.isBlank()) ? LocalDate.parse(startDate)
+        : LocalDate.now().minusMonths(1);
+    LocalDate end =
+        (endDate != null && !endDate.isBlank()) ? LocalDate.parse(endDate) : LocalDate.now();
+
+    List<OrderActivity> activities =
+        orderActivityService.getActivities(companyId, start, end, search);
+
+    model.addAttribute("activities", activities);
+    model.addAttribute("startDate", start);
+    model.addAttribute("endDate", end);
+    model.addAttribute("search", search != null ? search : "");
+    model.addAttribute("totalCount", activities.size());
+    return "admin/order-activity";
   }
 }
 

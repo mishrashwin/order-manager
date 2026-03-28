@@ -3,11 +3,13 @@ package com.example.ordermanager.order.controller;
 import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.entity.OrderItem;
 import com.example.ordermanager.order.entity.OrderStatus;
+import com.example.ordermanager.order.service.OrderActivityService;
 import com.example.ordermanager.client.service.ClientService;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.order.service.OrderService;
 import com.example.ordermanager.product.entity.Product;
 import com.example.ordermanager.product.service.ProductService;
+import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -25,17 +27,19 @@ import java.util.List;
 public class OrderController {
 
   private final OrderService orderService;
+  private final OrderActivityService orderActivityService;
   private final ClientService clientService;
   private final CompanyService companyService;
   private final ProductService productService;
   private final SecurityContextHelper securityContextHelper;
   private final PasswordVerificationService passwordVerificationService;
 
-  public OrderController(OrderService orderService, ClientService clientService,
-      CompanyService companyService, ProductService productService,
+  public OrderController(OrderService orderService, OrderActivityService orderActivityService,
+      ClientService clientService, CompanyService companyService, ProductService productService,
       SecurityContextHelper securityContextHelper,
       PasswordVerificationService passwordVerificationService) {
     this.orderService = orderService;
+    this.orderActivityService = orderActivityService;
     this.clientService = clientService;
     this.companyService = companyService;
     this.productService = productService;
@@ -81,7 +85,14 @@ public class OrderController {
       }
       Long companyId = securityContextHelper.getCompanyIdFromContext();
       buildOrderItems(order, itemProductIds, itemQuantities, itemUnitPrices, companyId);
-      orderService.createOrderWithCompany(order, companyId);
+      Order savedOrder = orderService.createOrderWithCompany(order, companyId);
+      // ── audit ──
+      try {
+        User actor = securityContextHelper.getUserFromContext();
+        orderActivityService.logCreated(savedOrder, actor.getUsername(),
+            actor.getFirstName() + " " + actor.getLastName(), companyId);
+      } catch (Exception ignored) {
+      }
       redirectAttributes.addFlashAttribute("message", "Order created successfully");
       return "redirect:/orders";
     } catch (IllegalStateException e) {
@@ -130,8 +141,27 @@ public class OrderController {
       RedirectAttributes redirectAttributes) {
     try {
       Long companyId = securityContextHelper.getCompanyIdFromContext();
+      // Capture old status before patching for audit comparison
+      Order oldOrder = orderService.getOrderByIdAndCompanyId(id, companyId);
+      OrderStatus oldStatus = oldOrder != null ? oldOrder.getStatus() : null;
+
       buildOrderItems(updatedOrder, itemProductIds, itemQuantities, itemUnitPrices, companyId);
-      orderService.patchOrder(id, updatedOrder);
+      Order savedOrder = orderService.patchOrder(id, updatedOrder);
+
+      // ── audit ──
+      try {
+        User actor = securityContextHelper.getUserFromContext();
+        String actorName = actor.getFirstName() + " " + actor.getLastName();
+        OrderStatus newStatus = savedOrder.getStatus();
+        if (oldStatus != null && newStatus != null && !oldStatus.equals(newStatus)) {
+          orderActivityService.logStatusChanged(savedOrder, oldStatus.getDisplayName(),
+              newStatus.getDisplayName(), actor.getUsername(), actorName, companyId);
+        } else {
+          orderActivityService.logUpdated(savedOrder, actor.getUsername(), actorName, companyId);
+        }
+      } catch (Exception ignored) {
+      }
+
       redirectAttributes.addFlashAttribute("message", "Order updated successfully");
       return "redirect:/orders";
     } catch (IllegalStateException e) {
@@ -158,7 +188,30 @@ public class OrderController {
       redirectAttributes.addFlashAttribute("error", "Incorrect password. Order was not deleted.");
       return "redirect:/orders";
     }
+    // Capture info before deletion for the audit log
+    String capturedPoNo = null;
+    String capturedClientName = null;
+    Long capturedCompanyId = null;
+    try {
+      capturedCompanyId = securityContextHelper.getCompanyIdFromContext();
+      Order existing = orderService.getOrderByIdAndCompanyId(id, capturedCompanyId);
+      if (existing != null) {
+        capturedPoNo = existing.getPoOrderNo();
+        capturedClientName = existing.getCustomerName();
+      }
+    } catch (Exception ignored) {
+    }
+
     orderService.deleteOrder(id);
+
+    // ── audit ──
+    try {
+      User actor = securityContextHelper.getUserFromContext();
+      orderActivityService.logDeleted(id, capturedPoNo, capturedClientName, actor.getUsername(),
+          actor.getFirstName() + " " + actor.getLastName(), capturedCompanyId);
+    } catch (Exception ignored) {
+    }
+
     redirectAttributes.addFlashAttribute("message", "Order deleted successfully");
     return "redirect:/orders";
   }

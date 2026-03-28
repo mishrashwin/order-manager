@@ -42,6 +42,7 @@ This file is the living test inventory for controller and service methods.
 - `ADM-18` `POST /admin/users/{id}/toggle-status` user not in company sets flash `error`
 - `ADM-19` `GET /admin/order-statistics` computes and exposes overall total order value for the selected date/status filters
 - `ADM-20` drill-down (`clientId`/`clientName`) computes selected-client total order value and ignores null order amounts
+- `ADM-21` `GET /admin/order-activity` returns activity list scoped to tenant, applies default 1-month date range, and passes search term to service
 
 ### `CompanyController`
 - `COM-01` `GET /company/register` initializes `registrationData`
@@ -225,6 +226,16 @@ This file is the living test inventory for controller and service methods.
 - `BVO-02` request timeout maps to timeout-specific message
 - `BVO-03` HTTP 4xx/5xx responses map to API rejection message
 - `BVO-04` request payload escapes JSON/HTML-sensitive characters
+
+### `OrderActivityService`
+- `ACT-01` `logCreated` persists CREATED activity with orderId, poNo, clientName, actor, companyId, and non-null activityAt
+- `ACT-02` `logCreated` with null PO number produces description without "PO:" segment
+- `ACT-03` `logStatusChanged` persists STATUS_CHANGED with fieldChanged="status", oldValue, newValue, and formatted description
+- `ACT-04` `logUpdated` persists UPDATED activity with null old/new values
+- `ACT-05` `logDeleted` persists DELETED activity using denormalized data (survives order row removal)
+- `ACT-06` `logDeleted` with null PO number produces description without "PO:" segment
+- `ACT-07` `getActivities` passes companyId, full start-of-day/end-of-day time window, and null term to repository when search is blank
+- `ACT-08` `getActivities` trims non-blank search term before passing to repository
 
 ## Minimum Rule For New Code
 - For every new or changed controller/service method, add or update tests in the same PR.

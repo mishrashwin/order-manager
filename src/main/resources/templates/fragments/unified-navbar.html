@@ -69,7 +69,7 @@
                 <!-- Admin Panel Link (Only for Admins) -->
                 <li class="nav-item" th:if="${#authorization.expression('hasRole(''ADMIN'')')}">
                     <a class="nav-link admin-link"
-                       th:classappend="${page == 'admin-dashboard' or page == 'admin-users' or page == 'admin-add-user' or page == 'admin-edit-user' or page == 'admin-company' or page == 'admin-edit-company' or page == 'admin-payments'} ? 'active'"
+                       th:classappend="${page == 'admin-dashboard' or page == 'admin-users' or page == 'admin-add-user' or page == 'admin-edit-user' or page == 'admin-company' or page == 'admin-edit-company' or page == 'admin-payments' or page == 'admin-order-activity'} ? 'active'"
                        th:href="@{/admin/dashboard}">
                         <i class="bi bi-shield-check"></i> Admin Panel
                     </a>

@@ -249,7 +249,26 @@ Use this file as the session-to-session handoff log for test implementation.
   - `src/test/java/com/example/ordermanager/owner/OwnerDashboardTemplateTest.java` for pending table column/content bindings.
 - Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with `OWN-06` and `OMS-04`.
 
-## Batch Completed (2026-03-28 — Dashboard Lazy-Load No-Session Fix)
+## Batch Completed (2026-03-28 — Order Activity Audit Log)
+- Added `V14__add_order_activity_log.sql` Flyway migration: `order_activities` table (orderId as plain column, no FK so log survives order deletion; companyId FK to companies; indexes on company_id, activity_at, order_id).
+- Added `ActivityType` enum (`CREATED`, `STATUS_CHANGED`, `UPDATED`, `DELETED`) in `order/entity/`.
+- Added `OrderActivity` entity with denormalized `orderId`, `orderPoNo`, `orderClientName`, `actorUsername`, `actorFullName`, `activityAt`, `companyId`.
+- Added `OrderActivityRepository` with JPQL tenant-scoped search query across PO, client, actor, and description fields.
+- Added `OrderActivityService` with `logCreated`, `logStatusChanged`, `logUpdated`, `logDeleted`, and `getActivities` methods.
+- Updated `OrderController`:
+  - `saveOrder` → log CREATED after successful create.
+  - `updateOrder` → pre-fetch old order, log STATUS_CHANGED if status changed else UPDATED.
+  - `deleteOrder` → capture order info before deletion, log DELETED after.
+- Updated `OrderRestController` (dashboard drag-drop PATCH) → log STATUS_CHANGED when status changes.
+- Added `GET /admin/order-activity` to `AdminController` with default 1-month range and free-text search.
+- Added `admin/order-activity.html` template: date range + search filter bar, result count, activity table with color-coded badges, status from→to chips, actor column.
+- Added "Order Activity Log" card to `admin/dashboard.html`.
+- Updated `fragments/unified-navbar.html` to mark Admin Panel link active on `admin-order-activity` page.
+- Added `src/test/java/com/example/ordermanager/order/service/OrderActivityServiceTest.java` with 8 tests (ACT-01 through ACT-08).
+- Updated `AdminControllerTest` constructor with `OrderActivityService` mock.
+- Updated `OrderControllerTest` constructor with `OrderActivityService` mock.
+- Verified with targeted suite: 54 tests passing (OrderActivityServiceTest, OrderControllerTest, OrderServiceTest, AdminControllerTest).
+- Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with ADM-21 and ACT-01 through ACT-08.
 - Fixed production `/dashboard` 500 (`failed to lazily initialize ... Order.orderItems`) by eager-loading order items for dashboard/list/urgent repository reads.
 - Updated `OrderRepository` with `@EntityGraph` coverage for:
   - `findByCompanyIdAndOrderDateBetween`

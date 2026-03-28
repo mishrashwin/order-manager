@@ -11,6 +11,7 @@ import com.example.ordermanager.admin.dto.ClientOrderStatDTO;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.entity.OrderStatus;
+import com.example.ordermanager.order.service.OrderActivityService;
 import com.example.ordermanager.order.service.OrderService;
 import com.example.ordermanager.payment.service.PaymentService;
 import com.example.ordermanager.user.entity.User;
@@ -44,6 +45,8 @@ class AdminControllerTest {
   @Mock
   private OrderService orderService;
   @Mock
+  private OrderActivityService orderActivityService;
+  @Mock
   private PaymentService paymentService;
   private PasswordVerificationService passwordVerificationService;
 
@@ -51,8 +54,9 @@ class AdminControllerTest {
 
   @BeforeEach
   void setUp() {
-    adminController = new AdminController(userService, companyService, securityContextHelper,
-        orderService, passwordVerificationService, paymentService, "test-upi-id");
+    adminController =
+        new AdminController(userService, companyService, securityContextHelper, orderService,
+            orderActivityService, passwordVerificationService, paymentService, "test-upi-id");
   }
 
   @Test

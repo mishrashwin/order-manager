@@ -2,7 +2,10 @@ package com.example.ordermanager.order.controller;
 
 import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.entity.OrderStatus;
+import com.example.ordermanager.order.service.OrderActivityService;
 import com.example.ordermanager.order.service.OrderService;
+import com.example.ordermanager.user.entity.User;
+import com.example.ordermanager.utils.SecurityContextHelper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -23,9 +26,14 @@ import java.util.stream.Collectors;
 public class OrderRestController {
 
   private final OrderService orderService;
+  private final OrderActivityService orderActivityService;
+  private final SecurityContextHelper securityContextHelper;
 
-  public OrderRestController(OrderService orderService) {
+  public OrderRestController(OrderService orderService, OrderActivityService orderActivityService,
+      SecurityContextHelper securityContextHelper) {
     this.orderService = orderService;
+    this.orderActivityService = orderActivityService;
+    this.securityContextHelper = securityContextHelper;
   }
 
 
@@ -49,7 +57,26 @@ public class OrderRestController {
       @PathVariable Long id,
       @Parameter(description = "Partial order fields to update", required = true)
       @RequestBody Order partialOrder) {
-    return orderService.patchOrder(id, partialOrder);
+    // Capture old status for audit comparison
+    Order oldOrder = orderService.getOrderById(id);
+    OrderStatus oldStatus = oldOrder != null ? oldOrder.getStatus() : null;
+
+    Order saved = orderService.patchOrder(id, partialOrder);
+
+    // ── audit (best-effort; must not break the API response) ──
+    try {
+      OrderStatus newStatus = saved.getStatus();
+      if (oldStatus != null && newStatus != null && !oldStatus.equals(newStatus)) {
+        Long companyId = securityContextHelper.getCompanyIdFromContext();
+        User actor = securityContextHelper.getUserFromContext();
+        orderActivityService.logStatusChanged(saved, oldStatus.getDisplayName(),
+            newStatus.getDisplayName(), actor.getUsername(),
+            actor.getFirstName() + " " + actor.getLastName(), companyId);
+      }
+    } catch (Exception ignored) {
+    }
+
+    return saved;
   }
 
 

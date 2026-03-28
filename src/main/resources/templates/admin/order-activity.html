@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:with="page='admin-order-activity'">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Activity Log | Order Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .activity-toolbar {
+            background: var(--om-surface);
+            border: 1px solid var(--om-border);
+            border-radius: var(--om-r-lg);
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--om-shadow-sm);
+        }
+        .activity-table-wrap {
+            background: var(--om-surface);
+            border: 1px solid var(--om-border);
+            border-radius: var(--om-r-lg);
+            box-shadow: var(--om-shadow-sm);
+            overflow: hidden;
+        }
+        .activity-table thead th {
+            background: var(--om-surface-muted);
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--om-text-secondary);
+            border-bottom: 1px solid var(--om-border);
+            white-space: nowrap;
+            padding: 0.65rem 0.85rem;
+        }
+        .activity-table td {
+            font-size: 0.84rem;
+            vertical-align: middle;
+            padding: 0.6rem 0.85rem;
+            border-bottom: 1px solid var(--om-border);
+        }
+        .activity-table tbody tr:last-child td { border-bottom: none; }
+        .activity-table tbody tr:hover { background: var(--om-surface-muted); }
+
+        .badge-activity-created  { background: #16a34a; color: #fff; }
+        .badge-activity-status   { background: #0891b2; color: #fff; }
+        .badge-activity-updated  { background: #d97706; color: #fff; }
+        .badge-activity-deleted  { background: #dc2626; color: #fff; }
+
+        .arrow-icon { color: var(--om-text-muted); margin: 0 4px; font-size: 0.75rem; }
+
+        .old-val {
+            background: #fee2e2;
+            color: #991b1b;
+            border-radius: 4px;
+            padding: 1px 6px;
+            font-size: 0.78rem;
+            font-weight: 500;
+        }
+        .new-val {
+            background: #dcfce7;
+            color: #15803d;
+            border-radius: 4px;
+            padding: 1px 6px;
+            font-size: 0.78rem;
+            font-weight: 500;
+        }
+        .actor-block small { color: var(--om-text-muted); }
+        .po-link { font-weight: 500; }
+        .empty-state {
+            text-align: center;
+            padding: 4rem 1rem;
+            color: var(--om-text-muted);
+        }
+        .empty-state i { font-size: 3rem; display: block; margin-bottom: 0.75rem; }
+        .result-count {
+            font-size: 0.8rem;
+            color: var(--om-text-muted);
+        }
+    </style>
+</head>
+<body>
+
+<!-- Unified Navbar -->
+<div th:replace="~{fragments/unified-navbar :: unified-navbar}"></div>
+
+<div class="main-content">
+    <!-- Header -->
+    <div class="content-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div>
+            <h1 class="mb-0"><i class="bi bi-activity"></i> Order Activity Log</h1>
+            <p class="text-muted mb-0" style="font-size:0.85rem;">Full audit trail – who created, updated, or moved each order</p>
+        </div>
+        <a th:href="@{/admin/dashboard}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Admin Panel
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="activity-toolbar">
+        <form method="get" th:action="@{/admin/order-activity}" class="row g-2 align-items-end">
+            <div class="col-12 col-md-auto">
+                <label class="form-label mb-1" style="font-size:0.78rem;font-weight:600;">FROM</label>
+                <input type="date" class="form-control form-control-sm"
+                       name="startDate" th:value="${#temporals.format(startDate, 'yyyy-MM-dd')}">
+            </div>
+            <div class="col-12 col-md-auto">
+                <label class="form-label mb-1" style="font-size:0.78rem;font-weight:600;">TO</label>
+                <input type="date" class="form-control form-control-sm"
+                       name="endDate" th:value="${#temporals.format(endDate, 'yyyy-MM-dd')}">
+            </div>
+            <div class="col-12 col-md">
+                <label class="form-label mb-1" style="font-size:0.78rem;font-weight:600;">SEARCH</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" name="search"
+                           th:value="${search}"
+                           placeholder="PO number, client, or actor name...">
+                </div>
+            </div>
+            <div class="col-12 col-md-auto d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="bi bi-funnel"></i> Apply
+                </button>
+                <a th:href="@{/admin/order-activity}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-counterclockwise"></i> Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Results count -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="result-count">
+            <i class="bi bi-list-ul"></i>
+            <span th:text="${totalCount}">0</span>
+            <span th:text="${totalCount == 1 ? ' activity' : ' activities'}"> activities</span>
+            found
+            <span th:if="${search != null and !search.isBlank()}">
+                for "<strong th:text="${search}"></strong>"
+            </span>
+        </span>
+    </div>
+
+    <!-- Table -->
+    <div class="activity-table-wrap">
+        <div th:if="${activities == null or activities.isEmpty()}" class="empty-state">
+            <i class="bi bi-clipboard2-x"></i>
+            <div>No activity records found for the selected date range.</div>
+            <div class="mt-1" style="font-size:0.82rem;">Try widening the date range or clearing the search filter.</div>
+        </div>
+
+        <table th:unless="${activities == null or activities.isEmpty()}"
+               class="table activity-table mb-0">
+            <thead>
+                <tr>
+                    <th>Date &amp; Time</th>
+                    <th>Order / PO</th>
+                    <th>Client</th>
+                    <th>Activity</th>
+                    <th>Details</th>
+                    <th>By</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="a : ${activities}">
+                    <!-- Date & Time -->
+                    <td style="white-space:nowrap;">
+                        <span th:text="${#temporals.format(a.activityAt, 'dd MMM yyyy')}"></span><br>
+                        <small class="text-muted" th:text="${#temporals.format(a.activityAt, 'HH:mm')}"></small>
+                    </td>
+
+                    <!-- Order / PO -->
+                    <td>
+                        <span th:if="${a.orderPoNo != null and !a.orderPoNo.isBlank()}"
+                              class="po-link"
+                              th:text="${a.orderPoNo}"></span>
+                        <span th:unless="${a.orderPoNo != null and !a.orderPoNo.isBlank()}"
+                              class="text-muted fst-italic">No PO</span>
+                        <br>
+                        <small class="text-muted">#<span th:text="${a.orderId}"></span></small>
+                    </td>
+
+                    <!-- Client -->
+                    <td>
+                        <span th:if="${a.orderClientName != null}"
+                              th:text="${a.orderClientName}"></span>
+                        <span th:unless="${a.orderClientName != null}"
+                              class="text-muted fst-italic">—</span>
+                    </td>
+
+                    <!-- Activity badge -->
+                    <td>
+                        <span class="badge"
+                              th:classappend="${a.activityType.name() == 'CREATED'    ? 'badge-activity-created'  :
+                                              (a.activityType.name() == 'STATUS_CHANGED' ? 'badge-activity-status' :
+                                              (a.activityType.name() == 'UPDATED'    ? 'badge-activity-updated'  :
+                                                                                        'badge-activity-deleted'))}"
+                              th:text="${a.activityType.displayName}">
+                        </span>
+                    </td>
+
+                    <!-- Details -->
+                    <td>
+                        <!-- Status-change: show from → to chips -->
+                        <span th:if="${a.oldValue != null and a.newValue != null}">
+                            <span class="old-val" th:text="${a.oldValue}"></span>
+                            <i class="bi bi-arrow-right arrow-icon"></i>
+                            <span class="new-val" th:text="${a.newValue}"></span>
+                        </span>
+                        <!-- Other activities: show description -->
+                        <span th:unless="${a.oldValue != null and a.newValue != null}"
+                              class="text-muted"
+                              th:text="${a.description}"></span>
+                    </td>
+
+                    <!-- Actor -->
+                    <td class="actor-block">
+                        <span th:if="${a.actorFullName != null}"
+                              th:text="${a.actorFullName}"></span>
+                        <br>
+                        <small th:text="${'@' + a.actorUsername}"></small>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
