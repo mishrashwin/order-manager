@@ -16,6 +16,40 @@
 <!-- Unified Navbar -->
 <div th:replace="~{fragments/unified-navbar :: unified-navbar}"></div>
 
+<!-- Payment Reminder Ticker Tape -->
+<div th:if="${paymentReminder != null and paymentReminder.active}"
+     class="payment-ticker-wrap">
+  <div class="payment-ticker-track">
+    <span class="payment-ticker-icon"><i class="bi bi-bell-fill"></i></span>
+    <span class="payment-ticker-text">
+      <th:block th:if="${paymentReminder.monthlyFee != null}">
+        Payment Reminder &mdash; Your subscription fee of
+        <strong th:text="'₹' + ${#numbers.formatDecimal(paymentReminder.monthlyFee, 1, 2)}">₹0.00</strong>
+        for <strong th:text="${paymentReminder.monthYearLabel}">Month Year</strong> is due.
+      </th:block>
+      <th:block th:if="${paymentReminder.monthlyFee == null}">
+        Payment Reminder &mdash; Your subscription payment for
+        <strong th:text="${paymentReminder.monthYearLabel}">Month Year</strong> is due.
+      </th:block>
+      Please <a th:href="@{/admin/payments}" class="payment-ticker-link">submit your payment</a> to avoid interruption.
+    </span>
+    <span class="payment-ticker-separator">&#9679;</span>
+    <span class="payment-ticker-icon"><i class="bi bi-bell-fill"></i></span>
+    <span class="payment-ticker-text">
+      <th:block th:if="${paymentReminder.monthlyFee != null}">
+        Payment Reminder &mdash; Your subscription fee of
+        <strong th:text="'₹' + ${#numbers.formatDecimal(paymentReminder.monthlyFee, 1, 2)}">₹0.00</strong>
+        for <strong th:text="${paymentReminder.monthYearLabel}">Month Year</strong> is due.
+      </th:block>
+      <th:block th:if="${paymentReminder.monthlyFee == null}">
+        Payment Reminder &mdash; Your subscription payment for
+        <strong th:text="${paymentReminder.monthYearLabel}">Month Year</strong> is due.
+      </th:block>
+      Please <a th:href="@{/admin/payments}" class="payment-ticker-link">submit your payment</a> to avoid interruption.
+    </span>
+  </div>
+</div>
+
 <!-- Flash Notifications Container -->
 <div class="flash-notifications-container" id="flashNotificationsContainer"></div>
 

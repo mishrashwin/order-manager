@@ -46,6 +46,17 @@ class DashboardUrgentNotificationSanitizationTest {
         "Local parsing should construct Date with year/month/day parts");
   }
 
+  @Test
+  void dashboardTemplate_containsPaymentReminderTicker() throws IOException {
+    String dashboardHtml = new ClassPathResource("templates/dashboard.html")
+        .getContentAsString(StandardCharsets.UTF_8);
+
+    assertTrue(dashboardHtml.contains("payment-ticker-wrap"),
+        "Order dashboard should render payment reminder ticker container");
+    assertTrue(dashboardHtml.contains("@{/admin/payments}"),
+        "Ticker CTA should point to admin payments page");
+  }
+
   private String extractCreateFlashNotificationFunction(String html) {
     String functionStartMarker = "function createFlashNotification(order)";
     String nextBlockMarker = "document.addEventListener(\"DOMContentLoaded\"";

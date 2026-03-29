@@ -20,6 +20,13 @@ class ProductFormTemplateTest {
     assertThat(template).contains("th:action=\"@{/products(returnTo=${returnTo})}\"");
     assertThat(template).contains("name=\"returnTo\"");
     assertThat(template).contains("id=\"addVendorLink\"");
+    assertThat(template).contains("th:field=\"*{name}\" required");
+    assertThat(template).contains("th:field=\"*{brand}\"");
+    assertThat(template).contains("th:field=\"*{category}\"");
+    assertThat(template).contains("th:field=\"*{vendor.id}\" required");
+    assertThat(template).contains("id=\"productSubmitBtn\"");
+    assertThat(template).contains("function areMandatoryProductFieldsFilled()");
+    assertThat(template).contains("function updateProductSubmitState()");
   }
 }
 

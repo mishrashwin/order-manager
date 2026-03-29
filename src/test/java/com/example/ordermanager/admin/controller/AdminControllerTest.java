@@ -407,13 +407,12 @@ class AdminControllerTest {
         2026, "April 2026", new BigDecimal("999.00"));
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
-    when(paymentService.getPaymentReminderInfo(5L)).thenReturn(reminder);
 
     Model model = new ConcurrentModel();
     String view = adminController.adminDashboard(model);
 
     assertThat(view).isEqualTo("admin/dashboard");
-    assertThat(model.getAttribute("paymentReminder")).isEqualTo(reminder);
+    assertThat(model.getAttribute("paymentReminder")).isNull();
     assertThat(model.getAttribute("companyId")).isEqualTo(5L);
   }
 

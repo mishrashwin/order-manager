@@ -19,6 +19,21 @@ Use this file as the session-to-session handoff log for test implementation.
 - Added complete test-case inventory:
   - `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md`
 
+## Batch Completed (2026-03-28 - Mandatory Form Fields + Disabled Submit UX)
+- Updated form UX to enforce required fields with disabled submit-until-complete behavior:
+  - `src/main/resources/templates/orders/form.html`
+  - `src/main/resources/templates/clients/form.html`
+  - `src/main/resources/templates/vendors/form.html`
+  - `src/main/resources/templates/products/form.html`
+- Order form now treats all fields except notes as mandatory (including product rows, PO/order no, dates, status, client) and keeps submit disabled until complete.
+- Client and Vendor forms now require all fields except address; Product form now requires product name, brand, category, and vendor.
+- Added/updated template tests:
+  - `src/test/java/com/example/ordermanager/client/controller/ClientFormTemplateTest.java` (new)
+  - `src/test/java/com/example/ordermanager/order/controller/OrderFormTemplateTest.java`
+  - `src/test/java/com/example/ordermanager/vendor/controller/VendorFormTemplateTest.java`
+  - `src/test/java/com/example/ordermanager/product/controller/ProductFormTemplateTest.java`
+- Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with ORDC-13, CLI-06, VEN-07, PRD-09.
+
 ## What Is Covered Now
 - Automated workflow chain: company registration -> email verification -> owner approval -> admin user creation -> client creation -> vendor creation -> order create/edit.
 - Field formatting assertions included:
@@ -258,6 +273,32 @@ Use this file as the session-to-session handoff log for test implementation.
 - Updated `OrderController`:
   - `saveOrder` → log CREATED after successful create.
   - `updateOrder` → pre-fetch old order, log STATUS_CHANGED if status changed else UPDATED.
+
+## Batch Completed (2026-03-28 - Owner Fee Submit Access-Denied Fix)
+- Fixed owner company fee modal form submission in `src/main/resources/templates/owner/companies.html` by adding CSRF hidden input (`_csrf.parameterName` / `_csrf.token`) to `setFeeForm`.
+- Replaced hardcoded JS action path construction with server-rendered per-company URL hook (`th:data-set-fee-url`) to keep posting robust under context paths.
+- Added regression template test `src/test/java/com/example/ordermanager/owner/OwnerCompaniesTemplateTest.java` to assert CSRF token wiring + dynamic action assignment.
+- Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with `OWN-07` coverage entry.
+
+## Batch Completed (2026-03-28 - Admin Payment Submit Access-Denied Fix)
+- Fixed admin payment submission form in `src/main/resources/templates/admin/payments.html` by adding CSRF hidden input (`_csrf.parameterName` / `_csrf.token`) to the `POST /admin/payments/add` form.
+- Added regression template test `src/test/java/com/example/ordermanager/admin/controller/AdminPaymentsTemplateTest.java` to lock form action + CSRF token presence.
+- Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with `ADM-23` coverage entry.
+
+## Batch Completed (2026-03-28 - Payment Reminder Moved to Order Dashboard)
+- Moved payment reminder ticker UI from `src/main/resources/templates/admin/dashboard.html` to `src/main/resources/templates/dashboard.html`.
+- Updated `DashboardController` to populate `paymentReminder` and show it for admin tenant users on `/dashboard`.
+- Updated `AdminController.adminDashboard()` to stop binding payment reminder model data.
+- Updated tests:
+  - `src/test/java/com/example/ordermanager/dashboard/controller/DashboardControllerTest.java` (admin + non-admin reminder behavior)
+  - `src/test/java/com/example/ordermanager/admin/controller/AdminControllerTest.java` (admin dashboard no reminder model)
+  - `src/test/java/com/example/ordermanager/dashboard/view/DashboardUrgentNotificationSanitizationTest.java` (ticker markup presence)
+- Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with `DASH-08`.
+
+## Batch Completed (2026-03-28 - Product Usage List Capped to Latest 3 Orders)
+- Updated `src/main/java/com/example/ordermanager/product/controller/ProductController.java` to cap each product's `orderUsageMap` entries to the latest 3 unique orders (sorted by newest order id first).
+- Added regression test `src/test/java/com/example/ordermanager/product/controller/ProductControllerTest.java` to verify dedupe + latest-three ordering behavior.
+- Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with `PRD-09`.
   - `deleteOrder` → capture order info before deletion, log DELETED after.
 - Updated `OrderRestController` (dashboard drag-drop PATCH) → log STATUS_CHANGED when status changes.
 - Added `GET /admin/order-activity` to `AdminController` with default 1-month range and free-text search.
