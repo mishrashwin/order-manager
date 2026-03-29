@@ -117,5 +117,19 @@ public class EmailService {
       throw e;
     }
   }
+
+  public void sendSupportEmail(String to, String senderName, String senderEmail,
+      String senderMobile, String subject, String description, byte[] attachmentContent,
+      String attachmentFilename, String attachmentContentType) {
+    log.info("Sending support request email to owner from: {}", senderEmail);
+    try {
+      brevoEmailService.sendSupportEmail(to, senderName, senderEmail, senderMobile, subject,
+          description, attachmentContent, attachmentFilename, attachmentContentType);
+      log.info("Support request email sent successfully to: {}", to);
+    } catch (Exception e) {
+      log.error("Failed to send support request email to: {}", to, e);
+      throw e;
+    }
+  }
 }
 

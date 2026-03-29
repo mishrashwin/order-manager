@@ -21,7 +21,9 @@ import com.example.ordermanager.order.controller.OrderRestController;
 import com.example.ordermanager.order.service.OrderActivityService;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.order.service.OrderService;
+import com.example.ordermanager.user.controller.SupportController;
 import com.example.ordermanager.user.repository.UserRepository;
+import com.example.ordermanager.user.service.EmailService;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,11 +32,14 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(controllers = {CompanyController.class, OrderRestController.class})
+@WebMvcTest(
+    controllers = {CompanyController.class, OrderRestController.class, SupportController.class})
 @AutoConfigureMockMvc
 @Import(SecurityConfig.class)
+@TestPropertySource(properties = "app.owner.email=owner@example.com")
 class SecurityConfigCsrfTest {
 
   @Autowired
@@ -57,6 +62,9 @@ class SecurityConfigCsrfTest {
 
   @MockBean
   private UserRepository userRepository;
+
+  @MockBean
+  private EmailService emailService;
 
   @Test
   void companyRegisterGet_rendersCsrfHiddenField() throws Exception {
@@ -114,6 +122,15 @@ class SecurityConfigCsrfTest {
         .contentType(MediaType.APPLICATION_JSON).content(
             "{\"customerName\":\"Acme\",\"productName\":\"Widget\",\"quantity\":1,\"totalAmount\":10.0}"))
         .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(1));
+  }
+
+  @Test
+  void supportPost_withoutCsrf_isAllowedBecauseSupportPathIsIgnored() throws Exception {
+    mockMvc
+        .perform(post("/support").param("name", "Jane Doe").param("email", "jane@example.com")
+            .param("mobile", "9999999999").param("subject", "Login issue")
+            .param("description", "Unable to login"))
+        .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/support?submitted"));
   }
 }
 

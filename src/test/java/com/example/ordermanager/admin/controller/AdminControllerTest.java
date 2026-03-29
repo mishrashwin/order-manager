@@ -20,6 +20,7 @@ import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.service.UserService;
 import com.example.ordermanager.utils.PasswordVerificationService;
 import com.example.ordermanager.utils.SecurityContextHelper;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -401,7 +402,10 @@ class AdminControllerTest {
   }
 
   @Test
-  void adminDashboard_addsCompanyIdOnly() {
+  void adminDashboard_addsPaymentReminderToModel() {
+    PaymentService.PaymentReminderInfo reminder = new PaymentService.PaymentReminderInfo(true, 4,
+        2026, "April 2026", new BigDecimal("999.00"));
+
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
 
     Model model = new ConcurrentModel();

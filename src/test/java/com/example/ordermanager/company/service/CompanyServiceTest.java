@@ -14,6 +14,7 @@ import com.example.ordermanager.company.repository.CompanyRepository;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.service.EmailService;
 import com.example.ordermanager.user.service.UserService;
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
