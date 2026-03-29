@@ -57,12 +57,12 @@ public class SecurityConfig {
   public SecurityFilterChain filterChain(HttpSecurity http,
       DaoAuthenticationProvider authenticationProvider, AccessDeniedHandler accessDeniedHandler)
       throws Exception {
-    http.csrf(csrf -> csrf.ignoringRequestMatchers(new AntPathRequestMatcher("/api/**")))
-        .authenticationProvider(authenticationProvider)
+    http.csrf(csrf -> csrf.ignoringRequestMatchers(new AntPathRequestMatcher("/api/**"),
+        new AntPathRequestMatcher("/support"))).authenticationProvider(authenticationProvider)
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/login", "/signup", "/verify", "/resend-verification",
                 "/company/register", "/forgot-password", "/verify-reset-code", "/reset-password",
-                "/access-denied", "/css/**", "/js/**", "/images/**")
+                "/access-denied", "/support", "/css/**", "/js/**", "/images/**")
             .permitAll().requestMatchers("/owner/**").hasRole("OWNER").requestMatchers("/admin/**")
             .hasRole("ADMIN")
             .requestMatchers("/dashboard", "/orders/**", "/clients/**", "/vendors/**")
