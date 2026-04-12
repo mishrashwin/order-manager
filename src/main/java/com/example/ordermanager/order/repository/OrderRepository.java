@@ -2,6 +2,8 @@ package com.example.ordermanager.order.repository;
 
 import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.entity.OrderStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -15,16 +17,27 @@ import java.util.Optional;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
+  @EntityGraph(attributePaths = {"company", "client", "orderItems", "orderItems.product"})
   List<Order> findByCompanyId(Long companyId);
 
-  @EntityGraph(attributePaths = {"client", "orderItems", "orderItems.product"})
+  @EntityGraph(attributePaths = {"company", "client", "orderItems", "orderItems.product"})
+  Page<Order> findByCompanyId(Long companyId, Pageable pageable);
+
+  @EntityGraph(attributePaths = {"company", "client", "orderItems", "orderItems.product"})
+  @Query("SELECT o FROM Order o WHERE o.company.id = :companyId AND " +
+         "(LOWER(o.productName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+         "LOWER(o.poOrderNo) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+         "LOWER(o.client.name) LIKE LOWER(CONCAT('%', :search, '%')))")
+  Page<Order> searchOrders(@Param("companyId") Long companyId, @Param("search") String search, Pageable pageable);
+
+  @EntityGraph(attributePaths = {"company", "client", "orderItems", "orderItems.product"})
   List<Order> findByCompanyIdAndOrderDateBetween(Long companyId, LocalDate startDate,
       LocalDate endDate);
 
-  @EntityGraph(attributePaths = {"client", "orderItems", "orderItems.product"})
+  @EntityGraph(attributePaths = {"company", "client", "orderItems", "orderItems.product"})
   Optional<Order> findByIdAndCompanyId(Long id, Long companyId);
 
-  @EntityGraph(attributePaths = {"client", "orderItems", "orderItems.product"})
+  @EntityGraph(attributePaths = {"company", "client", "orderItems", "orderItems.product"})
   @Query("SELECT o FROM Order o WHERE o.id = :id")
   Optional<Order> findDetailedById(@Param("id") Long id);
 
@@ -45,7 +58,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
    *        excluded by JPA
    * @return List of orders with delivery date less than or equal to the cutoff
    */
-  @EntityGraph(attributePaths = {"client", "orderItems", "orderItems.product"})
+  @EntityGraph(attributePaths = {"company", "client", "orderItems", "orderItems.product"})
   List<Order> findByCompanyIdAndDeliveryDateLessThanEqual(Long companyId, LocalDate toDate);
 
   /**
@@ -76,7 +89,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
    * @param statuses Set of OrderStatus values to include
    * @return Orders sorted by order date descending
    */
-  @EntityGraph(attributePaths = {"client", "orderItems", "orderItems.product"})
+  @EntityGraph(attributePaths = {"company", "client", "orderItems", "orderItems.product"})
   @Query("SELECT o FROM Order o " + "WHERE o.company.id = :companyId "
       + "AND o.orderDate BETWEEN :startDate AND :endDate " + "AND o.client.id = :clientId "
       + "AND o.status IN :statuses " + "ORDER BY o.orderDate DESC NULLS LAST")
@@ -88,7 +101,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
    * TENANT-AWARE: Get orders with no client relationship within a date range. Used for drill-down
    * on the nullable-client "Unknown" group in order statistics.
    */
-  @EntityGraph(attributePaths = {"client", "orderItems", "orderItems.product"})
+  @EntityGraph(attributePaths = {"company", "client", "orderItems", "orderItems.product"})
   @Query("SELECT o FROM Order o " + "WHERE o.company.id = :companyId "
       + "AND o.orderDate BETWEEN :startDate AND :endDate " + "AND o.client IS NULL "
       + "AND o.status IN :statuses " + "ORDER BY o.orderDate DESC NULLS LAST")

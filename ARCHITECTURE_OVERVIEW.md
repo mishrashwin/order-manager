@@ -605,6 +605,41 @@ Admin can manage other admins
 
 ---
 
-**Last Updated**: 2026-02-28  
-**Document Version**: 2.1  
-**Status**: Production Ready ✅
+### **2026-04-04: Vendor Purchase Order (Vendor PO) feature**
+- **Added (plan)**: New Vendor Purchase Order domain to manage POs released to vendors, PDF generation, and email delivery.
+- **Business intent**: Allow tenant admins to create/save/send vendor POs (multi-product lines, HSN/Unit on line items), store vendor GSTN, and keep PO records company-scoped for audit and download.
+- **Data model (planned)**:
+  - Add `vendor_purchase_order` and `vendor_purchase_order_item` tables with `company_id` FK and `vendor_id` FK
+  - Persist fields: `po_number` (unique per company), `vendor_name`, `vendor_gstn`, `delivery_date`, `linked_order_po_nos` (reference text), `emails` (comma-separated or normalized separate table), `note`, `total_amount`, `status`, `created_by`, `created_at`, `updated_at`.
+- **Files to add/modify (high level)**:
+  - Entities: `vendor/entity/VendorPo.java`, `vendor/entity/VendorPoItem.java`, `vendor/VendorPoStatus.java`
+  - Repositories: `vendor/repository/VendorPoRepository.java`
+  - Services: `vendor/service/VendorPoService.java` + impl; `vendor/service/VendorPdfService.java` (or reuse existing PdfService)
+  - Controllers: `vendor/VendorPoController.java` (MVC), `vendor/VendorPoRestController.java` (PATCH status)
+  - Templates: `templates/vendor/list.html`, `templates/vendor/form.html`, `templates/vendor/view.html`, `templates/vendor/pdf/vendor_po.html`
+  - Migrations: `src/main/resources/db/migration/V{N}__add_vendor_purchase_orders.sql`
+  - Tests: unit + controller + template + integration under `src/test/java/com/example/ordermanager/vendor/...`
+- **UI changes planned**:
+  - `Vendor` menu shows two sub-tabs: `Vendor List` (existing) and `Vendor PO` (new)
+  - Vendor PO list mirrors vendor list layout but shows PO-specific columns (PO No, Vendor, Delivery Date, Total, Status, Actions)
+  - `Create Vendor PO` form includes vendor dropdown (company-scoped), vendor GSTN auto-filled, emails array, multi-product rows (product dropdown, HSN, Unit, Qty, Amount), link order PO nos (company orders list for reference), note, delivery date, and Save / Save & Send Mail actions.
+- **PDF & Email**:
+  - Generate PDF using Thymeleaf->HTML->PDF renderer (project PDF utility or OpenHTMLToPDF). PDF must include company name/GSTN/address, vendor name/GSTN/address, PO no, order & delivery dates, product table (name, HSN, qty, unit, amount), total (num + words), notes, penalty/terms, and computer-generated statement.
+  - Send email via existing `EmailService` (Brevo pattern) with vendor emails + company primary admin in CC and any additional emails provided.
+- **Security & Multi-tenant rules**:
+  - All controller/service methods MUST use `SecurityContextHelper.getCompanyIdFromContext()` and tenant-aware repositories (`findByCompanyId`, `findByIdAndCompanyId`) — never accept `company_id` in requests.
+  - Only tenant users of the company can create/view their company's POs; owner sessions must be handled carefully (owner-only contexts have no company and should not use tenant PO endpoints).
+- **Acceptance Criteria (mapping)**:
+  - Vendor tab shows `Vendor List` + `Vendor PO` (UI test)
+  - Vendor GSTN stored and displayed on vendor and on generated PO PDF (unit & template test)
+  - Vendor PO can be created and saved with company-scoped data (service/controller tests)
+  - Vendor PO list is company-filtered (repository/controller tests)
+  - PDF is generated correctly with product table, GSTN and totals (template + integration tests)
+  - Email sent with correct recipients and PDF attachment (integration test with mocked email client)
+  - Multi-tenant isolation maintained (access control tests for cross-company attempts)
+
+**Document housekeeping**: update `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` and `docs/testing/TEST_PROGRESS.md` with Vendor PO test cases and implementation progress when coding starts.
+
+**Last Updated**: 2026-04-04  
+**Document Version**: 2.2  
+**Status**: Planned / In progress ⚙️

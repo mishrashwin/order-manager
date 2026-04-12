@@ -19,7 +19,7 @@
     <div class="content-header">
         <h1><i class="bi bi-box-seam"></i> Order Management</h1>
         <a class="btn btn-success-custom" th:href="@{/orders/new}">
-            <i class="bi bi-plus-circle"></i> Create New Order
+            <i class="bi bi-file-earmark-plus"></i> Create New Order
         </a>
     </div>
 
@@ -38,10 +38,19 @@
         <div class="row g-2 align-items-center">
             <!-- Left Half: Search -->
             <div class="col-md-5">
-                <div class="d-flex gap-2">
-                    <input type="text" id="searchInput" class="form-control form-control-sm om-list-search-input"
-                           placeholder="🔍 Search orders...">
-                </div>
+                <form method="get" action="/orders" class="d-flex gap-2">
+                    <input type="text" name="search" class="form-control form-control-sm om-list-search-input"
+                           placeholder="🔍 Search orders..."
+                           th:value="${search}">
+                    <input type="hidden" name="startDate" th:value="${#temporals.format(startDate, 'yyyy-MM-dd')}">
+                    <input type="hidden" name="endDate" th:value="${#temporals.format(endDate, 'yyyy-MM-dd')}">
+                    <button type="submit" class="btn btn-sm btn-primary om-btn-icon" title="Search">
+                        <i class="bi bi-search"></i>
+                    </button>
+                    <a th:href="@{/orders(startDate=${#temporals.format(startDate,'yyyy-MM-dd')}, endDate=${#temporals.format(endDate,'yyyy-MM-dd')})}" class="btn btn-sm btn-outline-secondary om-btn-icon" title="Clear Search">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                </form>
             </div>
 
             <!-- Right Half: Date Range Filter -->
@@ -54,6 +63,8 @@
                     <input type="date" class="form-control form-control-sm date-input" id="endDate" name="endDate"
                            th:value="${#temporals.format(endDate, 'yyyy-MM-dd')}"
                            title="End Date" required>
+                    <input type="hidden" name="search" th:value="${search}">
+                    <input type="hidden" name="page" th:value="${currentPage - 1}">
                     <button type="submit" class="btn btn-sm btn-primary om-btn-icon" title="Apply Date Filter">
                         <i class="bi bi-funnel"></i>
                     </button>
@@ -100,8 +111,8 @@
                     <td th:text="${iterStat.index + 1}"></td>
                     <td><strong th:text="${order.customerName}"></strong></td>
                     <td th:text="${order.poOrderNo != null ? order.poOrderNo : '-'}"></td>
-                    <td th:text="${order.displayProductSummary}"></td>
-                    <td class="text-end">
+                    <td th:text="${#strings.abbreviate(order.displayProductSummary, 40)}"></td>
+                    <td class="text-end" th:data-sort-value="${order.totalAmount != null ? order.totalAmount : 0}">
                         <strong th:text="${'₹' + #numbers.formatDecimal(order.totalAmount != null ? order.totalAmount : 0, 0, 'COMMA', 2, 'POINT')}"></strong>
                     </td>
                     <td>
@@ -109,8 +120,8 @@
                               th:text="${order.status.displayName}">
                         </span>
                     </td>
-                    <td th:text="${#temporals.format(order.orderDate, 'dd MMM yyyy')}"></td>
-                    <td th:text="${order.deliveryDate != null ? #temporals.format(order.deliveryDate, 'dd MMM yyyy') : '-'}"></td>
+                    <td th:text="${#temporals.format(order.orderDate, 'dd MMM yyyy')}" th:data-sort-value="${#temporals.format(order.orderDate, 'yyyy-MM-dd')}"></td>
+                    <td th:text="${order.deliveryDate != null ? #temporals.format(order.deliveryDate, 'dd MMM yyyy') : '-'}" th:data-sort-value="${order.deliveryDate != null ? #temporals.format(order.deliveryDate, 'yyyy-MM-dd') : ''}"></td>
                     <td class="text-center">
                         <div class="action-buttons om-action-group">
                             <a th:href="@{|/orders/edit/${order.id}|}"
@@ -139,10 +150,33 @@
                 </tbody>
             </table>
         </div>
-        <div class="unified-card-body">
+        <div class="unified-card-body d-flex justify-content-between align-items-center">
             <p class="text-muted-custom mb-0">
-                <i class="bi bi-info-circle"></i> Total Orders: <strong th:text="${orders.size()}"></strong>
+                <i class="bi bi-info-circle"></i> Total Orders: <strong th:text="${totalElements}"></strong>
             </p>
+            <nav th:if="${totalPages > 1}" aria-label="Order pagination">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item" th:classappend="${currentPage <= 1} ? 'disabled' : ''">
+                        <a class="page-link"
+                           th:href="${currentPage <= 1} ? '#' : @{/orders(startDate=${#temporals.format(startDate,'yyyy-MM-dd')}, endDate=${#temporals.format(endDate,'yyyy-MM-dd')}, search=${search}, page=${currentPage - 2})}">
+                            <i class="bi bi-chevron-left"></i> Prev
+                        </a>
+                    </li>
+                    <li class="page-item"
+                        th:each="i : ${#numbers.sequence(1, totalPages)}"
+                        th:classappend="${i == currentPage} ? 'active' : ''">
+                        <a class="page-link"
+                           th:href="@{/orders(startDate=${#temporals.format(startDate,'yyyy-MM-dd')}, endDate=${#temporals.format(endDate,'yyyy-MM-dd')}, search=${search}, page=${i - 1})}"
+                           th:text="${i}">1</a>
+                    </li>
+                    <li class="page-item" th:classappend="${currentPage >= totalPages} ? 'disabled' : ''">
+                        <a class="page-link"
+                           th:href="${currentPage >= totalPages} ? '#' : @{/orders(startDate=${#temporals.format(startDate,'yyyy-MM-dd')}, endDate=${#temporals.format(endDate,'yyyy-MM-dd')}, search=${search}, page=${currentPage})}">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
         </div>
     </div>
 </div>
@@ -164,8 +198,9 @@
     oneMonthAgo.setMonth(today.getMonth() - 1);
 
     const formatDate = (date) => date.toISOString().split('T')[0];
+    const searchParam = /*[[${search != null ? 'search=' + search : ''}]]*/ '';
 
-    window.location.href = `/orders?startDate=${formatDate(oneMonthAgo)}&endDate=${formatDate(today)}`;
+    window.location.href = `/orders?startDate=${formatDate(oneMonthAgo)}&endDate=${formatDate(today)}${searchParam ? '&' + searchParam : ''}`;
   }
 </script>
 

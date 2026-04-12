@@ -1,11 +1,13 @@
 package com.example.ordermanager.company.entity;
 
+import com.example.ordermanager.utils.IndianState;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
@@ -21,6 +23,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString
 public class Company {
 
   @Id
@@ -53,6 +56,32 @@ public class Company {
 
   @Column(name = "monthly_fee", precision = 10, scale = 2)
   private BigDecimal monthlyFee;
+
+  @Column(name = "gstn", length = 50)
+  private String gstn;
+
+  @Enumerated(EnumType.STRING)
+  @Column(length = 100)
+  private IndianState state;
+
+  // ✅ NEW FIELDS
+
+  @Column(columnDefinition = "TEXT")
+  private String address;
+
+  // LOGO
+  @Column(name = "logo_data", columnDefinition = "BYTEA")
+  private byte[] logoData;
+
+  @Column(name = "logo_content_type", length = 100)
+  private String logoContentType;
+
+  // SIGNATURE
+  @Column(name = "signature_data", columnDefinition = "BYTEA")
+  private byte[] signatureData;
+
+  @Column(name = "signature_content_type", length = 100)
+  private String signatureContentType;
 
   // Constructor with name
   public Company(String name) {

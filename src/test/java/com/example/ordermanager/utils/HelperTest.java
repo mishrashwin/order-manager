@@ -52,5 +52,42 @@ class HelperTest {
   void toTitleCase_nullInput_returnsEmptyStringWithoutException() {
     assertThat(helper.toTitleCase(null)).isEqualTo("");
   }
+
+  // --- extractInitials tests ---
+
+  @Test
+  void extractInitials_singleWord_returnsFirstLetter() {
+    assertThat(helper.extractInitials("Test")).isEqualTo("T");
+  }
+
+  @Test
+  void extractInitials_multipleWords_returnsFirstLetterOfEachWord() {
+    assertThat(helper.extractInitials("Test Company")).isEqualTo("TC");
+  }
+
+  @Test
+  void extractInitials_threeWords_returnsFirstLetterOfEachWord() {
+    assertThat(helper.extractInitials("Acme Manufacturing Company")).isEqualTo("AMC");
+  }
+
+  @Test
+  void extractInitials_extraWhitespace_stillExtractsCorrectly() {
+    assertThat(helper.extractInitials("  Test   Company  ")).isEqualTo("TC");
+  }
+
+  @Test
+  void extractInitials_emptyString_returnsEmptyString() {
+    assertThat(helper.extractInitials("")).isEqualTo("");
+  }
+
+  @Test
+  void extractInitials_blankString_returnsEmptyString() {
+    assertThat(helper.extractInitials("   ")).isEqualTo("");
+  }
+
+  @Test
+  void extractInitials_nullInput_returnsEmptyString() {
+    assertThat(helper.extractInitials(null)).isEqualTo("");
+  }
 }
 

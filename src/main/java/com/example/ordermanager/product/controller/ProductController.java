@@ -7,6 +7,9 @@ import com.example.ordermanager.product.service.ProductService;
 import com.example.ordermanager.utils.PasswordVerificationService;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import com.example.ordermanager.vendor.service.VendorService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -43,9 +46,13 @@ public class ProductController {
   }
 
   @GetMapping
-  public String listProducts(Model model) {
+  public String listProducts(@RequestParam(required = false) String search,
+      @RequestParam(required = false, defaultValue = "0") int page,
+      @RequestParam(required = false, defaultValue = "10") int size, Model model) {
     Long companyId = securityContextHelper.getCompanyIdFromContext();
-    List<Product> products = productService.getProductsByCompanyId(companyId);
+    Pageable pageable = PageRequest.of(page, size);
+    Page<Product> productsPage = productService.searchProducts(companyId, search, pageable);
+    List<Product> products = productsPage.getContent();
 
     // Build order usage map in a single query (avoids N+1): productId -> list of order refs
     Map<Long, List<ProductOrderRef>> orderUsageMap = new HashMap<>();
@@ -70,7 +77,11 @@ public class ProductController {
         .sorted(Comparator.comparing(ProductOrderRef::getOrderId).reversed()).limit(3).toList());
 
     model.addAttribute("products", products);
+    model.addAttribute("currentPage", page + 1);
+    model.addAttribute("totalPages", productsPage.getTotalPages());
+    model.addAttribute("totalElements", productsPage.getTotalElements());
     model.addAttribute("orderUsageMap", orderUsageMap);
+    model.addAttribute("search", search);
     return "products/list";
   }
 
@@ -134,7 +145,8 @@ public class ProductController {
       return PRODUCT_FALLBACK_PATH;
     }
 
-    boolean allowed = normalized.startsWith("/orders") || normalized.startsWith("/products");
+    boolean allowed = normalized.startsWith("/orders") || normalized.startsWith("/products")
+        || normalized.startsWith("/vendor/pos");
     return allowed ? normalized : PRODUCT_FALLBACK_PATH;
   }
 

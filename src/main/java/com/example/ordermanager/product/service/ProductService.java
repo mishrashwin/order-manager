@@ -6,6 +6,8 @@ import com.example.ordermanager.product.entity.Product;
 import com.example.ordermanager.product.repository.ProductRepository;
 import com.example.ordermanager.utils.Helper;
 import com.example.ordermanager.vendor.repository.VendorRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -28,6 +30,17 @@ public class ProductService {
 
   public List<Product> getProductsByCompanyId(Long companyId) {
     return productRepository.findByCompanyId(companyId);
+  }
+
+  public Page<Product> getProductsByCompanyId(Long companyId, Pageable pageable) {
+    return productRepository.findByCompanyId(companyId, pageable);
+  }
+
+  public Page<Product> searchProducts(Long companyId, String search, Pageable pageable) {
+    if (search == null || search.trim().isEmpty()) {
+      return productRepository.findByCompanyId(companyId, pageable);
+    }
+    return productRepository.findByCompanyIdAndNameContainingIgnoreCase(companyId, search, pageable);
   }
 
   public Product getProductById(Long id) {

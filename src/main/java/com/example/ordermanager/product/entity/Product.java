@@ -31,6 +31,13 @@ public class Product {
 
   private Double price;
 
+  // HSN code and unit required for Vendor PO generation
+  private String hsnCode;
+  private String unit;
+
+  @Column(name = "gst_percentage", precision = 5, scale = 2)
+  private java.math.BigDecimal gstPercentage;
+
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "vendor_id")
   private Vendor vendor;

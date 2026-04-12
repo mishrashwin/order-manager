@@ -62,8 +62,25 @@
                 </div>
             </div>
 
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <label class="form-label"><i class="bi bi-credit-card-2-back"></i> GSTN <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control form-control-custom" th:field="*{gstn}" placeholder="Vendor GSTN" id="vendorGstn">
+                </div>
+
+                <div class="col-md-6 mb-4">
+                    <label class="form-label"><i class="bi bi-geo-alt-fill"></i> State <span class="text-danger">*</span></label>
+                    <select class="form-select form-control-custom" th:field="*{state}" id="vendorState">
+                        <option value="">Select State</option>
+                        <option th:each="state : ${T(com.example.ordermanager.utils.IndianState).values()}"
+                                th:value="${state}"
+                                th:text="${state.displayName}"></option>
+                    </select>
+                </div>
+            </div>
+
             <div class="mb-4">
-                <label class="form-label"><i class="bi bi-geo-alt"></i> Address</label>
+                <label class="form-label"><i class="bi bi-geo-alt"></i> Address  <span class="text-danger">*</span></label>
                 <textarea class="form-control form-control-custom" th:field="*{address}" rows="3"></textarea>
             </div>
 
@@ -91,11 +108,17 @@
         const contactPerson = document.getElementById('contactPerson');
         const email = document.getElementById('email');
         const phoneLocal = document.getElementById('vendorPhoneLocal');
+        const gstn = document.getElementById('vendorGstn');
+        const state = document.getElementById('vendorState');
+        const address = document.getElementById('address');
 
         return !!(companyName && companyName.value.trim()
             && contactPerson && contactPerson.value.trim()
             && email && email.value.trim()
-            && phoneLocal && phoneLocal.value.trim());
+            && phoneLocal && phoneLocal.value.trim()
+            && gstn && gstn.value.trim()
+            && state && state.value
+            && address && address.value.trim());
     }
 
     function updateVendorSubmitState() {
@@ -118,11 +141,23 @@
 
         const vendorPhoneCountry = document.getElementById('vendorPhoneCountry');
         const vendorPhoneLocal = document.getElementById('vendorPhoneLocal');
+        const vendorGstn = document.getElementById('vendorGstn');
+        const vendorState = document.getElementById('vendorState');
+        const address = document.getElementById('address');
         if (vendorPhoneCountry) {
             vendorPhoneCountry.addEventListener('change', updateVendorSubmitState);
         }
         if (vendorPhoneLocal) {
             vendorPhoneLocal.addEventListener('input', updateVendorSubmitState);
+        }
+        if (vendorGstn) {
+            vendorGstn.addEventListener('input', updateVendorSubmitState);
+        }
+        if (vendorState) {
+            vendorState.addEventListener('change', updateVendorSubmitState);
+        }
+        if (address) {
+            address.addEventListener('input', updateVendorSubmitState);
         }
     });
 </script>

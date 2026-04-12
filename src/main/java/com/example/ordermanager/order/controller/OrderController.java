@@ -12,6 +12,9 @@ import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -50,17 +53,26 @@ public class OrderController {
 
   @GetMapping
   public String listOrders(@RequestParam(required = false) String startDate,
-      @RequestParam(required = false) String endDate, Model model) {
+      @RequestParam(required = false) String endDate,
+      @RequestParam(required = false) String search,
+      @RequestParam(required = false, defaultValue = "0") int page,
+      @RequestParam(required = false, defaultValue = "10") int size, Model model) {
     Long companyId = securityContextHelper.getCompanyIdFromContext();
 
     LocalDate start =
         startDate != null ? LocalDate.parse(startDate) : LocalDate.now().minusMonths(1);
     LocalDate end = endDate != null ? LocalDate.parse(endDate) : LocalDate.now();
 
-    model.addAttribute("orders",
-        orderService.getOrdersByCompanyIdAndDateRange(companyId, start, end));
+    Pageable pageable = PageRequest.of(page, size);
+    Page<Order> ordersPage = orderService.searchOrders(companyId, search, pageable);
+
+    model.addAttribute("orders", ordersPage.getContent());
+    model.addAttribute("currentPage", page + 1);
+    model.addAttribute("totalPages", ordersPage.getTotalPages());
+    model.addAttribute("totalElements", ordersPage.getTotalElements());
     model.addAttribute("startDate", start);
     model.addAttribute("endDate", end);
+    model.addAttribute("search", search);
     return "orders/list";
   }
 

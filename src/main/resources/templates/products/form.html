@@ -64,10 +64,24 @@
                     <input type="text" class="form-control form-control-custom" th:field="*{category}"
                            placeholder="e.g., Raw Material, Finished Goods" required>
                 </div>
-                <div class="col-md-4 mb-4">
+                <div class="col-md-3 mb-4">
                     <label class="form-label"><i class="bi bi-currency-rupee"></i> Price</label>
                     <input type="number" class="form-control form-control-custom" th:field="*{price}"
                            step="0.01" min="0" placeholder="0.00">
+                </div>
+                <div class="col-md-3 mb-4">
+                    <label class="form-label"><i class="bi bi-123"></i> HSN Code</label>
+                    <input type="text" class="form-control form-control-custom" th:field="*{hsnCode}" placeholder="HSN Code">
+                </div>
+                <div class="col-md-3 mb-4">
+                    <label class="form-label"><i class="bi bi-boxes"></i> Unit</label>
+                    <input type="text" class="form-control form-control-custom" th:field="*{unit}" placeholder="Unit (e.g., PCS)">
+                </div>
+                <div class="col-md-3 mb-4">
+                    <label class="form-label"><i class="bi bi-percent"></i> GST %</label>
+                    <input type="number" class="form-control form-control-custom" th:field="*{gstPercentage}"
+                           step="0.01" min="0" max="100" placeholder="e.g., 18">
+                    <small class="form-text text-muted">GST percentage for tax calculation (optional)</small>
                 </div>
             </div>
 
