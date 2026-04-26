@@ -1,8 +1,96 @@
 # AGENTS.md
 
+## 📌 Engineering Rule Evolution (MANDATORY)
+
+This repository follows a strict engineering playbook located under /docs.
+
+RULE:
+- If any new pattern, bug fix, or architectural improvement is identified:
+    1. It MUST be documented in the relevant engineering file:
+        - @Architecture → docs/architecture/ARCHITECTURE_BACKEND_RULES.md
+        - Architecture Overview → docs/architecture/ARCHITECTURE_OVERVIEW.md
+        - Multi-Tenant/Domain → docs/architecture/MULTI_TENANT_DOMAIN_RULES.md
+        - Testing → docs/testing/TESTING_RULES.md
+        - UI → docs/ui/UI_DESIGN_RULES.md
+        - Project Overview → README.md
+    2. It MUST NOT remain only in code.
+    3. Documentation must be updated in the SAME PR.
+
+Failure to update documentation = REJECT PR
+
+Goal:
+Engineering knowledge must evolve WITH the system, not after it.
+
+---
+
+## 📌 Branch-Based Documentation Strategy
+
+### Branch Documentation Directory: `docs/branches/`
+
+**Purpose**: Track work done per branch/feature for easy reference and knowledge sharing.
+
+**Process**:
+1. **Create branch-specific file**: When starting new work, create `docs/branches/{branch-name}.md`
+2. **Document intent**: State what this branch aims to achieve
+3. **Track progress**: Log work done, decisions made, and outcomes
+4. **Reference in AGENTS.md**: This file is automatically consulted for context
+
+**Benefits**:
+- Clear separation of concerns between branches
+- Historical record of what was done and why
+- Easy knowledge transfer between developers
+- Context preservation for future work
+
+**Example Structure**:
+```markdown
+# Branch: vendor-po-enhancement
+
+## Intent
+Enhance Vendor PO feature with advanced GST calculations and multi-vendor support.
+
+## Work Done
+- [2026-04-15] Added IGST vs CGST/SGST logic based on state comparison
+- [2026-04-16] Implemented multi-vendor PO bulk operations
+- [2026-04-17] Added vendor performance analytics
+
+## Key Decisions
+- State-based GST calculation chosen over manual GST type selection
+- Bulk operations use transactional approach for data consistency
+- Analytics dashboard uses cached data for performance
+
+## Outcomes
+- ✅ GST calculation accuracy improved by 95%
+- ✅ Bulk operations reduced processing time by 60%
+- ✅ Vendor analytics dashboard adopted by 80% of users
+```
+
+**Usage**:
+- Before starting work on a branch, check if `docs/branches/{current-branch}.md` exists
+- Read the file to understand previous work and context
+- Update the file as work progresses
+- Reference key decisions when implementing related features
+
+This ensures all developers have full context of what was done, why, and with what results.
+
+## 📌 Mandatory Pre-Change Review (CRITICAL)
+
+Before planning or implementing ANY change in the repository, you MUST consult these engineering rule files:
+
+1. **docs/architecture/ARCHITECTURE_BACKEND_RULES.md** - Backend architecture, service layer patterns, DTO usage, error handling, security, performance, database strategy
+2. **docs/architecture/ARCHITECTURE_OVERVIEW.md** - System architecture diagram, detailed architecture documentation, component relationships
+3. **docs/architecture/MULTI_TENANT_DOMAIN_RULES.md** - Multi-tenant isolation, SecurityContextHelper usage, company_id enforcement, repository patterns
+4. **docs/testing/TESTING_RULES.md** - Testing strategy, coverage requirements, test patterns for controllers/services
+5. **docs/ui/UI_DESIGN_RULES.md** - UI patterns, Thymeleaf conventions, frontend-backend integration
+
+**Process:**
+- Read the relevant rule file(s) before starting any code change
+- Ensure the proposed change aligns with documented patterns
+- Update the corresponding rule file if the change introduces a new pattern or deviation
+- Reference the specific rule section in commit messages when applicable
+
 ## Scope + Existing AI Instructions
 - This repo currently has one dedicated AI rule file (`AGENTS.md`) plus `README.md` from the requested glob scan; no other AI rule files were found.
-- Treat `README.md`, `ARCHITECTURE_OVERVIEW.md`, and `DEPLOYMENT.md` as context, but prefer code as source of truth when docs conflict.
+- Treat `README.md`, `docs/architecture/ARCHITECTURE_OVERVIEW.md`, and `DEPLOYMENT.md` as context, but prefer code as source of truth when docs conflict.
 
 ## Big Picture Architecture
 - Stack: Spring Boot 3.3, Java 17, Thymeleaf MVC + small REST surface (`OrderRestController`), JPA/Hibernate, Flyway, Spring Security.
