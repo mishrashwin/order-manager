@@ -15,7 +15,8 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
 
   Page<Client> findByCompanyId(Long companyId, Pageable pageable);
 
-  Page<Client> findByCompanyIdAndNameContainingIgnoreCase(Long companyId, String search, Pageable pageable);
+  Page<Client> findByCompanyIdAndNameContainingIgnoreCase(Long companyId, String search,
+      Pageable pageable);
 
   @EntityGraph(attributePaths = {"company"})
   Optional<Client> findByIdAndCompanyId(Long id, Long companyId);

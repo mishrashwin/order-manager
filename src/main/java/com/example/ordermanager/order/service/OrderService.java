@@ -140,6 +140,20 @@ public class OrderService {
       return;
     }
 
+    // Calculate GST-inclusive prices for order items that have pre-GST prices
+    for (OrderItem item : order.getOrderItems()) {
+      if (item.getPreGstUnitPrice() != null && item.getProduct() != null
+          && item.getProduct().getGstPercentage() != null) {
+        item.calculateGstInclusivePrice(item.getProduct().getGstPercentage());
+      } else if (item.getPreGstUnitPrice() != null && item.getUnitPrice() != null) {
+        // If we have pre-GST price but no GST percentage from product, use legacy unitPrice as
+        // GST-inclusive
+        item.setGstInclusiveUnitPrice(java.math.BigDecimal.valueOf(item.getUnitPrice()));
+        item.setGstAmount(
+            java.math.BigDecimal.valueOf(item.getUnitPrice()).subtract(item.getPreGstUnitPrice()));
+      }
+    }
+
     String names = order.getOrderItems().stream().map(OrderItem::getProductName)
         .filter(n -> n != null && !n.isEmpty()).collect(java.util.stream.Collectors.joining(", "));
     if (!names.isEmpty()) {
@@ -152,7 +166,10 @@ public class OrderService {
 
     double totalAmount = order.getOrderItems().stream().mapToDouble(item -> {
       int qty = item.getQuantity() != null ? item.getQuantity() : 0;
-      double unitPrice = item.getUnitPrice() != null ? item.getUnitPrice() : 0.0;
+      // Use GST-inclusive unit price if available, otherwise fall back to legacy unitPrice
+      double unitPrice =
+          (item.getGstInclusiveUnitPrice() != null) ? item.getGstInclusiveUnitPrice().doubleValue()
+              : (item.getUnitPrice() != null ? item.getUnitPrice() : 0.0);
       return qty * unitPrice;
     }).sum();
     order.setTotalAmount(totalAmount);

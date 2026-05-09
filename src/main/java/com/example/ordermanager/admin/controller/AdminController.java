@@ -296,7 +296,8 @@ public class AdminController {
         .orElseThrow(() -> new IllegalArgumentException("Company not found"));
     model.addAttribute("company", company);
     model.addAttribute("logoBase64", toBase64(company.getLogoData(), company.getLogoContentType()));
-    model.addAttribute("signatureBase64", toBase64(company.getSignatureData(), company.getSignatureContentType()));
+    model.addAttribute("signatureBase64",
+        toBase64(company.getSignatureData(), company.getSignatureContentType()));
     return "admin/company/view";
   }
 
@@ -307,7 +308,8 @@ public class AdminController {
         .orElseThrow(() -> new IllegalArgumentException("Company not found"));
     model.addAttribute("company", company);
     model.addAttribute("logoBase64", toBase64(company.getLogoData(), company.getLogoContentType()));
-    model.addAttribute("signatureBase64", toBase64(company.getSignatureData(), company.getSignatureContentType()));
+    model.addAttribute("signatureBase64",
+        toBase64(company.getSignatureData(), company.getSignatureContentType()));
     return "admin/company/edit";
   }
 
@@ -341,7 +343,8 @@ public class AdminController {
       redirectAttributes.addFlashAttribute("error", e.getMessage());
       return "redirect:/admin/company/edit";
     } catch (IOException e) {
-      redirectAttributes.addFlashAttribute("error", "Failed to process file upload: " + e.getMessage());
+      redirectAttributes.addFlashAttribute("error",
+          "Failed to process file upload: " + e.getMessage());
       return "redirect:/admin/company/edit";
     }
   }

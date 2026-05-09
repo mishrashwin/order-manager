@@ -40,7 +40,8 @@ public class ProductService {
     if (search == null || search.trim().isEmpty()) {
       return productRepository.findByCompanyId(companyId, pageable);
     }
-    return productRepository.findByCompanyIdAndNameContainingIgnoreCase(companyId, search, pageable);
+    return productRepository.findByCompanyIdAndNameContainingIgnoreCase(companyId, search,
+        pageable);
   }
 
   public Product getProductById(Long id) {
@@ -67,6 +68,18 @@ public class ProductService {
     // Resolve vendor entity by id if only id is present on the bound object
     if (product.getVendor() != null && product.getVendor().getId() != null) {
       product.setVendor(vendorRepository.findById(product.getVendor().getId()).orElse(null));
+    }
+
+    // Calculate GST-inclusive price from pre-GST price if pre-GST price is set
+    if (product.getPreGstPrice() != null) {
+      product.calculateGstInclusivePrice();
+    } else if (product.getPrice() != null && product.getGstPercentage() != null) {
+      // For backward compatibility: if only legacy price is set, calculate pre-GST price
+      java.math.BigDecimal gstMultiplier = product.getGstPercentage()
+          .divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+      java.math.BigDecimal preGstPrice = java.math.BigDecimal.valueOf(product.getPrice())
+          .divide(java.math.BigDecimal.ONE.add(gstMultiplier), 2, java.math.RoundingMode.HALF_UP);
+      product.setPreGstPrice(preGstPrice);
     }
 
     return productRepository.save(product);

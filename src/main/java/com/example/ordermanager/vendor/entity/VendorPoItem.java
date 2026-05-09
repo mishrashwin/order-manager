@@ -45,6 +45,13 @@ public class VendorPoItem {
 
   private Double unitPrice = 0.0;
 
+  // New GST calculation approach fields
+  @Column(name = "pre_gst_unit_price", precision = 12, scale = 2)
+  private java.math.BigDecimal preGstUnitPrice;
+
+  @Column(name = "gst_inclusive_unit_price", precision = 12, scale = 2)
+  private java.math.BigDecimal gstInclusiveUnitPrice;
+
   @Column(name = "line_total", insertable = false, updatable = false)
   private Double lineTotal;
 

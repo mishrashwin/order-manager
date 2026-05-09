@@ -61,7 +61,8 @@ public class VendorPoController {
   public String listAjax(@RequestParam(required = false) String search,
       @RequestParam(required = false, defaultValue = "0") int page,
       @RequestParam(required = false, defaultValue = "10") int size, Model model) {
-    Page<VendorPo> posPage = vendorPoService.searchVendorPos(null, null, search, PageRequest.of(page, size));
+    Page<VendorPo> posPage =
+        vendorPoService.searchVendorPos(null, null, search, PageRequest.of(page, size));
     model.addAttribute("pos", posPage);
     model.addAttribute("currentPage", page + 1);
     model.addAttribute("totalPages", posPage.getTotalPages());
@@ -85,12 +86,12 @@ public class VendorPoController {
   public String create(@ModelAttribute VendorPo vendorPo,
       @RequestParam(required = false) List<Long> itemProductIds,
       @RequestParam(required = false) List<Double> itemQuantities,
-      @RequestParam(required = false) List<Double> itemUnitPrices,
+      @RequestParam(required = false) List<Double> itemPreGstUnitPrices,
       @RequestParam(required = false) List<String> itemHsnCodes,
       @RequestParam(required = false) List<String> itemUnits,
       @RequestParam(required = false) String send, RedirectAttributes ra) {
 
-    buildVendorPoItems(vendorPo, itemProductIds, itemQuantities, itemUnitPrices, itemHsnCodes,
+    buildVendorPoItems(vendorPo, itemProductIds, itemQuantities, itemPreGstUnitPrices, itemHsnCodes,
         itemUnits);
     VendorPo saved = vendorPoService.createVendorPo(vendorPo);
 
@@ -123,7 +124,7 @@ public class VendorPoController {
   public String update(@PathVariable Long id, @ModelAttribute VendorPo vendorPo,
       @RequestParam(required = false) List<Long> itemProductIds,
       @RequestParam(required = false) List<Double> itemQuantities,
-      @RequestParam(required = false) List<Double> itemUnitPrices,
+      @RequestParam(required = false) List<Double> itemPreGstUnitPrices,
       @RequestParam(required = false) List<String> itemHsnCodes,
       @RequestParam(required = false) List<String> itemUnits, Model model, RedirectAttributes ra) {
 
@@ -134,7 +135,7 @@ public class VendorPoController {
       return "redirect:/vendors#vendor-po";
     }
 
-    buildVendorPoItems(vendorPo, itemProductIds, itemQuantities, itemUnitPrices, itemHsnCodes,
+    buildVendorPoItems(vendorPo, itemProductIds, itemQuantities, itemPreGstUnitPrices, itemHsnCodes,
         itemUnits);
 
     try {
@@ -215,7 +216,7 @@ public class VendorPoController {
    * Builds VendorPoItem objects from form arrays and attaches them to the vendor PO.
    */
   private void buildVendorPoItems(VendorPo vendorPo, List<Long> itemProductIds,
-      List<Double> itemQuantities, List<Double> itemUnitPrices, List<String> itemHsnCodes,
+      List<Double> itemQuantities, List<Double> itemPreGstUnitPrices, List<String> itemHsnCodes,
       List<String> itemUnits) {
 
     vendorPo.getItems().clear();
@@ -231,13 +232,14 @@ public class VendorPoController {
 
       Double qty =
           (itemQuantities != null && i < itemQuantities.size()) ? itemQuantities.get(i) : null;
-      Double unitPrice =
-          (itemUnitPrices != null && i < itemUnitPrices.size()) ? itemUnitPrices.get(i) : null;
+      Double preGstUnitPrice = (itemPreGstUnitPrices != null && i < itemPreGstUnitPrices.size())
+          ? itemPreGstUnitPrices.get(i)
+          : null;
       String hsnCode =
           (itemHsnCodes != null && i < itemHsnCodes.size()) ? itemHsnCodes.get(i) : null;
       String unit = (itemUnits != null && i < itemUnits.size()) ? itemUnits.get(i) : null;
 
-      if (qty == null || unitPrice == null)
+      if (qty == null || preGstUnitPrice == null)
         continue;
 
       VendorPoItem item = new VendorPoItem();
@@ -257,7 +259,7 @@ public class VendorPoController {
       if (unit != null && !unit.isBlank())
         item.setUnit(unit);
       item.setQuantity(qty);
-      item.setUnitPrice(unitPrice);
+      item.setPreGstUnitPrice(java.math.BigDecimal.valueOf(preGstUnitPrice));
       vendorPo.addItem(item);
     }
   }

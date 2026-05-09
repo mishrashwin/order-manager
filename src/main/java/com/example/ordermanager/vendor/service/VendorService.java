@@ -38,7 +38,8 @@ public class VendorService {
     if (search == null || search.trim().isEmpty()) {
       return vendorRepository.findByCompanyId(companyId, pageable);
     }
-    return vendorRepository.findByCompanyIdAndCompanyNameContainingIgnoreCase(companyId, search, pageable);
+    return vendorRepository.findByCompanyIdAndCompanyNameContainingIgnoreCase(companyId, search,
+        pageable);
   }
 
   public Vendor getVendorById(Long id) {

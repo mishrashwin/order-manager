@@ -24,11 +24,12 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
   Page<Order> findByCompanyId(Long companyId, Pageable pageable);
 
   @EntityGraph(attributePaths = {"company", "client", "orderItems", "orderItems.product"})
-  @Query("SELECT o FROM Order o WHERE o.company.id = :companyId AND " +
-         "(LOWER(o.productName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-         "LOWER(o.poOrderNo) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-         "LOWER(o.client.name) LIKE LOWER(CONCAT('%', :search, '%')))")
-  Page<Order> searchOrders(@Param("companyId") Long companyId, @Param("search") String search, Pageable pageable);
+  @Query("SELECT o FROM Order o WHERE o.company.id = :companyId AND "
+      + "(LOWER(o.productName) LIKE LOWER(CONCAT('%', :search, '%')) OR "
+      + "LOWER(o.poOrderNo) LIKE LOWER(CONCAT('%', :search, '%')) OR "
+      + "LOWER(o.client.name) LIKE LOWER(CONCAT('%', :search, '%')))")
+  Page<Order> searchOrders(@Param("companyId") Long companyId, @Param("search") String search,
+      Pageable pageable);
 
   @EntityGraph(attributePaths = {"company", "client", "orderItems", "orderItems.product"})
   List<Order> findByCompanyIdAndOrderDateBetween(Long companyId, LocalDate startDate,

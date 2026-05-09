@@ -179,7 +179,9 @@
                   <!-- Edit -->
                   <a th:href="@{/vendor/pos/{id}/edit(id=${po.id})}"
                      class="btn btn-outline-primary btn-sm"
-                     title="Edit PO">
+                     title="Edit PO"
+                     data-no-ajax="true"
+                     onclick="window.location=this.href;">
                     <i class="bi bi-pencil"></i>
                   </a>
 

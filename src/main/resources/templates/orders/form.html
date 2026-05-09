@@ -36,30 +36,30 @@
         <form id="orderForm" th:action="${order.id == null} ? @{/orders} : @{/orders/update/{id}(id=${order.id})}" th:object="${order}" method="post">
             <input type="hidden" th:field="*{id}">
 
-            <!-- Customer Selection -->
-            <div class="mb-4">
-                <label class="form-label"><i class="bi bi-person"></i> Customer Name <span class="text-danger">*</span></label>
-                <div class="input-group">
-                    <select class="form-select form-control-custom" th:field="*{client.id}" required>
-                        <option value="">-- Select Client --</option>
-                        <option th:each="client : ${clients}"
-                                th:value="${client.id}"
-                                th:text="${client.name}"
-                                th:selected="${order.client != null && order.client.id == client.id}">
-                        </option>
-                    </select>
-                    <a id="addClientLink" class="btn btn-outline-success"
-                       th:href="@{/clients/new(returnTo=${order.id == null ? '/orders/new' : '/orders/edit/' + order.id})}">
-                        <i class="bi bi-plus-circle"></i> Add Client
-                    </a>
+            <!-- Customer Selection and PO/Order No -->
+            <div class="row mb-4">
+                <div class="col-md-9">
+                    <label class="form-label"><i class="bi bi-person"></i> Customer Name <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <select class="form-select form-control-custom" th:field="*{client.id}" required>
+                            <option value="">-- Select Client --</option>
+                            <option th:each="client : ${clients}"
+                                    th:value="${client.id}"
+                                    th:text="${client.name}"
+                                    th:selected="${order.client != null && order.client.id == client.id}">
+                            </option>
+                        </select>
+                        <a id="addClientLink" class="btn btn-outline-success"
+                           th:href="@{/clients/new(returnTo=${order.id == null ? '/orders/new' : '/orders/edit/' + order.id})}">
+                            <i class="bi bi-plus-circle"></i> Add Client
+                        </a>
+                    </div>
+                    <small class="form-text text-muted">If the desired client is missing, click "Add Client".</small>
                 </div>
-                <small class="form-text text-muted">If the desired client is missing, click "Add Client".</small>
-            </div>
-
-            <!-- PO/Order No -->
-            <div class="mb-4">
-                <label class="form-label"><i class="bi bi-receipt"></i> PO/Order No <span class="text-danger">*</span></label>
-                <input type="text" class="form-control form-control-custom" th:field="*{poOrderNo}" placeholder="e.g., PO-2026-001" required>
+                <div class="col-md-3">
+                    <label class="form-label"><i class="bi bi-receipt"></i> PO/Order No <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control form-control-custom" th:field="*{poOrderNo}" placeholder="e.g., PO-2026-001" required>
+                </div>
             </div>
 
             <!-- Product Items -->
@@ -80,28 +80,28 @@
                                 </option>
                             </select>
                         </div>
-                        <div class="col-md-2">
-                            <input type="number" class="form-control form-control-custom"
-                                   name="itemQuantities" min="1" placeholder="Qty" required
-                                   th:value="${item.quantity}">
-                        </div>
-                        <div class="col-md-2">
-                            <div class="input-group">
-                                <span class="input-group-text">₹</span>
-                                <input type="number" class="form-control form-control-custom"
-                                       name="itemUnitPrices" step="0.01" min="0" placeholder="Unit Price" required
-                                       th:value="${item.unitPrice}">
-                            </div>
-                        </div>
-                        <div class="col-md-2">
+                        <div class="col-md-1">
                             <input type="text" class="form-control form-control-custom"
                                    readonly placeholder="HSN Code"
                                    th:value="${item.product != null ? item.product.hsnCode : ''}">
                         </div>
                         <div class="col-md-1">
+                            <input type="number" class="form-control form-control-custom"
+                                   name="itemQuantities" min="1" placeholder="Qty" required
+                                   th:value="${item.quantity}">
+                        </div>
+                        <div class="col-md-1">
                             <input type="text" class="form-control form-control-custom"
                                    readonly placeholder="Unit"
                                    th:value="${item.product != null ? item.product.unit : ''}">
+                        </div>
+                        <div class="col-md-2">
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" class="form-control form-control-custom"
+                                       name="itemPreGstUnitPrices" step="0.01" min="0" placeholder="Unit Price" required
+                                       th:value="${item.preGstUnitPrice != null ? item.preGstUnitPrice : (item.unitPrice != null ? #numbers.formatDecimal(item.unitPrice / 1.18, 1, 2) : '')}">
+                            </div>
                         </div>
                         <div class="col-md-1">
                             <input type="text" class="form-control form-control-custom"
@@ -109,6 +109,14 @@
                                    th:value="${item.product != null && item.product.gstPercentage != null ? #numbers.formatDecimal(item.product.gstPercentage, 1, 2) + '%' : ''}">
                         </div>
                         <div class="col-md-2">
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="text" class="form-control form-control-custom bg-light-subtle"
+                                       readonly placeholder="Line Total"
+                                       th:value="${item.gstAmount != null ? #numbers.formatDecimal(item.gstAmount, 1, 2) : '0.00'}">
+                            </div>
+                        </div>
+                        <div class="col-md-1">
                             <button type="button" class="btn btn-outline-danger btn-sm remove-product-row">
                                 <i class="bi bi-dash-circle"></i> Remove
                             </button>
@@ -127,30 +135,37 @@
                                 </option>
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-1">
+                            <input type="text" class="form-control form-control-custom"
+                                   readonly placeholder="HSN Code">
+                        </div>
+                        <div class="col-md-1">
                             <input type="number" class="form-control form-control-custom"
                                    name="itemQuantities" min="1" placeholder="Qty" required>
+                        </div>
+                        <div class="col-md-1">
+                            <input type="text" class="form-control form-control-custom"
+                                   readonly placeholder="Unit">
                         </div>
                         <div class="col-md-2">
                             <div class="input-group">
                                 <span class="input-group-text">₹</span>
                                 <input type="number" class="form-control form-control-custom"
-                                       name="itemUnitPrices" step="0.01" min="0" placeholder="Unit Price" required>
+                                       name="itemPreGstUnitPrices" step="0.01" min="0" placeholder="Unit Price" required>
                             </div>
-                        </div>
-                        <div class="col-md-2">
-                            <input type="text" class="form-control form-control-custom"
-                                   readonly placeholder="HSN Code">
-                        </div>
-                        <div class="col-md-1">
-                            <input type="text" class="form-control form-control-custom"
-                                   readonly placeholder="Unit">
                         </div>
                         <div class="col-md-1">
                             <input type="text" class="form-control form-control-custom"
                                    readonly placeholder="GST %">
                         </div>
                         <div class="col-md-2">
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="text" class="form-control form-control-custom bg-light-subtle"
+                                   readonly placeholder="Line Total">
+                            </div>
+                        </div>
+                        <div class="col-md-1">
                             <button type="button" class="btn btn-outline-danger btn-sm remove-product-row">
                                 <i class="bi bi-dash-circle"></i> Remove
                             </button>
@@ -159,16 +174,13 @@
                 </div>
                 <div class="d-flex gap-2 mt-2">
                     <button type="button" id="addProductRowBtn" class="btn btn-outline-success btn-sm">
-                        <i class="bi bi-plus-circle"></i> Add Another Product
+                        <i class="bi bi-plus-circle"></i> Add Existing Product
                     </button>
                     <a id="addProductLink" class="btn btn-outline-secondary btn-sm"
                        th:href="@{/products/new(returnTo=${order.id == null ? '/orders/new' : '/orders/edit/' + order.id})}">
-                        <i class="bi bi-plus-circle"></i> New Product
+                        <i class="bi bi-plus-circle"></i> Add New Product
                     </a>
                 </div>
-                <small class="form-text text-muted">Select existing products or
-                    <a th:href="@{/products/new(returnTo=${order.id == null ? '/orders/new' : '/orders/edit/' + order.id})}">create a new product</a>.
-                </small>
             </div>
 
             <!-- Legacy product name (hidden, auto-synced on save) -->
@@ -308,12 +320,12 @@
         return Array.from(document.querySelectorAll('#productRows .product-row')).map(function (row) {
             const productSelect = row.querySelector('select[name="itemProductIds"]');
             const qtyInput = row.querySelector('input[name="itemQuantities"]');
-            const priceInput = row.querySelector('input[name="itemUnitPrices"]');
+            const preGstPriceInput = row.querySelector('input[name="itemPreGstUnitPrices"]');
 
             return {
                 productId: productSelect ? productSelect.value : '',
                 quantity: qtyInput ? qtyInput.value : '',
-                unitPrice: priceInput ? priceInput.value : ''
+                preGstUnitPrice: preGstPriceInput ? preGstPriceInput.value : ''
             };
         });
     }
@@ -326,30 +338,37 @@
                     <option value="">-- Select Product --</option>
                 </select>
             </div>
-            <div class="col-md-2">
+            <div class="col-md-1">
+                <input type="text" class="form-control form-control-custom"
+                       readonly placeholder="HSN Code">
+            </div>
+            <div class="col-md-1">
                 <input type="number" class="form-control form-control-custom"
                        name="itemQuantities" min="1" placeholder="Qty" required>
+            </div>
+            <div class="col-md-1">
+                <input type="text" class="form-control form-control-custom"
+                       readonly placeholder="Unit">
             </div>
             <div class="col-md-2">
                 <div class="input-group">
                     <span class="input-group-text">₹</span>
                     <input type="number" class="form-control form-control-custom"
-                           name="itemUnitPrices" step="0.01" min="0" placeholder="Unit Price" required>
+                           name="itemPreGstUnitPrices" step="0.01" min="0" placeholder="Unit Price" required>
                 </div>
-            </div>
-            <div class="col-md-2">
-                <input type="text" class="form-control form-control-custom"
-                       readonly placeholder="HSN Code">
-            </div>
-            <div class="col-md-1">
-                <input type="text" class="form-control form-control-custom"
-                       readonly placeholder="Unit">
             </div>
             <div class="col-md-1">
                 <input type="text" class="form-control form-control-custom"
                        readonly placeholder="GST %">
             </div>
             <div class="col-md-2">
+                <div class="input-group">
+                    <span class="input-group-text">₹</span>
+                    <input type="text" class="form-control form-control-custom bg-light-subtle"
+                           readonly placeholder="Line Total">
+                </div>
+            </div>
+            <div class="col-md-1">
                 <button type="button" class="btn btn-outline-danger btn-sm remove-product-row">
                     <i class="bi bi-dash-circle"></i> Remove
                 </button>
@@ -368,19 +387,21 @@
         const newRow = div.firstElementChild;
         const newSelect = newRow.querySelector('select[name="itemProductIds"]');
         const qtyInput = newRow.querySelector('input[name="itemQuantities"]');
-        const priceInput = newRow.querySelector('input[name="itemUnitPrices"]');
+        const preGstPriceInput = newRow.querySelector('input[name="itemPreGstUnitPrices"]');
 
         if (newSelect) {
             newSelect.innerHTML = productOptionsHtml || getProductOptions();
             if (rowData && rowData.productId) {
                 newSelect.value = rowData.productId;
+            } else {
+                newSelect.value = '';
             }
         }
         if (qtyInput && rowData && rowData.quantity) {
             qtyInput.value = rowData.quantity;
         }
-        if (priceInput && rowData && rowData.unitPrice) {
-            priceInput.value = rowData.unitPrice;
+        if (preGstPriceInput && rowData && rowData.preGstUnitPrice) {
+            preGstPriceInput.value = rowData.preGstUnitPrice;
         }
 
         return newRow;
@@ -406,13 +427,46 @@
 
         document.querySelectorAll('#productRows .product-row').forEach(function (row) {
             const qtyInput = row.querySelector('input[name="itemQuantities"]');
-            const unitPriceInput = row.querySelector('input[name="itemUnitPrices"]');
+            const preGstPriceInput = row.querySelector('input[name="itemPreGstUnitPrices"]');
+            const gstInclusivePriceInput = row.querySelector('input[placeholder="GST-Inclusive Price"]');
+            const gstPercentInput = row.querySelector('input[placeholder="GST %"]');
+            
             const qty = parseInt(qtyInput ? qtyInput.value : '0', 10);
-            const unitPrice = parseFloat(unitPriceInput ? unitPriceInput.value : '0');
+            const preGstPrice = parseFloat(preGstPriceInput ? preGstPriceInput.value : '0');
+            const gstPercentText = gstPercentInput ? gstPercentInput.value.replace('%', '') : '0';
+            const gstPercent = parseFloat(gstPercentText) || 0;
 
-            if (!Number.isNaN(qty) && qty > 0) {
+            if (!Number.isNaN(qty) && qty > 0 && !Number.isNaN(preGstPrice) && preGstPrice > 0) {
                 totalQty += qty;
-                totalAmount += qty * (Number.isNaN(unitPrice) ? 0 : unitPrice);
+                
+                // Calculate GST-inclusive price
+                let gstInclusivePrice = preGstPrice;
+                if (gstPercent > 0) {
+                    gstInclusivePrice = preGstPrice * (1 + gstPercent / 100);
+                }
+                
+                // Update the GST-inclusive price display
+                if (gstInclusivePriceInput) {
+                    gstInclusivePriceInput.value = gstInclusivePrice.toFixed(2);
+                }
+                
+                // Calculate and update Line Total display (Full Line Total = Quantity × GST-Inclusive Price)
+                const lineTotal = qty * gstInclusivePrice;
+                const lineTotalInput = row.querySelector('input[placeholder="Line Total"]');
+                if (lineTotalInput) {
+                    lineTotalInput.value = lineTotal.toFixed(2);
+                }
+                
+                totalAmount += lineTotal;
+            } else {
+                // Clear displays when quantity or pre-GST price is zero/empty
+                if (gstInclusivePriceInput) {
+                    gstInclusivePriceInput.value = '';
+                }
+                const lineTotalInput = row.querySelector('input[placeholder="Line Total"]');
+                if (lineTotalInput) {
+                    lineTotalInput.value = '';
+                }
             }
         });
 
@@ -493,11 +547,11 @@
         return Array.from(rows).every(function (row) {
             const productSelect = row.querySelector('select[name="itemProductIds"]');
             const qtyInput = row.querySelector('input[name="itemQuantities"]');
-            const priceInput = row.querySelector('input[name="itemUnitPrices"]');
+            const preGstPriceInput = row.querySelector('input[name="itemPreGstUnitPrices"]');
 
             return !!(productSelect && productSelect.value
                 && qtyInput && qtyInput.value && Number(qtyInput.value) > 0
-                && priceInput && priceInput.value !== '' && Number(priceInput.value) >= 0);
+                && preGstPriceInput && preGstPriceInput.value !== '' && Number(preGstPriceInput.value) >= 0);
         });
     }
 
@@ -546,11 +600,11 @@
             }
         });
 
-        // Auto-fill unit price, HSN code, unit, and GST% when a product is selected
+        // Auto-fill pre-GST unit price, HSN code, unit, and GST% when a product is selected
         document.getElementById('productRows').addEventListener('change', function (e) {
             if (e.target.matches('select[name="itemProductIds"]')) {
                 const row = e.target.closest('.product-row');
-                const priceInput = row ? row.querySelector('input[name="itemUnitPrices"]') : null;
+                const preGstPriceInput = row ? row.querySelector('input[name="itemPreGstUnitPrices"]') : null;
                 const hsnInput = row ? row.querySelector('input[placeholder="HSN Code"]') : null;
                 const unitInput = row ? row.querySelector('input[placeholder="Unit"]') : null;
                 const gstInput = row ? row.querySelector('input[placeholder="GST %"]') : null;
@@ -560,17 +614,37 @@
                 const unit = selectedOption ? selectedOption.getAttribute('data-unit') : null;
                 const gst = selectedOption ? selectedOption.getAttribute('data-gst') : null;
 
-                if (priceInput && price != null) {
-                    priceInput.value = price;
-                }
-                if (hsnInput && hsnCode != null) {
-                    hsnInput.value = hsnCode;
-                }
-                if (unitInput && unit != null) {
-                    unitInput.value = unit;
-                }
-                if (gstInput && gst != null) {
-                    gstInput.value = gst + '%';
+                // Clear all auto-populated fields if no product is selected
+                if (!e.target.value || e.target.value === '') {
+                    if (preGstPriceInput) preGstPriceInput.value = '';
+                    if (hsnInput) hsnInput.value = '';
+                    if (unitInput) unitInput.value = '';
+                    if (gstInput) gstInput.value = '';
+                } else {
+                    // Auto-populate fields when a product is selected
+                    // Calculate pre-GST price from GST-inclusive price
+                    if (preGstPriceInput && price != null && gst != null) {
+                        const gstPercent = parseFloat(gst) || 0;
+                        const gstInclusivePrice = parseFloat(price) || 0;
+                        if (gstPercent > 0 && gstInclusivePrice > 0) {
+                            const preGstPrice = gstInclusivePrice / (1 + gstPercent / 100);
+                            preGstPriceInput.value = preGstPrice.toFixed(2);
+                        } else {
+                            preGstPriceInput.value = price;
+                        }
+                    } else if (preGstPriceInput && price != null) {
+                        preGstPriceInput.value = price;
+                    }
+                    
+                    if (hsnInput && hsnCode != null) {
+                        hsnInput.value = hsnCode;
+                    }
+                    if (unitInput && unit != null) {
+                        unitInput.value = unit;
+                    }
+                    if (gstInput && gst != null) {
+                        gstInput.value = gst + '%';
+                    }
                 }
                 recalculateOrderSummary();
                 saveOrderDraft();
@@ -597,7 +671,7 @@
             }
         });
 
-        // Add another product row
+        // Add existing product row
         document.getElementById('addProductRowBtn').addEventListener('click', function () {
             const container = document.getElementById('productRows');
             container.appendChild(createProductRow({}, getProductOptions()));

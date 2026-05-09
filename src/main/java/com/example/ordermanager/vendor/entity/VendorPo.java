@@ -61,7 +61,8 @@ public class VendorPo {
   private OffsetDateTime createdAt;
   private OffsetDateTime updatedAt;
 
-  @OneToMany(mappedBy = "vendorPo", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+  @OneToMany(mappedBy = "vendorPo", cascade = CascadeType.ALL, orphanRemoval = true,
+      fetch = FetchType.EAGER)
   private List<VendorPoItem> items = new ArrayList<>();
 
   public void addItem(VendorPoItem item) {
@@ -73,17 +74,43 @@ public class VendorPo {
   public void recalcTotal() {
     java.math.BigDecimal subtotal = java.math.BigDecimal.ZERO;
     for (VendorPoItem it : items) {
-      if (it.getQuantity() != null && it.getUnitPrice() != null) {
+      if (it.getQuantity() != null && it.getPreGstUnitPrice() != null) {
+        // Calculate GST-inclusive unit price from pre-GST price
+        java.math.BigDecimal gstPercent =
+            it.getGstPercentage() != null ? it.getGstPercentage() : java.math.BigDecimal.ZERO;
+
+        java.math.BigDecimal gstMultiplier =
+            gstPercent.divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+        java.math.BigDecimal gstInclusiveUnitPrice =
+            it.getPreGstUnitPrice().multiply(java.math.BigDecimal.ONE.add(gstMultiplier))
+                .setScale(2, java.math.RoundingMode.HALF_UP);
+
+        it.setGstInclusiveUnitPrice(gstInclusiveUnitPrice);
+
+        // Calculate line total using GST-inclusive price
+        java.math.BigDecimal lineTotal =
+            java.math.BigDecimal.valueOf(it.getQuantity()).multiply(gstInclusiveUnitPrice);
+        subtotal = subtotal.add(lineTotal);
+
+        // Calculate per-item GST amount
+        java.math.BigDecimal gstAmount = lineTotal
+            .subtract(
+                it.getPreGstUnitPrice().multiply(java.math.BigDecimal.valueOf(it.getQuantity())))
+            .setScale(2, java.math.RoundingMode.HALF_UP);
+        it.setGstAmount(gstAmount);
+
+        // Update legacy unitPrice field for backward compatibility
+        it.setUnitPrice(gstInclusiveUnitPrice.doubleValue());
+      } else if (it.getQuantity() != null && it.getUnitPrice() != null) {
+        // Fallback for legacy data (when preGstUnitPrice is null)
         java.math.BigDecimal lineTotal = java.math.BigDecimal.valueOf(it.getQuantity())
             .multiply(java.math.BigDecimal.valueOf(it.getUnitPrice()));
         subtotal = subtotal.add(lineTotal);
 
         // Calculate per-item GST amount
-        java.math.BigDecimal gstPercent = it.getGstPercentage() != null
-            ? it.getGstPercentage()
-            : java.math.BigDecimal.ZERO;
-        java.math.BigDecimal gstAmount = lineTotal
-            .multiply(gstPercent)
+        java.math.BigDecimal gstPercent =
+            it.getGstPercentage() != null ? it.getGstPercentage() : java.math.BigDecimal.ZERO;
+        java.math.BigDecimal gstAmount = lineTotal.multiply(gstPercent)
             .divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
         it.setGstAmount(gstAmount);
       }

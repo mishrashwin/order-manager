@@ -17,7 +17,8 @@ public interface VendorPoService {
 
   Page<VendorPo> listVendorPos(LocalDate startDate, LocalDate endDate, Pageable pageable);
 
-  Page<VendorPo> searchVendorPos(LocalDate startDate, LocalDate endDate, String search, Pageable pageable);
+  Page<VendorPo> searchVendorPos(LocalDate startDate, LocalDate endDate, String search,
+      Pageable pageable);
 
   VendorPo changeStatus(Long id, VendorPoStatus status);
 

@@ -150,12 +150,14 @@ public class VendorPoServiceImpl implements VendorPoService {
   }
 
   @Override
-  public Page<VendorPo> searchVendorPos(LocalDate startDate, LocalDate endDate, String search, Pageable pageable) {
+  public Page<VendorPo> searchVendorPos(LocalDate startDate, LocalDate endDate, String search,
+      Pageable pageable) {
     Long companyId = securityContextHelper.getCompanyIdFromContext();
     if (search == null || search.trim().isEmpty()) {
       return vendorPoRepository.findByCompany_Id(companyId, pageable);
     }
-    return vendorPoRepository.findByCompany_IdAndPoNumberContainingIgnoreCase(companyId, search, pageable);
+    return vendorPoRepository.findByCompany_IdAndPoNumberContainingIgnoreCase(companyId, search,
+        pageable);
   }
 
   // ── Status ─────────────────────────────────────────────────────────────────
@@ -215,6 +217,17 @@ public class VendorPoServiceImpl implements VendorPoService {
       it.setHsnCode(it.getProduct().getHsnCode());
       it.setUnit(it.getProduct().getUnit());
       it.setGstPercentage(it.getProduct().getGstPercentage());
+
+      // Handle pre-GST price calculation
+      if (it.getPreGstUnitPrice() == null && it.getUnitPrice() != null
+          && it.getProduct().getGstPercentage() != null) {
+        // Convert legacy unitPrice to pre-GST price for backward compatibility
+        java.math.BigDecimal gstMultiplier = it.getProduct().getGstPercentage()
+            .divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+        java.math.BigDecimal preGstPrice = java.math.BigDecimal.valueOf(it.getUnitPrice())
+            .divide(java.math.BigDecimal.ONE.add(gstMultiplier), 2, java.math.RoundingMode.HALF_UP);
+        it.setPreGstUnitPrice(preGstPrice);
+      }
     } else if (it.getProductId() != null) {
       Product product = productRepository.findById(it.getProductId()).orElse(null);
       if (product != null) {
@@ -223,6 +236,17 @@ public class VendorPoServiceImpl implements VendorPoService {
         it.setUnit(product.getUnit());
         it.setGstPercentage(product.getGstPercentage());
         it.setProduct(product);
+
+        // Handle pre-GST price calculation
+        if (it.getPreGstUnitPrice() == null && it.getUnitPrice() != null
+            && product.getGstPercentage() != null) {
+          // Convert legacy unitPrice to pre-GST price for backward compatibility
+          java.math.BigDecimal gstMultiplier = product.getGstPercentage()
+              .divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+          java.math.BigDecimal preGstPrice = java.math.BigDecimal.valueOf(it.getUnitPrice()).divide(
+              java.math.BigDecimal.ONE.add(gstMultiplier), 2, java.math.RoundingMode.HALF_UP);
+          it.setPreGstUnitPrice(preGstPrice);
+        }
       } else {
         it.setProductName(it.getProductName() != null ? it.getProductName() : "Unknown Product");
       }

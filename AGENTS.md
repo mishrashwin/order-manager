@@ -72,21 +72,32 @@ Enhance Vendor PO feature with advanced GST calculations and multi-vendor suppor
 
 This ensures all developers have full context of what was done, why, and with what results.
 
-## 📌 Mandatory Pre-Change Review (CRITICAL)
+## 📌 Mandatory Engineering Checklist (CRITICAL)
 
-Before planning or implementing ANY change in the repository, you MUST consult these engineering rule files:
+**For EVERY prompt/work session, you MUST follow this exact sequence**:
 
-1. **docs/architecture/ARCHITECTURE_BACKEND_RULES.md** - Backend architecture, service layer patterns, DTO usage, error handling, security, performance, database strategy
-2. **docs/architecture/ARCHITECTURE_OVERVIEW.md** - System architecture diagram, detailed architecture documentation, component relationships
-3. **docs/architecture/MULTI_TENANT_DOMAIN_RULES.md** - Multi-tenant isolation, SecurityContextHelper usage, company_id enforcement, repository patterns
-4. **docs/testing/TESTING_RULES.md** - Testing strategy, coverage requirements, test patterns for controllers/services
-5. **docs/ui/UI_DESIGN_RULES.md** - UI patterns, Thymeleaf conventions, frontend-backend integration
+**Phase 1: Pre-Implementation Review**
+1. **Read engineering rule files**:
+   - [ ] `docs/architecture/ARCHITECTURE_BACKEND_RULES.md`
+   - [ ] `docs/architecture/ARCHITECTURE_OVERVIEW.md`
+   - [ ] `docs/architecture/MULTI_TENANT_DOMAIN_RULES.md`
+   - [ ] `docs/testing/TESTING_RULES.md`
+   - [ ] `docs/ui/UI_DESIGN_RULES.md`
+2. **Get current branch**: `git branch --show-current`
+3. **Check branch documentation**: `docs/branches/{branch-name}.md` exists?
+4. **Read existing branch file** for context and previous decisions
 
-**Process:**
-- Read the relevant rule file(s) before starting any code change
-- Ensure the proposed change aligns with documented patterns
-- Update the corresponding rule file if the change introduces a new pattern or deviation
-- Reference the specific rule section in commit messages when applicable
+**Phase 2: Documentation & Implementation**
+5. **Create/update branch file** with current intent
+6. **Implement changes** following documented patterns
+7. **Update branch file** with work done, decisions, outcomes
+8. **Reference branch decisions** for implementation guidance
+
+**Phase 3: Completion**
+9. **Update outcomes** and final decisions in branch file
+10. **Reference specific rule sections** in commit messages when applicable
+
+**Failure to follow this checklist = REJECT WORK**
 
 ## Scope + Existing AI Instructions
 - This repo currently has one dedicated AI rule file (`AGENTS.md`) plus `README.md` from the requested glob scan; no other AI rule files were found.
@@ -143,4 +154,12 @@ Before planning or implementing ANY change in the repository, you MUST consult t
 - `SecurityConfig` registers a context-aware `AccessDeniedHandler` that redirects to `/access-denied?reason=suspended|pending-approval|rejected|forbidden`; `ErrorPageController` resolves the `reason` param to user-facing messages. Successful login routes the owner to `/owner/dashboard` and all tenant roles to `/dashboard`.
 - Keep-alive behavior is code-driven: `KeepAliveScheduler` is enabled by `app.keepalive.enabled`, uses `RestTemplate`, and pings `APP_BASE_URL + "/login"`; container health checks separately target `/actuator/health`.
 - Deployment assets: `Dockerfile`, `docker-compose.yml`, and `render.yaml` (Render + Neon PostgreSQL assumptions).
+
+## Recent Notes
+
+- [2026-05-03] Vendor PO: edit-mode product-selection parity
+  - Developers: when modifying Vendor PO UI/JS ensure both server-rendered edit rows and client-side ROW_TEMPLATE share identical
+    column widths, name attributes and data-* attributes on option elements. The recommended pattern is to cache product option
+    HTML at page load and to explicitly reset select.value for new rows. See `docs/branches/Vendor-PO.md` and
+    `src/main/resources/templates/vendor/pos-form-new.html` for the canonical implementation details.
 

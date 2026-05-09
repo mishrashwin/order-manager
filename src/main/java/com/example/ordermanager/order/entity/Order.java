@@ -52,7 +52,8 @@ public class Order {
   @JoinColumn(name = "company_id", nullable = false)
   private Company company;
 
-  @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+  @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true,
+      fetch = FetchType.EAGER)
   private List<OrderItem> orderItems = new ArrayList<>();
 
   /**

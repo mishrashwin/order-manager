@@ -53,8 +53,7 @@ public class OrderController {
 
   @GetMapping
   public String listOrders(@RequestParam(required = false) String startDate,
-      @RequestParam(required = false) String endDate,
-      @RequestParam(required = false) String search,
+      @RequestParam(required = false) String endDate, @RequestParam(required = false) String search,
       @RequestParam(required = false, defaultValue = "0") int page,
       @RequestParam(required = false, defaultValue = "10") int size, Model model) {
     Long companyId = securityContextHelper.getCompanyIdFromContext();

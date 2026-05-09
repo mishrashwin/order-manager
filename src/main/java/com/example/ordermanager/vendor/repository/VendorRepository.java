@@ -14,5 +14,6 @@ public interface VendorRepository extends JpaRepository<Vendor, Long> {
 
   Page<Vendor> findByCompanyId(Long companyId, Pageable pageable);
 
-  Page<Vendor> findByCompanyIdAndCompanyNameContainingIgnoreCase(Long companyId, String search, Pageable pageable);
+  Page<Vendor> findByCompanyIdAndCompanyNameContainingIgnoreCase(Long companyId, String search,
+      Pageable pageable);
 }

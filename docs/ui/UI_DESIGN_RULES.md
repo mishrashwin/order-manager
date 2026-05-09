@@ -206,6 +206,64 @@ For forms with dynamic rows (e.g., PO line items):
 - Maintain proper Thymeleaf field naming for binding
 - Example: Vendor PO form with dynamic item rows
 
+## 5.4 Header Field Layout Optimization
+For related header fields (e.g., Customer Name + PO Number), combine into single row with appropriate column ratios:
+- Use Bootstrap grid system (`row` + `col-md-*`)
+- Apply space-efficient ratios based on field importance (e.g., 3:1 for primary:secondary fields)
+- Maintain all existing functionality (validation, helper buttons, error messages)
+- Example: Order form header with Customer Name (col-md-9) and PO Order No (col-md-3)
+
+```html
+<div class="row mb-4">
+    <div class="col-md-9">
+        <label class="form-label">Customer Name</label>
+        <select class="form-select">...</select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">PO/Order No</label>
+        <input type="text" class="form-control">
+    </div>
+</div>
+```
+
+## 5.5 Entity Selection with Quick Add
+For forms that require selecting an entity (Client, Vendor, Product), provide a quick-add button in the input-group:
+- Wrap select in Bootstrap `input-group`
+- Add button with link to entity creation form
+- Include `returnTo` parameter to redirect back after creation
+- Add JavaScript handler to save draft before navigating away
+- Include helper text for user guidance
+- Example: Vendor PO form with "Add Vendor" button
+
+```html
+<div class="input-group">
+    <select class="form-select form-control-custom" th:field="*{vendor.id}" required>
+        <option value="">-- Select Vendor --</option>
+        <option th:each="vendor : ${vendors}"
+                th:value="${vendor.id}"
+                th:text="${vendor.companyName}">
+        </option>
+    </select>
+    <a id="addVendorLink" class="btn btn-outline-success"
+       th:href="@{/vendors/new(returnTo=${vendorPo.id == null ? '/vendor/pos/new' : '/vendor/pos/' + vendorPo.id + '/edit'})}">
+        <i class="bi bi-plus-circle"></i> Add Vendor
+    </a>
+</div>
+<small class="form-text text-muted">If the desired vendor is missing, click "Add Vendor".</small>
+```
+
+```javascript
+// Save draft before navigating away
+const addVendorLink = document.getElementById('addVendorLink');
+if (addVendorLink) {
+    addVendorLink.addEventListener('click', function (e) {
+        e.preventDefault();
+        saveDraft();
+        window.location.href = this.href;
+    });
+}
+```
+
 ---
 
 # 6. DASHBOARD PATTERNS

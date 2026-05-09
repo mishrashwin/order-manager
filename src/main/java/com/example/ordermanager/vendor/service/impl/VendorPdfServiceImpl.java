@@ -48,13 +48,11 @@ public class VendorPdfServiceImpl implements VendorPdfService {
       for (VendorPoItem item : vendorPo.getItems()) {
         java.math.BigDecimal lineTotal = java.math.BigDecimal.valueOf(item.getLineTotal());
 
-        java.math.BigDecimal gstPercent = item.getGstPercentage() != null
-            ? item.getGstPercentage()
-            : java.math.BigDecimal.ZERO;
+        java.math.BigDecimal gstPercent =
+            item.getGstPercentage() != null ? item.getGstPercentage() : java.math.BigDecimal.ZERO;
 
-        java.math.BigDecimal divisor = java.math.BigDecimal.ONE.add(
-            gstPercent.divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP)
-        );
+        java.math.BigDecimal divisor = java.math.BigDecimal.ONE.add(gstPercent
+            .divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP));
 
         // BACK CALCULATION: extract taxable value from GST-inclusive price
         java.math.BigDecimal taxable = lineTotal.divide(divisor, 2, java.math.RoundingMode.HALF_UP);
@@ -132,7 +130,8 @@ public class VendorPdfServiceImpl implements VendorPdfService {
       variables.put("isIntraState", isIntraState);
       variables.put("finalTotal", formattedFinalTotal);
       variables.put("logoBase64", toBase64(company.getLogoData(), company.getLogoContentType()));
-      variables.put("signatureBase64", toBase64(company.getSignatureData(), company.getSignatureContentType()));
+      variables.put("signatureBase64",
+          toBase64(company.getSignatureData(), company.getSignatureContentType()));
       context.setVariables(variables);
 
       // Render HTML template

@@ -22,7 +22,8 @@ public interface VendorPoRepository extends JpaRepository<VendorPo, Long> {
   Page<VendorPo> findByCompany_Id(Long companyId, Pageable pageable);
 
   @EntityGraph(attributePaths = {"company", "vendor", "items"})
-  Page<VendorPo> findByCompany_IdAndPoNumberContainingIgnoreCase(Long companyId, String search, Pageable pageable);
+  Page<VendorPo> findByCompany_IdAndPoNumberContainingIgnoreCase(Long companyId, String search,
+      Pageable pageable);
 
   @EntityGraph(attributePaths = {"company", "vendor", "items"})
   List<VendorPo> findByCompany_IdAndStatus(Long companyId, VendorPoStatus status);
