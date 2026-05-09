@@ -1,9 +1,9 @@
 # Branch: Vendor-PO
 
 ## Intent
-Enhance Vendor PO feature with advanced GST calculations and multi-vendor support. 
+Enhance Vendor PO feature with advanced GST calculations and multi-vendor support.
 Additionally, resolve critical CSRF session expiration issue affecting user login experience.
-**GST Calculation Reversal**: Reverse GST calculation approach from accepting GST-inclusive prices to accepting pre-GST prices 
+**GST Calculation Reversal**: Reverse GST calculation approach from accepting GST-inclusive prices to accepting pre-GST prices
 and calculating GST-inclusive amounts across Product, Order, and Vendor PO modules.
 **Product Selection Improvements**: Fix product selection behavior to ensure fresh rows show "Select Product" as default and clear auto-populated fields when product is deselected.
 **Vendor PO Edit Form Fixes**: Apply column width optimizations and product selection improvements to Vendor PO edit form to match creation form behavior.
@@ -11,8 +11,167 @@ and calculating GST-inclusive amounts across Product, Order, and Vendor PO modul
 **Order Product Layout Consistency**: Fix Product layout inconsistency between Order Create and Order Edit forms to ensure identical column arrangement.
 **Order Form Header Layout**: Combine Customer Name and PO Order No fields into a single row with 3:1 ratio for better space utilization.
 **Vendor PO Form Enhancement**: Add "Add Vendor" button to Vendor PO form to match Order form's "Add Client" functionality.
+**Edit Mode Add Existing Product Fix**: Fix "Add Existing Product" button not working in Edit Vendor PO mode by enhancing fallback logic to remove selected attributes from copied options.
 
 ## Work Done
+
+### [2026-05-09] Edit Mode Add Existing Product Fix
+**Problem**: "Add Existing Product" button was not working on Edit Vendor PO, but it was working on Create Vendor PO. Initial fix caused Create mode to show multiple empty product rows due to draft restoration issues.
+
+**Root Cause Identified**:
+- In Edit mode, when `window.productData` was not available or empty, the fallback logic copied options from existing server-rendered selects
+- The copied options included `selected` attributes from existing items, causing newly added rows to inherit incorrect selections
+- This made the dropdown appear with a pre-selected value instead of showing the default "-- Select Product --" state
+- Draft restoration in Create mode was causing multiple empty rows to appear due to stale draft data
+
+**Solution Implemented**:
+- Enhanced the fallback logic (line 300) to remove `selected` attributes when copying options from existing selects using regex: `existingSelect.innerHTML.replace(/\s*selected\s*=\s*["']?selected["']?/gi, '')`
+- Modified draft clearing logic (lines 628-632) to clear draft in Create mode to prevent restoring stale data that could cause multiple empty rows
+- This ensures that when a new row is added via "Add Existing Product" button in Edit mode, it always starts with a clean, unselected state matching Create mode behavior
+- Create mode now starts fresh without stale draft data, preventing the multiple empty rows issue
+
+**Key Technical Changes**:
+```javascript
+// Fallback logic with selected attribute removal
+optionsHtml = existingSelect.innerHTML.replace(/\s*selected\s*=\s*["']?selected["']?/gi, '');
+
+// Draft clearing in Create mode
+if (!isEditMode) {
+    sessionStorage.removeItem(draftKey);
+}
+```
+
+**Files Modified**:
+- `src/main/resources/templates/vendor/pos-form-new.html`
+
+### [2026-05-09] Edit Mode Remove Button Text Fix
+**Problem**: In Create Vendor PO, the remove button showed both the icon and "Remove" text, but in Edit Vendor PO, the remove button only showed the icon without text.
+
+**Root Cause Identified**:
+- The server-rendered existing items in Edit mode (line 164-166) had the remove button without text
+- The default empty row in Create mode (line 215-217) and JavaScript ROW_TEMPLATE (line 378-380) had the remove button with "Remove" text
+- This caused inconsistency between Create and Edit modes
+
+**Solution Implemented**:
+- Added " Remove" text to the Edit mode remove button (line 165) to match Create mode and ROW_TEMPLATE behavior
+- Now all remove buttons consistently show both the icon and "Remove" text across both Create and Edit modes
+
+**Key Technical Changes**:
+```html
+<!-- Before (Edit mode) -->
+<button type="button" class="btn btn-outline-danger btn-sm remove-product-row">
+  <i class="bi bi-dash-circle"></i>
+</button>
+
+<!-- After (Edit mode) -->
+<button type="button" class="btn btn-outline-danger btn-sm remove-product-row">
+  <i class="bi bi-dash-circle"></i> Remove
+</button>
+```
+
+**Files Modified**:
+- `src/main/resources/templates/vendor/pos-form-new.html`
+
+### [2026-05-09] Vendor PO Form Layout Ratio Update
+**Problem**: Vendor PO Create and Edit forms had Vendor and PO Number fields in a 50:50 column ratio (col-md-6 each), which was inconsistent with the Order form's 75:25 ratio.
+
+**Root Cause Identified**:
+- Vendor form used col-md-6 for both Vendor and PO Number fields
+- Order form uses col-md-9 for Customer and col-md-3 for PO/Order No (75:25 ratio)
+- This inconsistency created different layout patterns between similar forms
+
+**Solution Implemented**:
+- Changed Vendor field from col-md-6 to col-md-9 (75% width)
+- Changed PO Number field from col-md-6 to col-md-3 (25% width)
+- Now Vendor PO form matches Order form's 75:25 layout ratio for consistency
+
+**Key Technical Changes**:
+```html
+<!-- Before -->
+<div class="col-md-6 mb-4">Vendor</div>
+<div class="col-md-6 mb-4">PO Number</div>
+
+<!-- After -->
+<div class="col-md-9 mb-4">Vendor</div>
+<div class="col-md-3 mb-4">PO Number</div>
+```
+
+**Files Modified**:
+- `src/main/resources/templates/vendor/pos-form-new.html`
+
+### [2026-05-09] Vendor PO Product Column Order Update
+**Problem**: Vendor PO Create and Edit forms had Unit and Qty columns in the wrong order (Unit before Qty), which was inconsistent with the Order form (Qty before Unit).
+
+**Root Cause Identified**:
+- Vendor PO form had column order: Product → HSN → Unit → Qty → Unit Price → GST % → Total → Remove
+- Order form had column order: Product → HSN → Qty → Unit → Unit Price → GST % → GST-Inclusive Price → Total → Remove
+- This inconsistency created different user experience patterns between similar forms
+
+**Solution Implemented**:
+- Swapped Unit and Qty column order in all three sections:
+  - Edit mode (th:each block for existing items)
+  - Create mode (th:if block for default empty row)
+  - JavaScript ROW_TEMPLATE (for dynamically added rows)
+- Now Vendor PO form matches Order form's column order for consistency
+
+**Key Technical Changes**:
+```html
+<!-- Before -->
+<div class="col-md-1">
+    <input type="text" name="itemUnits" placeholder="Unit">
+</div>
+<div class="col-md-1">
+    <input type="number" name="itemQuantities" placeholder="Qty">
+</div>
+
+<!-- After -->
+<div class="col-md-1">
+    <input type="number" name="itemQuantities" placeholder="Qty">
+</div>
+<div class="col-md-1">
+    <input type="text" name="itemUnits" placeholder="Unit">
+</div>
+```
+
+**Files Modified**:
+- `src/main/resources/templates/vendor/pos-form-new.html`
+
+### [2026-05-09] Vendor PO Form Header Layout Optimization
+**Problem**: Vendor PO form had Delivery Date and Email Recipients in 50:50 ratio on one line, with Linked Order PO Numbers on a separate line, which was inefficient use of space.
+
+**Root Cause Identified**:
+- Delivery Date and Email Recipients occupied 50:50 ratio on one line
+- Linked Order PO Numbers occupied full width on a separate line
+- This layout wasted vertical space and could be optimized to a single row
+
+**Solution Implemented**:
+- Combined all three fields into a single row with 25:25:50 ratio
+- Linked Order PO Numbers: col-md-3 (25% width)
+- Delivery Date: col-md-3 (25% width)
+- Email Recipients: col-md-6 (50% width)
+- Improved form layout efficiency and space utilization
+
+**Key Technical Changes**:
+```html
+<!-- Before -->
+<div class="row">
+  <div class="col-md-6">Delivery Date</div>
+  <div class="col-md-6">Email Recipients</div>
+</div>
+<div class="row">
+  <div class="col-md-12">Linked Order PO Numbers</div>
+</div>
+
+<!-- After -->
+<div class="row">
+  <div class="col-md-3">Linked Order PO Numbers</div>
+  <div class="col-md-3">Delivery Date</div>
+  <div class="col-md-6">Email Recipients</div>
+</div>
+```
+
+**Files Modified**:
+- `src/main/resources/templates/vendor/pos-form-new.html`
 
 ### [2026-05-03] Remove "Incl. GST" from Vendor PO Form
 **Problem**: The "Incl. GST" column was present in the Vendor PO form (`pos-form-new.html`) but not in the Create/Edit Order page (`orders/form.html`), leading to inconsistency in the UI.
@@ -664,3 +823,52 @@ function calculateGstInclusivePrice() {
 - ✅ Product row layout on Vendor PO page now adheres to Bootstrap's 12-column grid.
 - ✅ Inconsistent spacing and overflow issues in Vendor PO product rows are resolved.
 - ✅ "Add Existing Product" button now correctly adds new product rows with proper layout and calculations.
+
+Summary
+Vendor PO branch: GST calculation reversal, UI consistency fixes, and form enhancements
+
+GST Calculation Reversal:
+- Reverse GST calculation from GST-inclusive to pre-GST pricing across Product, Order, and Vendor PO modules
+- Add pre-gst price fields to database schema (V27 migration) with backward compatibility
+- Update entities (Product, OrderItem, VendorPoItem) with automatic GST calculation methods
+- Modify service layer to handle pre-GST price input and calculate GST-inclusive prices
+- Update UI forms to accept "Pre-GST Price" input with automatic GST-inclusive display
+
+Vendor PO Form Enhancements:
+- Fix "Add Existing Product" button in Edit mode by removing selected attributes from copied options
+- Clear draft data in Create mode to prevent stale data from causing multiple empty rows
+- Add "Remove" text to Edit mode remove button for consistency with Create mode
+- Update Vendor/PO Number layout ratio from 50:50 to 75:25 to match Order form
+- Add "Add Vendor" button to Vendor PO form with draft saving before navigation
+- Remove "Incl. GST" column for UI consistency with Order form
+- Standardize product row layout to 12-column Bootstrap grid
+- Fix product selection parity between Create and Edit modes
+
+Order Form Improvements:
+- Combine Customer Name and PO Order No fields into single row with 3:1 ratio
+- Fix Product layout consistency between Create and Edit modes
+- Ensure "Add Existing Product" shows no selection in both modes
+
+Security Fixes:
+- Fix CSRF session expiration issue with enhanced AccessDeniedHandler
+- Add session timeout configuration (30m) across all environments
+- Implement frontend CSRF token refresh with idle detection
+- Add specific error handling for login-related CSRF failures
+
+Files Modified:
+- src/main/resources/templates/vendor/pos-form-new.html
+- src/main/resources/templates/vendor/pos-list-ajax.html
+- src/main/resources/templates/orders/form.html
+- src/main/resources/templates/auth/login.html
+- src/main/resources/application-dev.properties
+- src/main/resources/application-prod.properties
+- src/main/resources/application-qa.properties
+- src/main/resources/db/migration/V27__add_pre_gst_price_fields.sql
+- src/main/java/com/example/ordermanager/product/entity/Product.java
+- src/main/java/com/example/ordermanager/order/entity/OrderItem.java
+- src/main/java/com/example/ordermanager/vendor/entity/VendorPoItem.java
+- src/main/java/com/example/ordermanager/vendor/entity/VendorPo.java
+- src/main/java/com/example/ordermanager/product/service/ProductService.java
+- src/main/java/com/example/ordermanager/order/service/OrderService.java
+- src/main/java/com/example/ordermanager/vendor/service/impl/VendorPoServiceImpl.java
+- src/main/java/com/example/ordermanager/config/SecurityConfig.java
