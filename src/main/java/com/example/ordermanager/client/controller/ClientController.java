@@ -7,6 +7,9 @@ import com.example.ordermanager.utils.PasswordVerificationService;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -31,10 +34,18 @@ public class ClientController {
   }
 
   @GetMapping
-  public String listClients(Model model) {
+  public String listClients(@RequestParam(required = false) String search,
+      @RequestParam(required = false, defaultValue = "0") int page,
+      @RequestParam(required = false, defaultValue = "10") int size, Model model) {
     Long companyId = securityContextHelper.getCompanyIdFromContext();
-    var clients = clientService.getClientsByCompanyId(companyId);
-    model.addAttribute("clients", clients);
+    Pageable pageable = PageRequest.of(page, size);
+    Page<com.example.ordermanager.client.entity.Client> clientsPage =
+        clientService.searchClients(companyId, search, pageable);
+    model.addAttribute("clients", clientsPage.getContent());
+    model.addAttribute("currentPage", page + 1);
+    model.addAttribute("totalPages", clientsPage.getTotalPages());
+    model.addAttribute("totalElements", clientsPage.getTotalElements());
+    model.addAttribute("search", search);
     return "clients/list";
   }
 

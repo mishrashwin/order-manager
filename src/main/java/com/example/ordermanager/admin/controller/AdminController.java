@@ -15,6 +15,7 @@ import com.example.ordermanager.utils.PasswordVerificationService;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.Base64;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -294,6 +295,9 @@ public class AdminController {
     Company company = companyService.getCompanyById(companyId)
         .orElseThrow(() -> new IllegalArgumentException("Company not found"));
     model.addAttribute("company", company);
+    model.addAttribute("logoBase64", toBase64(company.getLogoData(), company.getLogoContentType()));
+    model.addAttribute("signatureBase64",
+        toBase64(company.getSignatureData(), company.getSignatureContentType()));
     return "admin/company/view";
   }
 
@@ -303,14 +307,34 @@ public class AdminController {
     Company company = companyService.getCompanyById(companyId)
         .orElseThrow(() -> new IllegalArgumentException("Company not found"));
     model.addAttribute("company", company);
+    model.addAttribute("logoBase64", toBase64(company.getLogoData(), company.getLogoContentType()));
+    model.addAttribute("signatureBase64",
+        toBase64(company.getSignatureData(), company.getSignatureContentType()));
     return "admin/company/edit";
   }
 
   @PostMapping("/company/update")
   public String updateCompany(@ModelAttribute Company company,
+      @RequestParam(value = "logoFile", required = false) MultipartFile logoFile,
+      @RequestParam(value = "signatureFile", required = false) MultipartFile signatureFile,
       RedirectAttributes redirectAttributes) {
     try {
       Long companyId = securityContextHelper.getCompanyIdFromContext();
+
+      // LOGO
+      if (logoFile != null && !logoFile.isEmpty()) {
+        validateImage(logoFile, 200 * 1024); // 200 KB
+        company.setLogoData(logoFile.getBytes());
+        company.setLogoContentType(logoFile.getContentType());
+      }
+
+      // SIGNATURE
+      if (signatureFile != null && !signatureFile.isEmpty()) {
+        validateImage(signatureFile, 100 * 1024); // 100 KB
+        company.setSignatureData(signatureFile.getBytes());
+        company.setSignatureContentType(signatureFile.getContentType());
+      }
+
       companyService.updateCompany(companyId, company);
       redirectAttributes.addFlashAttribute("message", "Company details updated successfully.");
       return "redirect:/admin/company";
@@ -318,7 +342,27 @@ public class AdminController {
     } catch (IllegalArgumentException e) {
       redirectAttributes.addFlashAttribute("error", e.getMessage());
       return "redirect:/admin/company/edit";
+    } catch (IOException e) {
+      redirectAttributes.addFlashAttribute("error",
+          "Failed to process file upload: " + e.getMessage());
+      return "redirect:/admin/company/edit";
     }
+  }
+
+  private void validateImage(MultipartFile file, int maxSize) {
+    if (file.getContentType() == null || !file.getContentType().startsWith("image/")) {
+      throw new IllegalArgumentException("Only image files are allowed");
+    }
+    if (file.getSize() > maxSize) {
+      throw new IllegalArgumentException("File size exceeds maximum limit");
+    }
+  }
+
+  private String toBase64(byte[] data, String contentType) {
+    if (data == null) {
+      return null;
+    }
+    return "data:" + contentType + ";base64," + Base64.getEncoder().encodeToString(data);
   }
 
   @GetMapping("/payments")

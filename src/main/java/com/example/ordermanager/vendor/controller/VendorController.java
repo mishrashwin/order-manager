@@ -8,6 +8,9 @@ import com.example.ordermanager.utils.SecurityContextHelper;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -33,9 +36,17 @@ public class VendorController {
   }
 
   @GetMapping
-  public String listVendors(Model model) {
+  public String listVendors(@RequestParam(required = false) String search,
+      @RequestParam(required = false, defaultValue = "0") int page,
+      @RequestParam(required = false, defaultValue = "10") int size, Model model) {
     Long companyId = securityContextHelper.getCompanyIdFromContext();
-    model.addAttribute("vendors", vendorService.getVendorsByCompanyId(companyId));
+    Pageable pageable = PageRequest.of(page, size);
+    Page<Vendor> vendorsPage = vendorService.searchVendors(companyId, search, pageable);
+    model.addAttribute("vendors", vendorsPage.getContent());
+    model.addAttribute("currentPage", page + 1);
+    model.addAttribute("totalPages", vendorsPage.getTotalPages());
+    model.addAttribute("totalElements", vendorsPage.getTotalElements());
+    model.addAttribute("search", search);
     return "vendors/list";
   }
 

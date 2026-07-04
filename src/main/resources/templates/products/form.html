@@ -64,10 +64,34 @@
                     <input type="text" class="form-control form-control-custom" th:field="*{category}"
                            placeholder="e.g., Raw Material, Finished Goods" required>
                 </div>
-                <div class="col-md-4 mb-4">
-                    <label class="form-label"><i class="bi bi-currency-rupee"></i> Price</label>
-                    <input type="number" class="form-control form-control-custom" th:field="*{price}"
-                           step="0.01" min="0" placeholder="0.00">
+                <div class="col-md-3 mb-4">
+                    <label class="form-label"><i class="bi bi-currency-rupee"></i> Pre-GST Price <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control form-control-custom" id="preGstPrice" 
+                           th:field="*{preGstPrice}" step="0.01" min="0" placeholder="0.00" required>
+                    <small class="form-text text-muted">Enter price before GST</small>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <label class="form-label"><i class="bi bi-currency-rupee"></i> GST-Inclusive Price</label>
+                    <div class="form-control form-control-custom bg-light-subtle d-flex align-items-center" id="gstInclusivePriceDisplay">
+                        ₹<span id="gstInclusiveAmount">0.00</span>
+                    </div>
+                    <small class="form-text text-muted">Calculated automatically</small>
+                    <input type="hidden" th:field="*{gstInclusivePrice}" id="gstInclusivePriceHidden">
+                    <input type="hidden" th:field="*{price}">
+                </div>
+                <div class="col-md-3 mb-4">
+                    <label class="form-label"><i class="bi bi-123"></i> HSN Code</label>
+                    <input type="text" class="form-control form-control-custom" th:field="*{hsnCode}" placeholder="HSN Code">
+                </div>
+                <div class="col-md-3 mb-4">
+                    <label class="form-label"><i class="bi bi-boxes"></i> Unit</label>
+                    <input type="text" class="form-control form-control-custom" th:field="*{unit}" placeholder="Unit (e.g., PCS)">
+                </div>
+                <div class="col-md-3 mb-4">
+                    <label class="form-label"><i class="bi bi-percent"></i> GST %</label>
+                    <input type="number" class="form-control form-control-custom" id="gstPercentage"
+                           th:field="*{gstPercentage}" step="0.01" min="0" max="100" placeholder="e.g., 18">
+                    <small class="form-text text-muted">GST percentage for tax calculation (optional)</small>
                 </div>
             </div>
 
@@ -161,16 +185,41 @@
         }
     }
 
+    function calculateGstInclusivePrice() {
+        const preGstPriceInput = document.getElementById('preGstPrice');
+        const gstPercentageInput = document.getElementById('gstPercentage');
+        const gstInclusiveAmount = document.getElementById('gstInclusiveAmount');
+        const gstInclusivePriceHidden = document.getElementById('gstInclusivePriceHidden');
+        const priceHidden = document.querySelector('input[name="price"]');
+        
+        const preGstPrice = parseFloat(preGstPriceInput.value) || 0;
+        const gstPercentage = parseFloat(gstPercentageInput.value) || 0;
+        
+        if (preGstPrice > 0 && gstPercentage > 0) {
+            const gstMultiplier = gstPercentage / 100;
+            const gstInclusivePrice = preGstPrice * (1 + gstMultiplier);
+            gstInclusiveAmount.textContent = gstInclusivePrice.toFixed(2);
+            gstInclusivePriceHidden.value = gstInclusivePrice.toFixed(2);
+            priceHidden.value = gstInclusivePrice.toFixed(2);
+        } else {
+            gstInclusiveAmount.textContent = preGstPrice.toFixed(2);
+            gstInclusivePriceHidden.value = preGstPrice.toFixed(2);
+            priceHidden.value = preGstPrice.toFixed(2);
+        }
+    }
+
     function areMandatoryProductFieldsFilled() {
         const productName = document.getElementById('name');
         const brand = document.getElementById('brand');
         const category = document.getElementById('category');
         const vendor = document.querySelector('#productForm select[name="vendor.id"]');
+        const preGstPrice = document.getElementById('preGstPrice');
 
         return !!(productName && productName.value.trim()
             && brand && brand.value.trim()
             && category && category.value.trim()
-            && vendor && vendor.value);
+            && vendor && vendor.value
+            && preGstPrice && preGstPrice.value.trim() && parseFloat(preGstPrice.value) >= 0);
     }
 
     function updateProductSubmitState() {
@@ -184,16 +233,27 @@
     document.addEventListener('DOMContentLoaded', function () {
         restoreProductDraft();
         updateProductSubmitState();
+        calculateGstInclusivePrice(); // Initial calculation
 
         const productForm = document.getElementById('productForm');
         if (productForm) {
-            productForm.addEventListener('input', function () {
+            productForm.addEventListener('input', function (e) {
                 saveProductDraft();
                 updateProductSubmitState();
+                
+                // Recalculate GST if price or GST percentage changes
+                if (e.target.id === 'preGstPrice' || e.target.id === 'gstPercentage') {
+                    calculateGstInclusivePrice();
+                }
             });
-            productForm.addEventListener('change', function () {
+            productForm.addEventListener('change', function (e) {
                 saveProductDraft();
                 updateProductSubmitState();
+                
+                // Recalculate GST if price or GST percentage changes
+                if (e.target.id === 'preGstPrice' || e.target.id === 'gstPercentage') {
+                    calculateGstInclusivePrice();
+                }
             });
         }
 

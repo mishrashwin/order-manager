@@ -1,85 +1,87 @@
 <script th:fragment="tableUtils" xmlns:th="http://www.w3.org/1999/xhtml">
-    document.addEventListener("DOMContentLoaded", function () {
-        // 📱 Mobile Table Scroll Indicator
-        document.querySelectorAll(".table-responsive").forEach(container => {
-            function checkScroll() {
-                const isScrolledToEnd = container.scrollLeft + container.clientWidth >= container.scrollWidth - 5;
-                container.classList.toggle("scrolled-end", isScrolledToEnd);
-            }
+  // Expose function for manual initialization (e.g., after AJAX loads)
+  window.initTableUtils = function(containerSelector, options) {
+    const container = containerSelector ? document.querySelector(containerSelector) : document;
+    const searchInputId = options?.searchInputId || 'searchInput';
+    const resetBtnId = options?.resetBtnId || 'resetSortBtn';
 
-            container.addEventListener("scroll", checkScroll);
-            checkScroll(); // Initial check
-        });
+      // 📱 Mobile Table Scroll Indicator
+      container.querySelectorAll(".table-responsive").forEach(tableContainer => {
+          function checkScroll() {
+              const isScrolledToEnd = tableContainer.scrollLeft + tableContainer.clientWidth >= tableContainer.scrollWidth - 5;
+              tableContainer.classList.toggle("scrolled-end", isScrolledToEnd);
+          }
 
-        document.querySelectorAll("table").forEach(table => {
-            const tbody = table.querySelector("tbody");
-            if (!tbody) return;
+          tableContainer.addEventListener("scroll", checkScroll);
+          checkScroll(); // Initial check
+      });
 
-            const originalRows = Array.from(tbody.querySelectorAll("tr"));
-            const searchInput = document.getElementById("searchInput");
-            const resetBtn = document.getElementById("resetSortBtn");
+      container.querySelectorAll("table").forEach(table => {
+          const tbody = table.querySelector("tbody");
+          if (!tbody) return;
 
-            // 🔍 Universal Search Filter
-            function applySearchFilter() {
-                if (!searchInput) return;
-                const filter = searchInput.value.toLowerCase();
-                tbody.querySelectorAll("tr").forEach(row => {
-                    const text = row.innerText.toLowerCase();
-                    row.style.display = text.includes(filter) ? "" : "none";
-                });
-            }
+          const originalRows = Array.from(tbody.querySelectorAll("tr"));
+          const searchInput = container.querySelector("#" + searchInputId);
+          const resetBtn = container.querySelector("#" + resetBtnId);
 
-            if (searchInput) {
-                searchInput.addEventListener("keyup", applySearchFilter);
-            }
+          // 🔍 Universal Search Filter
+          function applySearchFilter() {
+              if (!searchInput) return;
+              const filter = searchInput.value.toLowerCase();
+              tbody.querySelectorAll("tr").forEach(row => {
+                  const text = row.innerText.toLowerCase();
+                  row.style.display = text.includes(filter) ? "" : "none";
+              });
+          }
 
-            // ↕ Column Sorting
-            table.querySelectorAll("thead th").forEach((th, index) => {
-                if (th.classList.contains("no-sort") || th.innerText.toLowerCase().includes("action")) return;
+          if (searchInput) {
+              searchInput.addEventListener("keyup", applySearchFilter);
+          }
 
-                th.addEventListener("click", () => {
-                    const rows = Array.from(tbody.querySelectorAll("tr"));
-                    const isAsc = !th.classList.contains("sort-asc");
+          // ↕ Column Sorting
+          table.querySelectorAll("thead th").forEach((th, index) => {
+              if (th.classList.contains("no-sort") || th.innerText.toLowerCase().includes("action")) return;
 
-                    // Clear all indicators
-                    table.querySelectorAll("th").forEach(t => t.classList.remove("sort-asc", "sort-desc"));
-                    th.classList.toggle("sort-asc", isAsc);
-                    th.classList.toggle("sort-desc", !isAsc);
+              th.addEventListener("click", () => {
+                  const rows = Array.from(tbody.querySelectorAll("tr"));
+                  const isAsc = !th.classList.contains("sort-asc");
 
-                    // Sort visible rows only
-                    const visibleRows = rows.filter(r => r.style.display !== "none");
+                  table.querySelectorAll("th").forEach(t => t.classList.remove("sort-asc", "sort-desc"));
+                  th.classList.toggle("sort-asc", isAsc);
+                  th.classList.toggle("sort-desc", !isAsc);
 
-                    visibleRows.sort((a, b) => {
-                        const valA = a.children[index].innerText.trim().toLowerCase();
-                        const valB = b.children[index].innerText.trim().toLowerCase();
-                        return isAsc
-                            ? valA.localeCompare(valB, undefined, { numeric: true })
-                            : valB.localeCompare(valA, undefined, { numeric: true });
-                    });
+                  const visibleRows = rows.filter(r => r.style.display !== "none");
+                  visibleRows.sort((a, b) => {
+                      const cellA = a.children[index];
+                      const cellB = b.children[index];
+                      const valA = cellA.getAttribute('data-sort-value') || cellA.innerText.trim().toLowerCase();
+                      const valB = cellB.getAttribute('data-sort-value') || cellB.innerText.trim().toLowerCase();
+                      
+                      return isAsc
+                          ? valA.localeCompare(valB, undefined, { numeric: true })
+                          : valB.localeCompare(valA, undefined, { numeric: true });
+                  });
 
-                    // Rebuild the table keeping hidden ones below
-                    tbody.innerHTML = "";
-                    visibleRows.forEach(row => tbody.appendChild(row));
-                    rows.filter(r => r.style.display === "none").forEach(row => tbody.appendChild(row));
-                });
-            });
+                  tbody.innerHTML = "";
+                  visibleRows.forEach(row => tbody.appendChild(row));
+                  rows.filter(r => r.style.display === "none").forEach(row => tbody.appendChild(row));
+              });
+          });
 
-            // 🔁 Reset Sorting (but keep search filter)
-            if (resetBtn) {
-                resetBtn.addEventListener("click", () => {
-                    // Clear sort indicators
-                    table.querySelectorAll("th").forEach(t => t.classList.remove("sort-asc", "sort-desc"));
+          // 🔁 Reset Sorting
+          if (resetBtn) {
+              resetBtn.addEventListener("click", () => {
+                  table.querySelectorAll("th").forEach(t => t.classList.remove("sort-asc", "sort-desc"));
+                  tbody.innerHTML = "";
+                  originalRows.forEach(row => tbody.appendChild(row));
+                  applySearchFilter();
+              });
+          }
+      });
+  };
 
-                    // Restore original row order
-                    tbody.innerHTML = "";
-                    originalRows.forEach(row => {
-                        tbody.appendChild(row);
-                    });
-
-                    // Reapply current search (if any)
-                    applySearchFilter();
-                });
-            }
-        });
-    });
+  // Auto-initialize on DOMContentLoaded
+  document.addEventListener("DOMContentLoaded", function () {
+      window.initTableUtils();
+  });
 </script>

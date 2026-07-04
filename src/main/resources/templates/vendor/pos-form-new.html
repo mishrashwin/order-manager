@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:with="page='vendor-po'">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- FIX 9: Dynamic page title (was hardcoded "Create Vendor PO") -->
+  <title th:text="${vendorPo.id == null ? 'Create Vendor PO' : 'Edit Vendor PO'} + ' | Order Manager'">Vendor PO | Order
+    Manager</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body>
+
+  <!-- Unified Navbar -->
+  <div th:replace="~{fragments/unified-navbar :: unified-navbar}"></div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Header -->
+    <div class="content-header">
+      <h1>
+        <i class="bi bi-file-earmark-text"></i>
+        <span th:text="${vendorPo.id == null ? 'Create Vendor Purchase Order' : 'Edit Vendor Purchase Order'}">Vendor
+          Purchase Order</span>
+      </h1>
+      <a class="btn btn-secondary" th:href="@{/vendors#vendor-po}">
+        <i class="bi bi-arrow-left"></i> Back to Vendor POs
+      </a>
+    </div>
+
+    <!-- Flash messages (shown on redirect back to form on error) -->
+    <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+      <i class="bi bi-check-circle-fill"></i> <span th:text="${message}"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+      <i class="bi bi-exclamation-triangle-fill"></i> <span th:text="${error}"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Form Card -->
+    <div class="unified-card">
+      <!--
+        FIX 1: Separate create vs update action URLs — mirrors Order form:
+          Create  → POST /vendor/pos
+          Update  → POST /vendor/pos/update/{id}
+    -->
+      <form th:action="${vendorPo.id == null} ? @{/vendor/pos} : @{/vendor/pos/update/{id}(id=${vendorPo.id})}"
+        th:object="${vendorPo}" method="post" id="vendorPoForm">
+        <input type="hidden" th:field="*{id}">
+
+        <!-- Vendor + PO Number -->
+        <div class="row">
+          <div class="col-md-9 mb-4">
+            <label class="form-label"><i class="bi bi-building"></i> Vendor <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <select class="form-select form-control-custom" th:field="*{vendor.id}" required>
+                <option value="">-- Select Vendor --</option>
+                <option th:each="vendor : ${vendors}" th:value="${vendor.id}"
+                  th:text="${vendor.companyName + ' (GSTN: ' + (vendor.gstn ?: 'N/A') + ')'}">Vendor Name</option>
+              </select>
+              <a id="addVendorLink" class="btn btn-outline-success"
+                th:href="@{/vendors/new(returnTo=${vendorPo.id == null ? '/vendor/pos/new' : '/vendor/pos/' + vendorPo.id + '/edit'})}">
+                <i class="bi bi-plus-circle"></i> Add Vendor
+              </a>
+            </div>
+            <small class="form-text text-muted">If the desired vendor is missing, click "Add Vendor".</small>
+          </div>
+          <div class="col-md-3 mb-4">
+            <label class="form-label"><i class="bi bi-hash"></i> PO Number <span
+                class="text-muted">(Auto-generated)</span></label>
+            <input type="text" class="form-control form-control-custom bg-light" th:field="*{poNumber}" readonly>
+          </div>
+        </div>
+
+        <!-- Linked Order PO Numbers + Delivery Date + Email Recipients -->
+        <div class="row">
+          <div class="col-md-3 mb-4">
+            <label class="form-label"><i class="bi bi-link-45deg"></i> Linked Order PO Numbers</label>
+            <input type="text" class="form-control form-control-custom" th:field="*{linkedOrderPoNos}"
+              placeholder="PO-001, PO-002">
+            <div class="form-text">Reference order PO numbers (optional).</div>
+          </div>
+          <div class="col-md-3 mb-4">
+            <label class="form-label"><i class="bi bi-calendar"></i> Delivery Date <span
+                class="text-danger">*</span></label>
+            <input type="date" class="form-control form-control-custom"
+              th:value="${vendorPo.deliveryDate != null ? #temporals.format(vendorPo.deliveryDate, 'yyyy-MM-dd') : ''}"
+              name="deliveryDate" id="deliveryDate" required>
+          </div>
+          <div class="col-md-6 mb-4">
+            <label class="form-label"><i class="bi bi-envelope"></i> Email Recipients</label>
+            <input type="text" class="form-control form-control-custom" th:field="*{emails}"
+              placeholder="vendor1@example.com, vendor2@example.com">
+            <div class="form-text">Comma-separated addresses (vendor's own email is added automatically).</div>
+          </div>
+        </div>
+
+        <!-- Product Items -->
+        <div class="mb-4">
+          <label class="form-label"><i class="bi bi-boxes"></i> Products <span class="text-danger">*</span></label>
+          <div id="productRows">
+            <!-- Existing items (edit mode) -->
+            <div th:each="item, itemStat : ${vendorPo.items}" class="product-row row g-2 mb-2 align-items-center">
+              <div class="col-md-3">
+                <select class="form-select form-control-custom" name="itemProductIds" required>
+                  <option value="">-- Select Product --</option>
+                  <!--
+                    FIX: Use item.productId (plain Long column) for th:selected.
+                    item.product is a LAZY proxy — comparing item.product.id
+                    can silently fail if the proxy isn't initialised, causing
+                    the dropdown to show blank even though qty/price are correct.
+                -->
+                  <option th:each="p : ${products}" th:value="${p.id}"
+                    th:text="${p.name + (p.brand != null ? ' (' + p.brand + ')' : '')}" th:attr="data-price=${p.price != null ? p.price : ''},
+                                                 data-hsn=${p.hsnCode},
+                                                 data-unit=${p.unit},
+                                                 data-gst=${p.gstPercentage != null ? p.gstPercentage : ''}"
+                    th:selected="${item.productId != null and item.productId == p.id}">
+                  </option>
+                </select>
+              </div>
+              <div class="col-md-1">
+                <input type="text" class="form-control form-control-custom" name="itemHsnCodes" readonly
+                  placeholder="HSN Code" th:value="${item.hsnCode}">
+              </div>
+              <div class="col-md-1">
+                <input type="number" class="form-control form-control-custom" name="itemQuantities" min="0.01"
+                  step="0.01" placeholder="Qty" required th:value="${item.quantity}">
+              </div>
+              <div class="col-md-1">
+                <input type="text" class="form-control form-control-custom" name="itemUnits" readonly placeholder="Unit"
+                  th:value="${item.unit}">
+              </div>
+              <div class="col-md-2">
+                <div class="input-group">
+                  <span class="input-group-text">₹</span>
+                  <input type="number" class="form-control form-control-custom" name="itemPreGstUnitPrices" step="0.01"
+                    min="0" placeholder="Unit Price" required
+                    th:value="${item.preGstUnitPrice != null ? item.preGstUnitPrice : (item.unitPrice != null ? #numbers.formatDecimal(item.unitPrice / 1.18, 1, 2) : '')}">
+                </div>
+              </div>
+              <div class="col-md-1">
+                <input type="text" class="form-control form-control-custom" name="itemGstPercentages" readonly
+                  placeholder="GST %"
+                  th:value="${item.gstPercentage != null ? #numbers.formatDecimal(item.gstPercentage, 1, 2) + '%' : ''}">
+              </div>
+              <div class="col-md-2">
+                <div class="input-group">
+                  <span class="input-group-text">₹</span>
+                  <input type="text" class="form-control form-control-custom line-total-display" readonly
+                    placeholder="Total"
+                    th:value="${item.lineTotal != null ? #numbers.formatDecimal(item.lineTotal, 1, 2) : '0.00'}">
+                </div>
+              </div>
+              <div class="col-md-1">
+                <button type="button" class="btn btn-outline-danger btn-sm remove-product-row">
+                  <i class="bi bi-dash-circle"></i> Remove
+                </button>
+              </div>
+            </div>
+
+            <!-- Default empty row for new POs -->
+            <div th:if="${vendorPo.items == null or vendorPo.items.isEmpty()}"
+              class="product-row row g-2 mb-2 align-items-center">
+              <div class="col-md-3">
+                <select class="form-select form-control-custom" name="itemProductIds" required>
+                  <option value="">-- Select Product --</option>
+                  <option th:each="p : ${products}" th:value="${p.id}"
+                    th:text="${p.name + (p.brand != null ? ' (' + p.brand + ')' : '')}" th:attr="data-price=${p.price != null ? p.price : ''},
+                                                 data-hsn=${p.hsnCode},
+                                                 data-unit=${p.unit},
+                                                 data-gst=${p.gstPercentage != null ? p.gstPercentage : ''}">
+                  </option>
+                </select>
+              </div>
+              <div class="col-md-1">
+                <input type="text" class="form-control form-control-custom" name="itemHsnCodes" readonly
+                  placeholder="HSN Code">
+              </div>
+              <div class="col-md-1">
+                <input type="number" class="form-control form-control-custom" name="itemQuantities" min="0.01"
+                  step="0.01" placeholder="Qty" required>
+              </div>
+              <div class="col-md-1">
+                <input type="text" class="form-control form-control-custom" name="itemUnits" readonly
+                  placeholder="Unit">
+              </div>
+              <div class="col-md-2">
+                <div class="input-group">
+                  <span class="input-group-text">₹</span>
+                  <input type="number" class="form-control form-control-custom" name="itemPreGstUnitPrices" step="0.01"
+                    min="0" placeholder="Unit Price" required>
+                </div>
+              </div>
+              <div class="col-md-1">
+                <input type="text" class="form-control form-control-custom" name="itemGstPercentages" readonly
+                  placeholder="GST %">
+              </div>
+              <div class="col-md-2">
+                <div class="input-group">
+                  <span class="input-group-text">₹</span>
+                  <input type="text" class="form-control form-control-custom line-total-display" readonly
+                    placeholder="Total">
+                </div>
+              </div>
+              <div class="col-md-1">
+                <button type="button" class="btn btn-outline-danger btn-sm remove-product-row">
+                  <i class="bi bi-dash-circle"></i> Remove
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-2">
+            <button type="button" id="addProductRowBtn" class="btn btn-outline-success btn-sm">
+              <i class="bi bi-plus-circle"></i> Add Existing Product
+            </button>
+            <a id="addProductLink" class="btn btn-outline-secondary btn-sm"
+              th:href="@{/products/new(returnTo=${vendorPo.id == null ? '/vendor/pos/new' : '/vendor/pos/' + vendorPo.id + '/edit'})}">
+              <i class="bi bi-plus-circle"></i> Add New Product
+            </a>
+          </div>
+        </div>
+
+        <!-- Summary row -->
+        <div class="row">
+          <div class="col-md-6 mb-4">
+            <label class="form-label"><i class="bi bi-hash"></i> Total Qty</label>
+            <div class="form-control form-control-custom d-flex align-items-center bg-light-subtle"
+              id="orderQuantitySummary">0</div>
+          </div>
+          <div class="col-md-6 mb-4">
+            <label class="form-label"><i class="bi bi-currency-rupee"></i> Total Amount</label>
+            <div class="form-control form-control-custom d-flex align-items-center bg-light-subtle"
+              id="orderTotalAmountSummary">₹0.00</div>
+          </div>
+        </div>
+
+        <!-- Note -->
+        <div class="mb-4">
+          <label class="form-label"><i class="bi bi-sticky-note"></i> Note</label>
+          <textarea class="form-control form-control-custom" th:field="*{note}" rows="4"
+            placeholder="Additional notes for vendor..."></textarea>
+        </div>
+
+        <!-- Actions -->
+        <div class="d-flex justify-content-end gap-3 pt-3 border-top">
+          <a class="btn btn-outline-secondary" th:href="@{/vendors#vendor-po}">
+            <i class="bi bi-x-circle"></i> Cancel
+          </a>
+          <!-- FIX 8: Buttons start disabled; enabled by JS once mandatory fields are filled -->
+          <button type="submit" class="btn btn-primary-custom" id="saveBtn" disabled>
+            <i class="bi bi-check-circle"></i>
+            <span th:text="${vendorPo.id == null ? 'Save PO' : 'Update PO'}">Save PO</span>
+          </button>
+          <!-- "Save & Send" only shown on create — on edit there is no new email send -->
+          <button th:if="${vendorPo.id == null}" type="submit" name="send" value="true" class="btn btn-success-custom"
+            id="saveSendBtn" disabled>
+            <i class="bi bi-envelope"></i> Save &amp; Send Email
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div th:replace="~{fragments/footer :: footer}"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+
+
+    document.addEventListener('DOMContentLoaded', function () {
+
+
+      // ── Draft persistence ─────────────────────────────────────────────────────
+      const draftKey = 'om:draft:vendorPo:' + window.location.pathname;
+      const DRAFT_TTL = 8 * 60 * 60 * 1000; // 8 hours
+
+      function saveDraft() {
+        try {
+          const form = document.getElementById('vendorPoForm');
+          const values = {};
+          form.querySelectorAll('input[name], select[name], textarea[name]').forEach(function (field) {
+            // Exclude product row fields as they are handled by collectRows()
+            if (!field.closest('#productRows')) {
+              values[field.name] = field.value;
+            }
+          });
+
+          sessionStorage.setItem(draftKey, JSON.stringify({
+            updatedAt: Date.now(),
+            values: values,
+            rows: collectRows()
+          }));
+        } catch (e) { /* quota exceeded — silently ignore */ }
+      }
+
+      function restoreDraft() {
+        const raw = sessionStorage.getItem(draftKey);
+        if (!raw) return;
+        try {
+          const data = JSON.parse(raw);
+          if (!data.updatedAt || Date.now() - data.updatedAt > DRAFT_TTL) {
+            sessionStorage.removeItem(draftKey);
+            return;
+          }
+
+          // Restore product rows
+          if (data.rows && data.rows.length > 0) {
+            renderRows(data.rows);
+          }
+        } catch (e) {
+          sessionStorage.removeItem(draftKey);
+        }
+      }
+
+      function collectRows() {
+        return Array.from(document.querySelectorAll('#productRows .product-row')).map(function (row) {
+          return {
+            productId: row.querySelector('select[name="itemProductIds"]')?.value || '',
+            hsnCode: row.querySelector('input[name="itemHsnCodes"]')?.value || '',
+            unit: row.querySelector('input[name="itemUnits"]')?.value || '',
+            gstPercentage: row.querySelector('input[name="itemGstPercentages"]')?.value || '',
+            quantity: row.querySelector('input[name="itemQuantities"]')?.value || '',
+            preGstUnitPrice: row.querySelector('input[name="itemPreGstUnitPrices"]')?.value || ''
+          };
+        });
+      }
+
+      // ── Row template ──────────────────────────────────────────────────────────
+      const ROW_TEMPLATE = `
+          <div class="product-row row g-2 mb-2 align-items-center">
+              <div class="col-md-3">
+                  <select class="form-select form-control-custom" name="itemProductIds" required>
+                      <option value="">-- Select Product --</option>
+                  </select>
+              </div>
+              <div class="col-md-1">
+                  <input type="text" class="form-control form-control-custom"
+                         name="itemHsnCodes" readonly placeholder="HSN Code">
+              </div>
+              <div class="col-md-1">
+                  <input type="number" class="form-control form-control-custom"
+                         name="itemQuantities" min="0.01" step="0.01" placeholder="Qty" required>
+              </div>
+              <div class="col-md-1">
+                  <input type="text" class="form-control form-control-custom"
+                         name="itemUnits" readonly placeholder="Unit">
+              </div>
+              <div class="col-md-2">
+                  <div class="input-group">
+                      <span class="input-group-text">₹</span>
+                      <input type="number" class="form-control form-control-custom"
+                             name="itemPreGstUnitPrices" step="0.01" min="0" placeholder="Unit Price" required>
+                  </div>
+              </div>
+              <div class="col-md-1">
+                  <input type="text" class="form-control form-control-custom"
+                         name="itemGstPercentages" readonly placeholder="GST %">
+              </div>
+              <div class="col-md-2">
+                  <div class="input-group">
+                      <span class="input-group-text">₹</span>
+                      <input type="text" class="form-control form-control-custom line-total-display"
+                             readonly placeholder="Total">
+                  </div>
+              </div>
+              <div class="col-md-1">
+                  <button type="button" class="btn btn-outline-danger btn-sm remove-product-row">
+                      <i class="bi bi-dash-circle"></i> Remove
+                  </button>
+              </div>
+          </div>`;
+
+      function getProductOptions() {
+        const first = document.querySelector('#productRows select[name="itemProductIds"]');
+        return first ? first.innerHTML.replace(/\s*selected\s*=\s*["']?selected["']?/gi, '') : '';
+      }
+
+      function createRow(data, optionsHtml) {
+        const div = document.createElement('div');
+        div.innerHTML = ROW_TEMPLATE;
+        const row = div.firstElementChild;
+        const select = row.querySelector('select[name="itemProductIds"]');
+
+        select.innerHTML = optionsHtml || getProductOptions();
+        // Explicitly reset selection when no productId is provided to match Create mode behavior
+        if (data?.productId) {
+          select.value = data.productId;
+        } else {
+          select.value = '';
+        }
+        if (data?.hsnCode) row.querySelector('input[name="itemHsnCodes"]').value = data.hsnCode;
+        if (data?.unit) row.querySelector('input[name="itemUnits"]').value = data.unit;
+        if (data?.gstPercentage) row.querySelector('input[name="itemGstPercentages"]').value = data.gstPercentage;
+        if (data?.quantity) row.querySelector('input[name="itemQuantities"]').value = data.quantity;
+        if (data?.preGstUnitPrice) row.querySelector('input[name="itemPreGstUnitPrices"]').value = data.preGstUnitPrice;
+
+        return row;
+      }
+
+      function renderRows(rows) {
+        const container = document.getElementById('productRows');
+        const options = getProductOptions();
+        container.innerHTML = '';
+        (rows.length ? rows : [{}]).forEach(function (r) {
+          container.appendChild(createRow(r, options));
+        });
+      }
+
+      // ── Totals ────────────────────────────────────────────────────────────────
+      function recalc() {
+        let totalQty = 0, totalAmt = 0;
+        document.querySelectorAll('#productRows .product-row').forEach(function (row) {
+          const qty = parseFloat(row.querySelector('input[name="itemQuantities"]')?.value || 0);
+          const preGstPrice = parseFloat(row.querySelector('input[name="itemPreGstUnitPrices"]')?.value || 0);
+          const gstPercentText = row.querySelector('input[name="itemGstPercentages"]')?.value || '0';
+          const gstPercent = parseFloat(gstPercentText.replace('%', '')) || 0;
+
+          let gstInclusiveUnitPrice = preGstPrice;
+          if (preGstPrice > 0 && gstPercent > 0) {
+            gstInclusiveUnitPrice = preGstPrice * (1 + gstPercent / 100);
+          }
+
+          // Calculate and update Line Total display (Quantity × GST-Inclusive Unit Price)
+          const lineTotal = qty * gstInclusiveUnitPrice;
+          const lineTotalDisplayInput = row.querySelector('input[placeholder="Total"]'); // This is the final line total
+          if (lineTotalDisplayInput) {
+            if (preGstPrice > 0 && qty > 0) {
+              lineTotalDisplayInput.value = lineTotal > 0 ? lineTotal.toFixed(2) : '0.00';
+            } else {
+              lineTotalDisplayInput.value = '';
+            }
+          }
+
+          if (!isNaN(qty) && qty > 0 && preGstPrice > 0) {
+            totalQty += qty;
+            totalAmt += lineTotal;
+          }
+        });
+        document.getElementById('orderQuantitySummary').textContent = totalQty % 1 === 0
+          ? String(totalQty)
+          : totalQty.toFixed(2);
+        document.getElementById('orderTotalAmountSummary').textContent =
+          '₹' + totalAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+
+      // ── FIX 8: Submit guard ───────────────────────────────────────────────────
+      function areMandatoryFieldsFilled() {
+        const vendorSelect = document.querySelector('#vendorPoForm select[name="vendor.id"]');
+        const deliveryDate = document.getElementById('deliveryDate');
+
+        const headerValid = !!(
+          vendorSelect && vendorSelect.value &&
+          deliveryDate && deliveryDate.value
+        );
+        if (!headerValid) return false;
+
+        const rows = document.querySelectorAll('#productRows .product-row');
+        if (!rows.length) return false;
+
+        return Array.from(rows).every(function (row) {
+          const product = row.querySelector('select[name="itemProductIds"]');
+          const qty = row.querySelector('input[name="itemQuantities"]');
+          const preGstPrice = row.querySelector('input[name="itemPreGstUnitPrices"]');
+          return !!(
+            product && product.value &&
+            qty && qty.value && Number(qty.value) > 0 &&
+            preGstPrice && preGstPrice.value !== '' && Number(preGstPrice.value) >= 0
+          );
+        });
+      }
+
+      function updateSubmitState() {
+        const enabled = areMandatoryFieldsFilled();
+        const saveBtn = document.getElementById('saveBtn');
+        const saveSendBtn = document.getElementById('saveSendBtn');
+        if (saveBtn) saveBtn.disabled = !enabled;
+        if (saveSendBtn) saveSendBtn.disabled = !enabled;
+      }
+
+      // ── Event wiring ──────────────────────────────────────────────────────────
+
+      // Add row
+      document.getElementById('addProductRowBtn').addEventListener('click', function () {
+        document.getElementById('productRows').appendChild(createRow({}, getProductOptions()));
+        recalc();
+        updateSubmitState();
+      });
+
+      // Remove row / product select change / qty+price input
+      document.getElementById('productRows').addEventListener('click', function (e) {
+        if (e.target.closest('.remove-product-row')) {
+          const rows = document.querySelectorAll('#productRows .product-row');
+          if (rows.length > 1) {
+            e.target.closest('.product-row').remove();
+            recalc();
+            saveDraft();
+            updateSubmitState();
+          }
+        }
+      });
+
+      document.getElementById('productRows').addEventListener('change', function (e) {
+        if (e.target.matches('select[name="itemProductIds"]')) {
+          const row = e.target.closest('.product-row');
+          const opt = e.target.selectedOptions[0];
+          // FIX 6: Auto-fill pre-GST price, HSN, unit, and GST% on product select
+          const preGstPriceInput = row?.querySelector('input[name="itemPreGstUnitPrices"]');
+          const hsnInput = row?.querySelector('input[name="itemHsnCodes"]');
+          const unitInput = row?.querySelector('input[name="itemUnits"]');
+          const gstInput = row?.querySelector('input[name="itemGstPercentages"]');
+
+          // Clear all auto-populated fields if no product is selected
+          if (!e.target.value || e.target.value === '') {
+            if (preGstPriceInput) preGstPriceInput.value = '';
+            if (hsnInput) hsnInput.value = '';
+            if (unitInput) unitInput.value = '';
+            if (gstInput) gstInput.value = '';
+          } else {
+            // Auto-populate fields when a product is selected
+            // Calculate pre-GST price from GST-inclusive price
+            if (preGstPriceInput && opt?.dataset.price && opt?.dataset.gst) {
+              const gstPercent = parseFloat(opt.dataset.gst) || 0;
+              const gstInclusivePrice = parseFloat(opt.dataset.price) || 0;
+              if (gstPercent > 0 && gstInclusivePrice > 0) {
+                const preGstPrice = gstInclusivePrice / (1 + gstPercent / 100);
+                preGstPriceInput.value = preGstPrice.toFixed(2);
+              } else {
+                preGstPriceInput.value = opt.dataset.price;
+              }
+            } else if (preGstPriceInput && opt?.dataset.price) {
+              preGstPriceInput.value = opt.dataset.price;
+            }
+
+            if (hsnInput) hsnInput.value = opt?.dataset.hsn || '';
+            if (unitInput) unitInput.value = opt?.dataset.unit || '';
+            if (gstInput && opt?.dataset.gst) gstInput.value = opt?.dataset.gst + '%';
+          }
+          recalc();
+          saveDraft();
+          updateSubmitState();
+        }
+      });
+
+      document.getElementById('productRows').addEventListener('input', function () {
+        recalc();
+        saveDraft();
+        updateSubmitState();
+      });
+
+      // Header fields
+      document.getElementById('vendorPoForm').addEventListener('input', updateSubmitState);
+      document.getElementById('vendorPoForm').addEventListener('change', updateSubmitState);
+
+      // Save draft before navigating away to add a product
+      const addProductLink = document.getElementById('addProductLink');
+      if (addProductLink) {
+        addProductLink.addEventListener('click', function (e) {
+          e.preventDefault();
+          saveDraft();
+          window.location.href = this.href;
+        });
+      }
+
+      // Save draft before navigating away to add a vendor
+      const addVendorLink = document.getElementById('addVendorLink');
+      if (addVendorLink) {
+        addVendorLink.addEventListener('click', function (e) {
+          e.preventDefault();
+          saveDraft();
+          window.location.href = this.href;
+        });
+      }
+
+      // Clear draft on successful submit
+      document.getElementById('vendorPoForm').addEventListener('submit', function () {
+        sessionStorage.removeItem(draftKey);
+      });
+
+      // ── Init ──────────────────────────────────────────────────────────────────
+      const isEditMode = document.querySelector('input[name="id"]')?.value;
+
+      // Clear draft in Create mode to prevent restoring stale data from previous sessions
+      // Only restore draft if explicitly needed (e.g., after navigating away to add product/vendor)
+      if (!isEditMode) {
+        sessionStorage.removeItem(draftKey);
+      }
+
+      recalc();
+      updateSubmitState();
+    });
+  </script>
+</body>
+
+</html>

@@ -52,7 +52,8 @@ public class Order {
   @JoinColumn(name = "company_id", nullable = false)
   private Company company;
 
-  @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true,
+      fetch = FetchType.EAGER)
   private List<OrderItem> orderItems = new ArrayList<>();
 
   /**
@@ -104,7 +105,6 @@ public class Order {
     this.orderNote = orderNote;
   }
 
-  @Transient
   public String getDisplayProductSummary() {
     if (orderItems != null && !orderItems.isEmpty()) {
       String summary =
@@ -124,7 +124,6 @@ public class Order {
     return quantity != null ? productName + " [" + quantity + "]" : productName;
   }
 
-  @Transient
   public String getDisplayQuantitySummary() {
     if (orderItems != null && !orderItems.isEmpty()) {
       String summary = orderItems.stream().map(item -> {

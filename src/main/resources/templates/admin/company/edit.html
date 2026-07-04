@@ -35,7 +35,7 @@
 
     <!-- Form Card -->
     <div class="unified-card">
-        <form th:action="@{/admin/company/update}" th:object="${company}" method="post" class="row g-3">
+        <form th:action="@{/admin/company/update}" th:object="${company}" method="post" enctype="multipart/form-data" class="row g-3">
             <input type="hidden" th:field="*{id}">
 
             <div class="col-md-6">
@@ -63,6 +63,55 @@
                 <textarea class="form-control form-control-custom" th:field="*{bio}" rows="5"
                           placeholder="Enter a brief description about your company (optional)"></textarea>
                 <div class="form-text">A brief description about your company, its mission, or services (optional)</div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label"><i class="bi bi-receipt"></i> Company GSTN <span class="text-danger">*</span></label>
+                <input type="text" class="form-control form-control-custom" th:field="*{gstn}"
+                       placeholder="Company GSTIN (optional)">
+                <div class="form-text">Company GSTIN for tax compliance and PO generation</div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label"><i class="bi bi-geo-alt-fill"></i> State  <span class="text-danger">*</span></label>
+                <select class="form-select form-control-custom" th:field="*{state}">
+                    <option value="">Select State</option>
+                    <option th:each="state : ${T(com.example.ordermanager.utils.IndianState).values()}"
+                            th:value="${state}"
+                            th:text="${state.displayName}"></option>
+                </select>
+                <div class="form-text">Company state for GST tax calculation (CGST/SGST vs IGST)</div>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label"><i class="bi bi-geo-alt"></i> Company Address</label>
+                <textarea class="form-control form-control-custom" th:field="*{address}" rows="3"
+                          placeholder="Enter full company address (optional)"></textarea>
+                <div class="form-text">Full company address for invoices and purchase orders</div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label"><i class="bi bi-image"></i> Logo Upload</label>
+                <input type="file" name="logoFile" class="form-control form-control-custom"
+                       accept="image/png, image/jpeg">
+                <div class="form-text">Max size: 200 KB (PNG/JPEG only)</div>
+                <div th:if="${logoBase64 != null}" class="mt-2">
+                    <img th:src="${logoBase64}"
+                         style="max-height: 60px; max-width: 200px;" alt="Current logo">
+                    <div class="form-text text-muted">Current logo (upload new to replace)</div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label"><i class="bi bi-pencil-square"></i> Signature Upload</label>
+                <input type="file" name="signatureFile" class="form-control form-control-custom"
+                       accept="image/png, image/jpeg">
+                <div class="form-text">Max size: 100 KB (PNG/JPEG only)</div>
+                <div th:if="${signatureBase64 != null}" class="mt-2">
+                    <img th:src="${signatureBase64}"
+                         style="max-height: 50px; max-width: 200px;" alt="Current signature">
+                    <div class="form-text text-muted">Current signature (upload new to replace)</div>
+                </div>
             </div>
 
             <div class="col-12">

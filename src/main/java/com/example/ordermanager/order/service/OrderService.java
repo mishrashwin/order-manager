@@ -11,6 +11,8 @@ import com.example.ordermanager.order.entity.OrderStatus;
 import com.example.ordermanager.order.exception.OrderNotFoundException;
 import com.example.ordermanager.order.repository.OrderRepository;
 import com.example.ordermanager.utils.Helper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -44,6 +46,24 @@ public class OrderService {
   public List<Order> getOrdersByCompanyIdAndDateRange(Long companyId, LocalDate startDate,
       LocalDate endDate) {
     return orderRepository.findByCompanyIdAndOrderDateBetween(companyId, startDate, endDate);
+  }
+
+  /**
+   * TENANT-AWARE: Get paginated orders for a specific company
+   *
+   * @param companyId Company ID
+   * @param pageable Pagination parameters
+   * @return Page of orders
+   */
+  public Page<Order> getOrdersByCompanyId(Long companyId, Pageable pageable) {
+    return orderRepository.findByCompanyId(companyId, pageable);
+  }
+
+  public Page<Order> searchOrders(Long companyId, String search, Pageable pageable) {
+    if (search == null || search.trim().isEmpty()) {
+      return orderRepository.findByCompanyId(companyId, pageable);
+    }
+    return orderRepository.searchOrders(companyId, search, pageable);
   }
 
   public Order createOrder(Order order) {
@@ -120,6 +140,20 @@ public class OrderService {
       return;
     }
 
+    // Calculate GST-inclusive prices for order items that have pre-GST prices
+    for (OrderItem item : order.getOrderItems()) {
+      if (item.getPreGstUnitPrice() != null && item.getProduct() != null
+          && item.getProduct().getGstPercentage() != null) {
+        item.calculateGstInclusivePrice(item.getProduct().getGstPercentage());
+      } else if (item.getPreGstUnitPrice() != null && item.getUnitPrice() != null) {
+        // If we have pre-GST price but no GST percentage from product, use legacy unitPrice as
+        // GST-inclusive
+        item.setGstInclusiveUnitPrice(java.math.BigDecimal.valueOf(item.getUnitPrice()));
+        item.setGstAmount(
+            java.math.BigDecimal.valueOf(item.getUnitPrice()).subtract(item.getPreGstUnitPrice()));
+      }
+    }
+
     String names = order.getOrderItems().stream().map(OrderItem::getProductName)
         .filter(n -> n != null && !n.isEmpty()).collect(java.util.stream.Collectors.joining(", "));
     if (!names.isEmpty()) {
@@ -132,7 +166,10 @@ public class OrderService {
 
     double totalAmount = order.getOrderItems().stream().mapToDouble(item -> {
       int qty = item.getQuantity() != null ? item.getQuantity() : 0;
-      double unitPrice = item.getUnitPrice() != null ? item.getUnitPrice() : 0.0;
+      // Use GST-inclusive unit price if available, otherwise fall back to legacy unitPrice
+      double unitPrice =
+          (item.getGstInclusiveUnitPrice() != null) ? item.getGstInclusiveUnitPrice().doubleValue()
+              : (item.getUnitPrice() != null ? item.getUnitPrice() : 0.0);
       return qty * unitPrice;
     }).sum();
     order.setTotalAmount(totalAmount);

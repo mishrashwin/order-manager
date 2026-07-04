@@ -217,6 +217,27 @@ public class CompanyService {
     // Update bio (can be null or empty)
     company.setBio(updatedCompany.getBio());
 
+    // Update GSTN (can be null or empty)
+    company.setGstn(updatedCompany.getGstn());
+
+    // Update state (can be null)
+    company.setState(updatedCompany.getState());
+
+    // Update address (can be null or empty)
+    company.setAddress(updatedCompany.getAddress());
+
+    // Update logo data (can be null or empty)
+    if (updatedCompany.getLogoData() != null) {
+      company.setLogoData(updatedCompany.getLogoData());
+      company.setLogoContentType(updatedCompany.getLogoContentType());
+    }
+
+    // Update signature data (can be null or empty)
+    if (updatedCompany.getSignatureData() != null) {
+      company.setSignatureData(updatedCompany.getSignatureData());
+      company.setSignatureContentType(updatedCompany.getSignatureContentType());
+    }
+
     return companyRepository.save(company);
   }
 

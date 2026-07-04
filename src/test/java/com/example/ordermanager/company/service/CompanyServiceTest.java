@@ -174,5 +174,96 @@ class CompanyServiceTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Company with ID 99 not found");
   }
+
+  @Test
+  void updateCompany_shouldUpdateAllFieldsSuccessfully() {
+    Company existingCompany = new Company();
+    existingCompany.setId(5L);
+    existingCompany.setName("Old Company Name");
+    existingCompany.setBio("Old bio");
+    existingCompany.setGstn("OldGSTN");
+
+    Company updatedCompany = new Company();
+    updatedCompany.setName("New Company Name");
+    updatedCompany.setBio("New bio description");
+    updatedCompany.setGstn("27AAAPL1234C1ZV");
+
+    when(companyRepository.findById(5L)).thenReturn(Optional.of(existingCompany));
+    when(companyRepository.findByName("New Company Name")).thenReturn(Optional.empty());
+    when(companyRepository.save(any(Company.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    Company result = companyService.updateCompany(5L, updatedCompany);
+
+    assertThat(result.getName()).isEqualTo("New Company Name");
+    assertThat(result.getBio()).isEqualTo("New bio description");
+    assertThat(result.getGstn()).isEqualTo("27AAAPL1234C1ZV");
+    verify(companyRepository).save(existingCompany);
+  }
+
+  @Test
+  void updateCompany_shouldUpdateBioAndGstnOnly() {
+    Company existingCompany = new Company();
+    existingCompany.setId(5L);
+    existingCompany.setName("Company Name");
+    existingCompany.setBio("Old bio");
+    existingCompany.setGstn("OldGSTN");
+
+    Company updatedCompany = new Company();
+    updatedCompany.setName(null); // No name change
+    updatedCompany.setBio("Updated bio only");
+    updatedCompany.setGstn("27AAAPL1234C1ZV");
+
+    when(companyRepository.findById(5L)).thenReturn(Optional.of(existingCompany));
+    when(companyRepository.save(any(Company.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    Company result = companyService.updateCompany(5L, updatedCompany);
+
+    assertThat(result.getName()).isEqualTo("Company Name"); // Unchanged
+    assertThat(result.getBio()).isEqualTo("Updated bio only");
+    assertThat(result.getGstn()).isEqualTo("27AAAPL1234C1ZV");
+    verify(companyRepository).save(existingCompany);
+  }
+
+  @Test
+  void updateCompany_shouldHandleNullBioAndGstn() {
+    Company existingCompany = new Company();
+    existingCompany.setId(5L);
+    existingCompany.setName("Company Name");
+    existingCompany.setBio("Old bio");
+    existingCompany.setGstn("OldGSTN");
+
+    Company updatedCompany = new Company();
+    updatedCompany.setName("Company Name");
+    updatedCompany.setBio(null);
+    updatedCompany.setGstn(null);
+
+    when(companyRepository.findById(5L)).thenReturn(Optional.of(existingCompany));
+    when(companyRepository.findByName("Company Name")).thenReturn(Optional.of(existingCompany));
+    when(companyRepository.save(any(Company.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    Company result = companyService.updateCompany(5L, updatedCompany);
+
+    assertThat(result.getName()).isEqualTo("Company Name");
+    assertThat(result.getBio()).isNull();
+    assertThat(result.getGstn()).isNull();
+    verify(companyRepository).save(existingCompany);
+  }
+
+  @Test
+  void updateCompany_shouldThrowWhenCompanyNotFound() {
+    Company updatedCompany = new Company();
+    updatedCompany.setName("New Company Name");
+    updatedCompany.setBio("New bio");
+    updatedCompany.setGstn("27AAAPL1234C1ZV");
+
+    when(companyRepository.findById(5L)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> companyService.updateCompany(5L, updatedCompany))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Company with ID 5 not found");
+  }
 }
 

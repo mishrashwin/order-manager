@@ -6,9 +6,11 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.example.ordermanager.admin.dto.ClientOrderStatDTO;
+import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.order.entity.OrderActivity;
 import com.example.ordermanager.order.entity.Order;
@@ -414,6 +416,70 @@ class AdminControllerTest {
     assertThat(view).isEqualTo("admin/dashboard");
     assertThat(model.getAttribute("paymentReminder")).isNull();
     assertThat(model.getAttribute("companyId")).isEqualTo(5L);
+  }
+
+  @Test
+  void updateCompany_shouldUpdateCompanyDetailsSuccessfully() {
+    Company existingCompany = new Company();
+    existingCompany.setId(5L);
+    existingCompany.setName("Old Company Name");
+    existingCompany.setBio("Old bio");
+    existingCompany.setGstn("OldGSTN");
+
+    Company updatedCompany = new Company();
+    updatedCompany.setName("New Company Name");
+    updatedCompany.setBio("New bio description");
+    updatedCompany.setGstn("27AAAPL1234C1ZV");
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    when(companyService.updateCompany(5L, updatedCompany)).thenReturn(existingCompany);
+
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+    String view = adminController.updateCompany(updatedCompany, redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/admin/company");
+    assertThat(redirectAttributes.getFlashAttributes().get("message"))
+        .isEqualTo("Company details updated successfully.");
+
+    verify(companyService).updateCompany(5L, updatedCompany);
+  }
+
+  @Test
+  void updateCompany_shouldHandleCompanyNotFoundError() {
+    Company updatedCompany = new Company();
+    updatedCompany.setName("New Company Name");
+    updatedCompany.setBio("New bio");
+    updatedCompany.setGstn("27AAAPL1234C1ZV");
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    when(companyService.updateCompany(5L, updatedCompany))
+        .thenThrow(new IllegalArgumentException("Company with ID 5 not found"));
+
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+    String view = adminController.updateCompany(updatedCompany, redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/admin/company/edit");
+    assertThat(redirectAttributes.getFlashAttributes().get("error"))
+        .isEqualTo("Company with ID 5 not found");
+  }
+
+  @Test
+  void updateCompany_shouldHandleDuplicateNameError() {
+    Company updatedCompany = new Company();
+    updatedCompany.setName("Duplicate Company Name");
+    updatedCompany.setBio("New bio");
+    updatedCompany.setGstn("27AAAPL1234C1ZV");
+
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    when(companyService.updateCompany(5L, updatedCompany)).thenThrow(
+        new IllegalArgumentException("Company with name 'Duplicate Company Name' already exists"));
+
+    RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
+    String view = adminController.updateCompany(updatedCompany, redirectAttributes);
+
+    assertThat(view).isEqualTo("redirect:/admin/company/edit");
+    assertThat(redirectAttributes.getFlashAttributes().get("error"))
+        .isEqualTo("Company with name 'Duplicate Company Name' already exists");
   }
 
 }

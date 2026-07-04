@@ -27,8 +27,12 @@
 
     <!-- Spring Security error -->
     <div th:if="${param.error}" class="alert alert-danger py-2 small text-center rounded-3" role="alert">
-        <span th:text="${param.reason != null ? param.reason[0] : 'Invalid credentials or account not verified.'}"></span>
-        <div th:if="${param.reason == null || #strings.contains(#strings.toLowerCase(param.reason[0]), 'verified') || #strings.contains(#strings.toLowerCase(param.reason[0]), 'verification')}">
+        <span th:if="${param.reason != null and param.reason[0] == 'csrf-expired'}" class="csrf-expired-message">
+            <i class="bi bi-clock-history me-1"></i>
+            Your login session expired due to inactivity. Please try again - the page has been refreshed with a new security token.
+        </span>
+        <span th:unless="${param.reason != null and param.reason[0] == 'csrf-expired'}" th:text="${param.reason != null ? param.reason[0] : 'Invalid credentials or account not verified.'}"></span>
+        <div th:if="${param.reason == null or #strings.contains(#strings.toLowerCase(param.reason[0]), 'verified') or #strings.contains(#strings.toLowerCase(param.reason[0]), 'verification')}">
             <br>
             <a id="resendLink" th:href="@{/resend-verification}" class="text-decoration-none fw-semibold">
                 Resend verification email
@@ -95,6 +99,62 @@
             usernameField.addEventListener("input", updateLink);
             updateLink();
         }
+        
+        // Handle CSRF token refresh for long idle periods
+        const loginForm = document.querySelector('form[action="/login"]');
+        if (loginForm) {
+            loginForm.addEventListener('submit', async (e) => {
+                // Check if session might be stale (page loaded more than 20 minutes ago)
+                const pageLoadTime = performance.timing.navigationStart;
+                const currentTime = Date.now();
+                const idleTimeMinutes = (currentTime - pageLoadTime) / (1000 * 60);
+                
+                if (idleTimeMinutes > 20) {
+                    e.preventDefault();
+                    
+                    // Show loading state
+                    const submitBtn = loginForm.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i> Refreshing...';
+                    submitBtn.disabled = true;
+                    
+                    try {
+                        // Refresh the page to get a new CSRF token
+                        window.location.reload();
+                    } catch (error) {
+                        // Fallback: submit the form anyway
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
+                        loginForm.submit();
+                    }
+                }
+            });
+        }
+        
+        // Auto-refresh CSRF token every 15 minutes
+        const csrfRefreshInterval = setInterval(async () => {
+            try {
+                // Only refresh if page is visible and user is active
+                if (!document.hidden && document.hasFocus()) {
+                    const response = await fetch('/login', {
+                        method: 'HEAD',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                    
+                    // If we get a new CSRF cookie, the page will be refreshed on next form submission
+                    console.log('CSRF token refreshed');
+                }
+            } catch (error) {
+                console.log('CSRF refresh failed, will retry later');
+            }
+        }, 15 * 60 * 1000); // 15 minutes
+        
+        // Clean up interval when page is unloaded
+        window.addEventListener('beforeunload', () => {
+            clearInterval(csrfRefreshInterval);
+        });
     });
     setTimeout(() => {
         document.querySelectorAll('.alert').forEach(a => {

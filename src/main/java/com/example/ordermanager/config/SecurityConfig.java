@@ -120,6 +120,16 @@ public class SecurityConfig {
     return (request, response, accessDeniedException) -> {
       String reason = "forbidden";
       if (accessDeniedException instanceof CsrfException) {
+        // Check if this is a login-related CSRF failure
+        String requestURI = request.getRequestURI();
+        String referer = request.getHeader("referer");
+
+        // If it's a login CSRF failure, redirect back to login with a helpful message
+        if ("/login".equals(requestURI) || (referer != null && referer.contains("/login"))) {
+          response.sendRedirect("/login?error&reason=csrf-expired");
+          return;
+        }
+
         reason = "csrf";
       }
       var authentication = SecurityContextHolder.getContext().getAuthentication();

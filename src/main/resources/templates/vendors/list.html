@@ -1,124 +1,316 @@
 <!DOCTYPE html>
+
 <html xmlns:th="http://www.thymeleaf.org" th:with="page='vendors'">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vendors | Order Manager</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vendors | Order Manager</title>
+
+  <!-- CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+
 </head>
+
 <body>
 
-<!-- Unified Navbar -->
+<!-- Navbar -->
+
 <div th:replace="~{fragments/unified-navbar :: unified-navbar}"></div>
 
-<!-- Main Content (Full Width) -->
 <div class="main-content">
-    <!-- Header -->
-    <div class="content-header">
-        <h1><i class="bi bi-building"></i> Vendor Management</h1>
-        <a class="btn btn-success-custom" th:href="@{/vendors/new}">
-            <i class="bi bi-plus-circle"></i> Add New Vendor
-        </a>
-    </div>
 
-    <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+  <!-- Header -->
+  <div class="content-header">
+    <h1><i class="bi bi-building"></i> Vendor Management</h1>
+    <div class="header-actions">
+      <a id="addVendorBtn" class="btn btn-success-custom" th:href="@{/vendors/new}">
+        <i class="bi bi-plus-circle"></i> Add New Vendor
+      </a>
+      <a id="createVendorPoBtn" class="btn btn-success-custom" th:href="@{/vendor/pos/new}" style="display: none;">
+        <i class="bi bi-file-earmark-plus"></i> Create Vendor PO
+      </a>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <ul class="nav nav-tabs mb-4" id="vendorTabs" role="tablist">
+    <li class="nav-item">
+      <button class="nav-link active"
+              id="vendor-list-tab"
+              data-bs-toggle="tab"
+              data-bs-target="#vendor-list"
+              type="button">
+        <i class="bi bi-list-ul"></i> Vendor List
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link"
+              id="vendor-po-tab"
+              data-bs-toggle="tab"
+              data-bs-target="#vendor-po"
+              type="button">
+        <i class="bi bi-file-earmark-text"></i> Vendor PO
+      </button>
+    </li>
+  </ul>
+
+
+
+  <!-- Tab Content -->
+  <div class="tab-content">
+
+    <!-- ================= VENDOR LIST ================= -->
+    <div class="tab-pane fade show active" id="vendor-list">
+      <div class="unified-card">
+      <!-- Header -->
+      <div class="unified-card-header">
+        <h5><i class="bi bi-file-earmark-text"></i> Vendor List</h5>
+      </div>
+
+      <!-- Alerts -->
+      <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
         <i class="bi bi-check-circle-fill"></i> <span th:text="${message}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+      </div>
 
-    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+      <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
         <i class="bi bi-exclamation-triangle-fill"></i> <span th:text="${error}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+      </div>
 
-    <!-- Search & Filters -->
-    <div class="search-box om-list-toolbar">
+      <!-- Search -->
+      <div class="search-box om-list-toolbar">
         <div class="om-list-toolbar-row">
-            <input type="text" id="searchInput" class="form-control-custom om-list-search-input"
-                   placeholder="🔍 Search vendors by company, contact, email, phone...">
-            <div class="om-list-actions">
-                <button id="resetSortBtn" class="btn btn-outline-secondary om-btn-icon">
-                <i class="bi bi-arrow-clockwise"></i> Reset Sort
-                </button>
-            </div>
-        </div>
-    </div>
+          <form method="get" action="/vendors" class="d-flex gap-2 flex-grow-1">
+            <input type="text"
+                   name="search"
+                   class="form-control-custom om-list-search-input"
+                   placeholder="🔍 Search vendors by company, contact, email, phone..."
+                   th:value="${search}">
+            <button type="submit" class="btn btn-primary om-btn-icon" title="Search">
+              <i class="bi bi-search"></i>
+            </button>
+            <a th:href="@{/vendors}" class="btn btn-outline-secondary om-btn-icon" title="Clear Search">
+              <i class="bi bi-x-lg"></i>
+            </a>
+          </form>
 
-    <!-- Empty State -->
-    <div th:if="${#lists.isEmpty(vendors)}" class="empty-state">
+          <div class="om-list-actions">
+            <button id="resetSortBtn" class="btn btn-outline-secondary om-btn-icon">
+              <i class="bi bi-arrow-clockwise"></i> Reset Sort
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty -->
+      <div th:if="${#lists.isEmpty(vendors)}" class="empty-state">
         <i class="bi bi-shop"></i>
         <h4>No vendors found</h4>
         <p>Get started by adding your first vendor</p>
-        <a th:href="@{/vendors/new}" class="btn btn-success-custom">
-            <i class="bi bi-plus-circle"></i> Add First Vendor
+        <a class="btn btn-primary-custom" th:href="@{/vendors/new}">
+          <i class="bi bi-plus-circle"></i> Add First Vendor
         </a>
+      </div>
+
+      <!-- Table -->
+      <div th:if="${!#lists.isEmpty(vendors)}">
+        <div class="table-responsive">
+          <table class="table unified-table table-hover align-middle mb-0">
+            <thead>
+            <tr>
+              <th>#</th>
+              <th class="om-sortable">Company</th>
+              <th class="om-sortable">Contact</th>
+              <th class="om-sortable">Email</th>
+              <th class="om-sortable">Phone</th>
+              <th class="om-sortable">GSTN</th>
+              <th class="om-sortable">Address</th>
+              <th class="text-center no-sort">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="vendor, iterStat : ${vendors}">
+              <td th:text="${iterStat.index + 1}"></td>
+              <td><strong th:text="${vendor.companyName}"></strong></td>
+              <td th:text="${vendor.contactPerson}"></td>
+              <td><i class="bi bi-envelope"></i> <span th:text="${vendor.email}"></span></td>
+              <td><i class="bi bi-telephone"></i> <span th:text="${!#strings.isEmpty(vendor.phone) ? '+' + vendor.phone : ''}"></span></td>
+              <td th:text="${vendor.gstn}"></td>
+              <td th:text="${#strings.abbreviate(vendor.address, 30)}"></td>
+              <td class="text-center">
+                <div class="action-buttons om-action-group">
+                  <a th:href="@{|/vendors/edit/${vendor.id}|}"
+                     class="btn btn-sm btn-outline-primary om-btn-icon"
+                     title="Edit vendor">
+                    <i class="bi bi-pencil"></i> Edit
+                  </a>
+                  <button th:if="${#authorization.expression('hasAnyRole(''ADMIN'',''MANAGER'')')}"
+                          type="button"
+                          class="btn btn-sm btn-outline-danger om-btn-icon"
+                          data-bs-toggle="modal"
+                          data-bs-target="#confirmDeleteModal"
+                          th:data-delete-url="@{|/vendors/delete/${vendor.id}|}"
+                          th:data-entity-label="${vendor.companyName}"
+                          title="Delete vendor">
+                    <i class="bi bi-trash"></i> Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="unified-card-body d-flex justify-content-between align-items-center">
+          <p class="text-muted-custom mb-0">
+            <i class="bi bi-info-circle"></i> Total Vendors: <strong th:text="${totalElements}"></strong>
+          </p>
+          <nav th:if="${totalPages > 1}" aria-label="Vendor pagination">
+            <ul class="pagination pagination-sm mb-0">
+              <li class="page-item" th:classappend="${currentPage <= 1} ? 'disabled' : ''">
+                <a class="page-link"
+                   th:href="${currentPage <= 1} ? '#' : @{/vendors(search=${search}, page=${currentPage - 2})}">
+                  <i class="bi bi-chevron-left"></i> Prev
+                </a>
+              </li>
+              <li class="page-item"
+                  th:each="i : ${#numbers.sequence(1, totalPages)}"
+                  th:classappend="${i == currentPage} ? 'active' : ''">
+                <a class="page-link"
+                   th:href="@{/vendors(search=${search}, page=${i - 1})}"
+                   th:text="${i}">1</a>
+              </li>
+              <li class="page-item" th:classappend="${currentPage >= totalPages} ? 'disabled' : ''">
+                <a class="page-link"
+                   th:href="${currentPage >= totalPages} ? '#' : @{/vendors(search=${search}, page=${currentPage})}">
+                  Next <i class="bi bi-chevron-right"></i>
+                </a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+      </div>
+
     </div>
 
-    <!-- Vendors Table -->
-    <div th:if="${!#lists.isEmpty(vendors)}" class="unified-card">
-        <div class="table-responsive">
-            <table class="table unified-table table-hover align-middle mb-0">
-                <thead>
-                <tr>
-                    <th class="om-sortable">#</th>
-                    <th class="om-sortable">Company Name</th>
-                    <th class="om-sortable">Contact Person</th>
-                    <th class="om-sortable">Email</th>
-                    <th class="om-sortable">Phone</th>
-                    <th class="om-sortable">Address</th>
-                    <th class="text-center no-sort">Actions</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="vendor, iterStat : ${vendors}">
-                    <td th:text="${iterStat.index + 1}"></td>
-                    <td><strong th:text="${vendor.companyName}"></strong></td>
-                    <td th:text="${vendor.contactPerson}"></td>
-                    <td><i class="bi bi-envelope"></i> <span th:text="${vendor.email}"></span></td>
-                    <td><i class="bi bi-telephone"></i> <span th:text="${!#strings.isEmpty(vendor.phone) ? '+' + vendor.phone : ''}"></span></td>
-                    <td th:text="${vendor.address}"></td>
-                    <td class="text-center">
-                        <div class="action-buttons om-action-group">
-                            <a th:href="@{|/vendors/edit/${vendor.id}|}"
-                               class="btn btn-sm btn-outline-primary om-btn-icon"
-                               title="Edit vendor">
-                                <i class="bi bi-pencil"></i> Edit
-                            </a>
-                            <button th:if="${#authorization.expression('hasAnyRole(''ADMIN'',''MANAGER'')')}"
-                                    type="button"
-                                    class="btn btn-sm btn-outline-danger om-btn-icon"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#confirmDeleteModal"
-                                    th:data-delete-url="@{|/vendors/delete/${vendor.id}|}"
-                                    th:data-entity-label="${vendor.companyName}"
-                                    title="Delete vendor">
-                                <i class="bi bi-trash"></i> Delete
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-        <div class="unified-card-body">
-            <p class="text-muted-custom mb-0">
-                <i class="bi bi-info-circle"></i> Total Vendors: <strong th:text="${vendors.size()}"></strong>
-            </p>
-        </div>
+    <!-- ================= VENDOR PO ================= -->
+    <div class="tab-pane fade" id="vendor-po">
+      <!-- Alerts -->
+      <div th:if="${poMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill"></i> <span th:text="${poMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+
+      <div th:if="${poError}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill"></i> <span th:text="${poError}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+
+          <div id="vendor-po-list-container">
+            <div class="text-center py-4">
+              <div class="spinner-border text-primary"></div>
+              <p class="mt-2 text-muted">Click tab to load Vendor PO...</p>
+            </div>
+          </div>
+
     </div>
+
+  </div>
+
 </div>
 
 <!-- Footer -->
+
 <div th:replace="~{fragments/footer :: footer}"></div>
 
-<!-- Table Utility JS -->
+<!-- Table Utils -->
+
 <div th:replace="~{fragments/table-utils :: tableUtils}"></div>
 
-<!-- Password Confirmation Modal -->
+<!-- Delete Modal -->
+
 <div th:replace="~{fragments/confirm-delete-modal :: confirmDeleteModal}"></div>
 
+<!-- JS -->
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+
+      const tabEl = document.getElementById('vendor-po-tab');
+      const vendorListTab = document.getElementById('vendor-list-tab');
+      const addVendorBtn = document.getElementById('addVendorBtn');
+      const createVendorPoBtn = document.getElementById('createVendorPoBtn');
+
+      function toggleHeaderButtons(activeTab) {
+          if (activeTab === 'vendor-po') {
+              addVendorBtn.style.display = 'none';
+              createVendorPoBtn.style.display = 'inline-block';
+          } else {
+              addVendorBtn.style.display = 'inline-block';
+              createVendorPoBtn.style.display = 'none';
+          }
+      }
+
+      function loadVendorPoList(page = 0) {
+          const container = document.getElementById('vendor-po-list-container');
+
+          container.innerHTML = `
+              <div class="text-center py-4">
+                  <div class="spinner-border text-primary"></div>
+                  <p class="mt-2 text-muted">Loading Vendor PO...</p>
+              </div>
+          `;
+
+          fetch(`/vendor/pos/list-ajax?page=${page}`)
+              .then(res => res.text())
+              .then(html => {
+                  container.innerHTML = html;
+                  // Initialize table-utils for the dynamically loaded content
+                  window.initTableUtils('#vendor-po-list-container', {
+                        searchInputId: 'searchInputPo',
+                         resetBtnId: 'resetSortBtnPo'
+                  });
+              })
+              .catch(() => {
+                  container.innerHTML = `
+                      <div class="alert alert-danger">
+                          Failed to load Vendor PO
+                      </div>
+                  `;
+              });
+      }
+
+      // When tab is clicked
+      if (tabEl) {
+          tabEl.addEventListener('shown.bs.tab', function () {
+              toggleHeaderButtons('vendor-po');
+              loadVendorPoList(0);
+          });
+      }
+
+      if (vendorListTab) {
+          vendorListTab.addEventListener('shown.bs.tab', function () {
+              toggleHeaderButtons('vendor-list');
+          });
+      }
+
+      // When coming from redirect (#vendor-po)
+      if (window.location.hash === '#vendor-po' && tabEl) {
+          const tab = new bootstrap.Tab(tabEl);
+          tab.show();
+          toggleHeaderButtons('vendor-po');
+          // Load immediately
+          loadVendorPoList(0);
+      }
+
+  });
+</script>
+
 </body>
 </html>
