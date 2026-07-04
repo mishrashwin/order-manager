@@ -15,6 +15,16 @@ and calculating GST-inclusive amounts across Product, Order, and Vendor PO modul
 
 ## Work Done
 
+### [2026-07-04] Documentation alignment
+**Problem**: The project README still described the older MySQL/Gmail runtime and Swagger defaults, which no longer matched the committed profiles and security/email configuration.
+
+**Solution Implemented**:
+- Updated README runtime references to PostgreSQL, Brevo email delivery, owner approval flow, and disabled Swagger UI defaults.
+- Updated the agent notes so future work starts from the current profile and security behavior.
+
+**Outcome**:
+- Repository-facing docs now match the active dev/qa/prod configuration and login flow.
+
 ### [2026-05-09] Edit Mode Add Existing Product Fix
 **Problem**: "Add Existing Product" button was not working on Edit Vendor PO, but it was working on Create Vendor PO. Initial fix caused Create mode to show multiple empty product rows due to draft restoration issues.
 

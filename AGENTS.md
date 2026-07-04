@@ -162,4 +162,7 @@ This ensures all developers have full context of what was done, why, and with wh
     column widths, name attributes and data-* attributes on option elements. The recommended pattern is to cache product option
     HTML at page load and to explicitly reset select.value for new rows. See `docs/branches/Vendor-PO.md` and
     `src/main/resources/templates/vendor/pos-form-new.html` for the canonical implementation details.
+- [2026-07-04] Documentation alignment
+  - README now reflects the live PostgreSQL-first profiles, Brevo mail delivery, owner approval flow, disabled Swagger UI defaults, and enabled MVC CSRF behavior.
+  - Keep future documentation changes aligned with `src/main/resources/application-dev.properties`, `application-qa.properties`, `application-prod.properties`, and `config/SecurityConfig.java`.
 
