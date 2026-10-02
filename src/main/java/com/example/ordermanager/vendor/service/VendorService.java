@@ -51,19 +51,53 @@ public class VendorService {
         companyService.getCompanyById(companyId).orElseThrow(() -> new IllegalArgumentException(
             "Company not found. Cannot create vendor without a company."));
 
+    validateRequiredFields(vendor);
     vendor.setCompany(company);
 
     if (vendor.getCompanyName() != null) {
-      vendor.setCompanyName(vendor.getCompanyName().toUpperCase());
+      vendor.setCompanyName(vendor.getCompanyName().trim().toUpperCase());
     }
     if (vendor.getContactPerson() != null) {
-      vendor.setContactPerson(helper.toTitleCase(vendor.getContactPerson()));
+      vendor.setContactPerson(helper.toTitleCase(vendor.getContactPerson().trim()));
+    }
+    if (vendor.getEmail() != null) {
+      vendor.setEmail(vendor.getEmail().trim());
+    }
+    if (vendor.getGstn() != null) {
+      vendor.setGstn(vendor.getGstn().trim());
+    }
+    if (vendor.getAddress() != null) {
+      vendor.setAddress(vendor.getAddress().trim());
     }
 
     vendor.setPhone(
         PhoneNumberUtils.normalizeOptionalInternational(vendor.getPhone(), "Vendor Phone No"));
 
     return vendorRepository.save(vendor);
+  }
+
+  private void validateRequiredFields(Vendor vendor) {
+    if (vendor.getCompanyName() == null || vendor.getCompanyName().trim().isEmpty()) {
+      throw new IllegalArgumentException("Vendor Company Name is required.");
+    }
+    if (vendor.getContactPerson() == null || vendor.getContactPerson().trim().isEmpty()) {
+      throw new IllegalArgumentException("Vendor Contact Person is required.");
+    }
+    if (vendor.getEmail() == null || vendor.getEmail().trim().isEmpty()) {
+      throw new IllegalArgumentException("Vendor Email is required.");
+    }
+    if (vendor.getPhone() == null || vendor.getPhone().trim().isEmpty()) {
+      throw new IllegalArgumentException("Vendor Phone No is required.");
+    }
+    if (vendor.getGstn() == null || vendor.getGstn().trim().isEmpty()) {
+      throw new IllegalArgumentException("Vendor GSTN is required.");
+    }
+    if (vendor.getState() == null) {
+      throw new IllegalArgumentException("Vendor State is required.");
+    }
+    if (vendor.getAddress() == null || vendor.getAddress().trim().isEmpty()) {
+      throw new IllegalArgumentException("Vendor Address is required.");
+    }
   }
 
   public void deleteVendor(Long id) {

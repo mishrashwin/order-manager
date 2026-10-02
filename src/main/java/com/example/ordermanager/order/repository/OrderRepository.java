@@ -24,12 +24,18 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
   Page<Order> findByCompanyId(Long companyId, Pageable pageable);
 
   @EntityGraph(attributePaths = {"company", "client", "orderItems", "orderItems.product"})
-  @Query("SELECT o FROM Order o WHERE o.company.id = :companyId AND "
-      + "(LOWER(o.productName) LIKE LOWER(CONCAT('%', :search, '%')) OR "
+  @Query("SELECT o FROM Order o LEFT JOIN o.client c WHERE o.company.id = :companyId "
+      + "AND o.orderDate BETWEEN :startDate AND :endDate "
+      + "AND (LOWER(o.productName) LIKE LOWER(CONCAT('%', :search, '%')) OR "
       + "LOWER(o.poOrderNo) LIKE LOWER(CONCAT('%', :search, '%')) OR "
-      + "LOWER(o.client.name) LIKE LOWER(CONCAT('%', :search, '%')))")
+      + "LOWER(COALESCE(c.name, '')) LIKE LOWER(CONCAT('%', :search, '%')))")
   Page<Order> searchOrders(@Param("companyId") Long companyId, @Param("search") String search,
+      @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate,
       Pageable pageable);
+
+  @EntityGraph(attributePaths = {"company", "client", "orderItems", "orderItems.product"})
+  Page<Order> findByCompanyIdAndOrderDateBetween(Long companyId, LocalDate startDate,
+      LocalDate endDate, Pageable pageable);
 
   @EntityGraph(attributePaths = {"company", "client", "orderItems", "orderItems.product"})
   List<Order> findByCompanyIdAndOrderDateBetween(Long companyId, LocalDate startDate,

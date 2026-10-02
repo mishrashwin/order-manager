@@ -62,6 +62,10 @@ class IndianStateTest {
   void allStates_shouldHaveUniqueCodes() {
     int size = IndianState.values().length;
     assertEquals(37, size, "Should have 37 Indian states/union territories");
+    assertEquals("01", IndianState.JAMMU_AND_KASHMIR.getCode());
+    assertEquals("26", IndianState.DADRA_AND_NAGAR_HAVELI_AND_DAMAN_AND_DIU.getCode());
+    assertEquals("31", IndianState.LAKSHADWEEP.getCode());
+    assertEquals("97", IndianState.OTHER_TERRITORY.getCode());
   }
 
   @Test

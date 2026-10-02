@@ -59,11 +59,16 @@ public class OrderService {
     return orderRepository.findByCompanyId(companyId, pageable);
   }
 
-  public Page<Order> searchOrders(Long companyId, String search, Pageable pageable) {
+  public Page<Order> searchOrders(Long companyId, String search, LocalDate startDate,
+      LocalDate endDate, Pageable pageable) {
+    LocalDate effectiveStart = startDate != null ? startDate : LocalDate.now().minusMonths(1);
+    LocalDate effectiveEnd = endDate != null ? endDate : LocalDate.now();
+
     if (search == null || search.trim().isEmpty()) {
-      return orderRepository.findByCompanyId(companyId, pageable);
+      return orderRepository.findByCompanyIdAndOrderDateBetween(companyId, effectiveStart,
+          effectiveEnd, pageable);
     }
-    return orderRepository.searchOrders(companyId, search, pageable);
+    return orderRepository.searchOrders(companyId, search, effectiveStart, effectiveEnd, pageable);
   }
 
   public Order createOrder(Order order) {

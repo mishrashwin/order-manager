@@ -65,12 +65,12 @@
             <div class="row">
                 <div class="col-md-6 mb-4">
                     <label class="form-label"><i class="bi bi-credit-card-2-back"></i> GSTN <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control form-control-custom" th:field="*{gstn}" placeholder="Vendor GSTN" id="vendorGstn">
-                </div>
+                <input type="text" class="form-control form-control-custom" th:field="*{gstn}" placeholder="Vendor GSTN" id="vendorGstn" required>
+            </div>
 
-                <div class="col-md-6 mb-4">
+            <div class="col-md-6 mb-4">
                     <label class="form-label"><i class="bi bi-geo-alt-fill"></i> State <span class="text-danger">*</span></label>
-                    <select class="form-select form-control-custom" th:field="*{state}" id="vendorState">
+                    <select class="form-select form-control-custom" th:field="*{state}" id="vendorState" required>
                         <option value="">Select State</option>
                         <option th:each="state : ${T(com.example.ordermanager.utils.IndianState).values()}"
                                 th:value="${state}"
@@ -80,9 +80,8 @@
             </div>
 
             <div class="mb-4">
-                <label class="form-label"><i class="bi bi-geo-alt"></i> Address  <span class="text-danger">*</span></label>
-                <textarea class="form-control form-control-custom" th:field="*{address}" rows="3"></textarea>
-            </div>
+                <label class="form-label"><i class="bi bi-geo-alt"></i> Address <span class="text-danger">*</span></label>
+                <textarea class="form-control form-control-custom" th:field="*{address}" rows="3" required></textarea>
 
             <!-- Actions -->
             <div class="d-flex justify-content-end gap-3 pt-3 border-top">
@@ -117,7 +116,7 @@
             && email && email.value.trim()
             && phoneLocal && phoneLocal.value.trim()
             && gstn && gstn.value.trim()
-            && state && state.value
+            && state && state.value.trim()
             && address && address.value.trim());
     }
 

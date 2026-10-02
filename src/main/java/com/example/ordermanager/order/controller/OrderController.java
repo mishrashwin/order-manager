@@ -63,7 +63,7 @@ public class OrderController {
     LocalDate end = endDate != null ? LocalDate.parse(endDate) : LocalDate.now();
 
     Pageable pageable = PageRequest.of(page, size);
-    Page<Order> ordersPage = orderService.searchOrders(companyId, search, pageable);
+    Page<Order> ordersPage = orderService.searchOrders(companyId, search, start, end, pageable);
 
     model.addAttribute("orders", ordersPage.getContent());
     model.addAttribute("currentPage", page + 1);

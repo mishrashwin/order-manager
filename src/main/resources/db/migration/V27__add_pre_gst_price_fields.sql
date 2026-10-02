@@ -28,20 +28,31 @@ END,
 gst_inclusive_price = CAST(price AS DECIMAL(12,2))
 WHERE price IS NOT NULL;
 
--- For order items
-UPDATE order_items
-SET pre_gst_unit_price = CASE 
-    WHEN unit_price IS NOT NULL 
-    THEN CAST(unit_price / 1.18 AS DECIMAL(12,2))  -- Assuming 18% GST for existing data
-    ELSE CAST(unit_price AS DECIMAL(12,2))
+-- For order items, back-calculate from the product's GST rate when available
+UPDATE order_items oi
+SET pre_gst_unit_price = CASE
+    WHEN oi.unit_price IS NULL THEN NULL
+    WHEN oi.product_id IS NOT NULL AND p.gst_percentage IS NOT NULL AND p.gst_percentage > 0
+      THEN CAST(oi.unit_price / (1 + p.gst_percentage / 100.0) AS DECIMAL(12,2))
+    ELSE CAST(oi.unit_price AS DECIMAL(12,2))
 END,
-gst_inclusive_unit_price = CAST(unit_price AS DECIMAL(12,2)),
-gst_amount = CASE 
-    WHEN unit_price IS NOT NULL 
-    THEN CAST(unit_price - CAST(unit_price / 1.18 AS DECIMAL(12,2)) AS DECIMAL(12,2))
+gst_inclusive_unit_price = CAST(oi.unit_price AS DECIMAL(12,2)),
+gst_amount = CASE
+    WHEN oi.unit_price IS NULL THEN NULL
+    WHEN oi.product_id IS NOT NULL AND p.gst_percentage IS NOT NULL AND p.gst_percentage > 0
+      THEN CAST(oi.unit_price - (oi.unit_price / (1 + p.gst_percentage / 100.0)) AS DECIMAL(12,2))
     ELSE CAST(0 AS DECIMAL(12,2))
 END
-WHERE unit_price IS NOT NULL;
+FROM products p
+WHERE oi.product_id = p.id
+  AND oi.unit_price IS NOT NULL;
+
+UPDATE order_items oi
+SET pre_gst_unit_price = CAST(oi.unit_price AS DECIMAL(12,2)),
+    gst_inclusive_unit_price = CAST(oi.unit_price AS DECIMAL(12,2)),
+    gst_amount = CAST(0 AS DECIMAL(12,2))
+WHERE oi.unit_price IS NOT NULL
+  AND oi.product_id IS NULL;
 
 -- For vendor PO items
 UPDATE vendor_purchase_order_item

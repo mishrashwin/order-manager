@@ -53,7 +53,7 @@ public class Order {
   private Company company;
 
   @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true,
-      fetch = FetchType.EAGER)
+      fetch = FetchType.LAZY)
   private List<OrderItem> orderItems = new ArrayList<>();
 
   /**

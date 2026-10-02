@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
+@ToString(exclude = {"logoData", "signatureData"})
 public class Company {
 
   @Id
