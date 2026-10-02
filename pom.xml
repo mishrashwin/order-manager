@@ -188,6 +188,18 @@
       <artifactId>libphonenumber</artifactId>
       <version>8.13.55</version>
     </dependency>
+
+    <!-- PDF generation using OpenHTMLToPDF -->
+    <dependency>
+      <groupId>com.openhtmltopdf</groupId>
+      <artifactId>openhtmltopdf-pdfbox</artifactId>
+      <version>1.0.10</version>
+    </dependency>
+    <dependency>
+      <groupId>com.openhtmltopdf</groupId>
+      <artifactId>openhtmltopdf-slf4j</artifactId>
+      <version>1.0.10</version>
+    </dependency>
   </dependencies>
   <description>Spring Boot executable application for managing client orders end-to-end
   </description>

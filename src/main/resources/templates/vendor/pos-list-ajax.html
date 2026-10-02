@@ -1,0 +1,354 @@
+<!-- Fragment for AJAX loading into vendors/list.html #vendor-po tab -->
+
+<th:block th:fragment="pos-table">
+
+  <div class="unified-card">
+
+    <!-- Header -->
+    <div class="unified-card-header">
+      <h5><i class="bi bi-file-earmark-text"></i> Vendor Purchase Orders</h5>
+    </div>
+
+
+
+      <!-- Flash messages injected after AJAX reload via URL hash redirect -->
+      <div th:if="${poMessage}" class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle-fill"></i> <span th:text="${poMessage}"></span>
+        <button class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+      <div th:if="${poError}" class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle-fill"></i> <span th:text="${poError}"></span>
+        <button class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+
+      <!-- Search -->
+      <div class="search-box om-list-toolbar">
+        <div class="om-list-toolbar-row">
+          <div class="d-flex gap-2 flex-grow-1">
+            <input type="text"
+                   id="searchInputPo"
+                   class="form-control-custom om-list-search-input"
+                   placeholder="🔍 Search by PO Number, Vendor Name, Product,  Delivery Date..."
+                   th:value="${search}">
+            <button id="searchBtnPo" class="btn btn-primary om-btn-icon" title="Search">
+              <i class="bi bi-search"></i>
+            </button>
+            <button id="clearSearchBtnPo" class="btn btn-outline-secondary om-btn-icon" title="Clear Search">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+          <div class="om-list-actions">
+            <button id="resetSortBtnPo" class="btn btn-outline-secondary om-btn-icon">
+              <i class="bi bi-arrow-clockwise"></i> Reset Sort
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        // Vendor PO search functionality
+        document.addEventListener('DOMContentLoaded', function() {
+          const searchInputPo = document.getElementById('searchInputPo');
+          const searchBtnPo = document.getElementById('searchBtnPo');
+          const clearSearchBtnPo = document.getElementById('clearSearchBtnPo');
+
+          function loadVendorPoPage(page = 0, search = null) {
+            const url = new URL('/vendor/pos/list-ajax', window.location.origin);
+            if (page > 0) url.searchParams.set('page', page);
+            if (search) url.searchParams.set('search', search);
+
+            fetch(url.toString())
+              .then(response => response.text())
+              .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newContent = doc.querySelector('th\\:block[th\\:fragment="pos-table"]');
+                const currentContent = document.querySelector('th\\:block[th\\:fragment="pos-table"]');
+                if (newContent && currentContent) {
+                  currentContent.innerHTML = newContent.innerHTML;
+                  // Re-initialize table utilities
+                  if (window.initTableUtils) {
+                    window.initTableUtils('.unified-card');
+                  }
+                }
+              });
+          }
+
+          searchBtnPo.addEventListener('click', function() {
+            loadVendorPoPage(0, searchInputPo.value);
+          });
+
+          searchInputPo.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+              loadVendorPoPage(0, searchInputPo.value);
+            }
+          });
+
+          clearSearchBtnPo.addEventListener('click', function() {
+            searchInputPo.value = '';
+            loadVendorPoPage(0, null);
+          });
+
+          // Handle pagination clicks
+          document.addEventListener('click', function(e) {
+            const link = e.target.closest('a.page-link');
+            if (link && link.closest('nav[aria-label="Vendor PO pagination"]')) {
+              e.preventDefault();
+              const url = new URL(link.href);
+              const page = parseInt(url.searchParams.get('page') || '0');
+              const search = url.searchParams.get('search') || null;
+              loadVendorPoPage(page, search);
+            }
+          });
+        });
+      </script>
+
+      <!-- EMPTY STATE -->
+      <div th:if="${#lists.isEmpty(pos.content)}" class="text-center py-4">
+        <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+        <p class="text-muted mt-2">No Vendor Purchase Orders found.</p>
+        <a class="btn btn-primary-custom" th:href="@{/vendor/pos/new}">
+          <i class="bi bi-plus-circle"></i> Create Your First Vendor PO
+        </a>
+      </div>
+
+      <!-- TABLE -->
+      <div th:if="${!#lists.isEmpty(pos.content)}">
+        <div class="table-responsive">
+          <table class="table unified-table table-hover align-middle mb-0">
+
+            <thead>
+            <tr>
+              <th>#</th>
+              <th class="om-sortable">PO Number</th>
+              <th class="om-sortable">Vendor</th>
+              <th class="om-sortable">Products</th>
+              <th class="om-sortable">Delivery Date</th>
+              <th class="om-sortable">Total</th>
+              <th class="om-sortable">Status</th>
+              <th class="text-center no-sort">Actions</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr th:each="po, iterStat : ${pos.content}">
+
+              <!-- # -->
+              <td th:text="${iterStat.index + 1}"></td>
+
+              <!-- PO Number -->
+              <td><strong th:text="${po.poNumber}"></strong></td>
+
+              <!-- Vendor -->
+              <td>
+                <div th:text="${po.vendorName}"></div>
+              </td>
+
+              <!-- Products -->
+              <td><div th:text="${po.displayProductSummary}"></div></td>
+
+              <!-- Delivery Date -->
+              <td th:data-sort-value="${#temporals.format(po.deliveryDate, 'yyyy-MM-dd')}">
+                <i class="bi bi-calendar"></i>
+                <span th:text="${#temporals.format(po.deliveryDate, 'dd MMM yyyy')}"></span>
+              </td>
+
+              <!-- Total Amount -->
+              <td>
+                <strong>
+                  ₹<span th:text="${#numbers.formatDecimal(po.totalAmount, 1, 2)}"></span>
+                </strong>
+              </td>
+
+              <!-- Status — short label + icon in badge, full label as tooltip -->
+              <td>
+                  <span class="badge d-inline-flex align-items-center gap-1"
+                        th:classappend="'bg-' + ${po.status.badgeColor}"
+                        th:title="${po.status.displayName}"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="top">
+                    <i th:classappend="${po.status.icon}"></i>
+                    <span th:text="${po.status.shortName}"></span>
+                  </span>
+              </td>
+
+              <!-- ACTIONS -->
+              <td class="text-center">
+                <div class="d-flex gap-1 justify-content-center flex-wrap">
+
+                  <!-- Edit -->
+                  <a th:href="@{/vendor/pos/{id}/edit(id=${po.id})}"
+                     class="btn btn-outline-primary btn-sm"
+                     title="Edit PO"
+                     data-no-ajax="true"
+                     onclick="window.location=this.href;">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+
+                  <!-- Download — filename built server-side as VendorName_PoNumber.pdf -->
+                  <a th:href="@{/vendor/pos/{id}/download(id=${po.id})}"
+                     class="btn btn-outline-success btn-sm"
+                     title="Download PDF">
+                    <i class="bi bi-download"></i>
+                  </a>
+
+                  <!--
+                    Resend Email.
+                    Shown when PO has been sent before (SENT or later) OR always so user
+                    can trigger first send after editing. Uses a small inline form so it
+                    works inside the AJAX fragment without needing the parent page's JS.
+                  -->
+                  <form th:action="@{/vendor/pos/{id}/resend(id=${po.id})}"
+                        method="post" style="display:inline;">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <button type="submit"
+                            class="btn btn-outline-info btn-sm"
+                            title="Resend PO Email"
+                            onclick="return confirm('Resend this PO by email to the vendor?')">
+                      <i class="bi bi-envelope-arrow-up"></i>
+                    </button>
+                  </form>
+
+                  <!--
+                    Delete — ADMIN/MANAGER only.
+                    Uses a self-contained modal defined below in this fragment, because this
+                    HTML is AJAX-injected and cannot reach the parent page's #confirmDeleteModal.
+                  -->
+                  <button th:if="${#authorization.expression('hasAnyRole(''ADMIN'',''MANAGER'')')}"
+                          type="button"
+                          class="btn btn-sm btn-outline-danger om-btn-icon"
+                          data-bs-toggle="modal"
+                          data-bs-target="#confirmDeleteModal"
+                          th:data-delete-url="@{|/vendor/pos/delete/${po.id}|}"
+                          th:data-entity-label="${po.poNumber}"
+                          title="Delete PO">
+                    <i class="bi bi-trash"></i>
+                  </button>
+
+                </div>
+              </td>
+
+            </tr>
+            </tbody>
+
+          </table>
+        </div>
+
+        <div class="unified-card-body d-flex justify-content-between align-items-center">
+          <p class="text-muted-custom mb-0">
+            <i class="bi bi-info-circle"></i> Total Vendor Purchase Orders: <strong th:text="${totalElements}"></strong>
+          </p>
+          <nav th:if="${totalPages > 1}" aria-label="Vendor PO pagination">
+            <ul class="pagination pagination-sm mb-0">
+              <li class="page-item" th:classappend="${currentPage <= 1} ? 'disabled' : ''">
+                <a class="page-link"
+                   th:href="${currentPage <= 1} ? '#' : @{/vendor/pos/list-ajax(search=${search}, page=${currentPage - 2})}">
+                  <i class="bi bi-chevron-left"></i> Prev
+                </a>
+              </li>
+              <li class="page-item"
+                  th:each="i : ${#numbers.sequence(1, totalPages)}"
+                  th:classappend="${i == currentPage} ? 'active' : ''">
+                <a class="page-link"
+                   th:href="@{/vendor/pos/list-ajax(search=${search}, page=${i - 1})}"
+                   th:text="${i}">1</a>
+              </li>
+              <li class="page-item" th:classappend="${currentPage >= totalPages} ? 'disabled' : ''">
+                <a class="page-link"
+                   th:href="${currentPage >= totalPages} ? '#' : @{/vendor/pos/list-ajax(search=${search}, page=${currentPage})}">
+                  Next <i class="bi bi-chevron-right"></i>
+                </a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+
+    </div>
+
+
+
+  <!--
+    Self-contained delete modal.
+    Lives inside this AJAX fragment so it's always present when the table is loaded.
+    The parent page's confirmDeleteModal is NOT reachable from injected HTML.
+  -->
+  <div class="modal fade" id="poDeleteModal" tabindex="-1" aria-labelledby="poDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="poDeleteModalLabel">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>Confirm Deletion
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="poDeleteForm" method="post">
+          <!--
+            CSRF token injected by Thymeleaf at fragment render time.
+            This is valid because the fragment is server-rendered via /vendor/pos/list-ajax.
+          -->
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <div class="modal-body">
+            <p class="mb-3">
+              You are about to permanently delete PO
+              <strong id="poDeleteLabel"></strong>.
+              This action <strong>cannot be undone</strong>.
+            </p>
+            <div class="mb-3">
+              <label for="poDeletePassword" class="form-label fw-semibold">
+                Enter your password to confirm:
+              </label>
+              <input type="password" class="form-control" id="poDeletePassword"
+                     name="password" placeholder="Your password" required
+                     autocomplete="current-password"/>
+              <div class="invalid-feedback">Password is required.</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              <i class="bi bi-x-circle"></i> Cancel
+            </button>
+            <button type="submit" class="btn btn-danger">
+              <i class="bi bi-trash"></i> Delete
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      // Tooltip init for status badges
+      document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+        new bootstrap.Tooltip(el);
+      });
+
+      // Wire delete buttons to the self-contained modal
+      document.querySelectorAll('.po-delete-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var deleteUrl = btn.getAttribute('data-delete-url');
+          var label     = btn.getAttribute('data-label');
+
+          document.getElementById('poDeleteForm').action   = deleteUrl;
+          document.getElementById('poDeleteLabel').textContent = label || 'this PO';
+          document.getElementById('poDeletePassword').value = '';
+          document.getElementById('poDeletePassword').classList.remove('is-invalid');
+
+          var modal = new bootstrap.Modal(document.getElementById('poDeleteModal'));
+          modal.show();
+        });
+      });
+
+      // Validate password before submit
+      document.getElementById('poDeleteForm').addEventListener('submit', function (e) {
+        var pw = document.getElementById('poDeletePassword');
+        if (!pw.value.trim()) {
+          e.preventDefault();
+          pw.classList.add('is-invalid');
+        }
+      });
+    })();
+  </script>
+
+</th:block>

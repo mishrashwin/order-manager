@@ -2,6 +2,112 @@
 
 Use this file as the session-to-session handoff log for test implementation.
 
+## Vendor Purchase Order (Vendor PO) Feature Implementation (2026-04-04)
+- **Completed full pipeline implementation for Vendor PO feature including:**
+  - **PDF Generation**: Added OpenHTMLToPDF dependencies (version 1.0.10) and implemented `VendorPdfServiceImpl.generatePdf()` using Thymeleaf template rendering
+  - **Email Enhancement**: Extended `BrevoEmailService` with `sendEmailWithMultipleRecipients()` method supporting multiple TO recipients and CC recipients (company admin auto-CC)
+  - **Form UX**: Enhanced `vendor/pos-form.html` with dynamic item row addition, vendor/product dropdowns with tenant-scoped data, and real-time total calculation
+  - **Controller Updates**: Added `SecurityContextHelper` integration for tenant isolation in `VendorPoController`
+  - **Comprehensive Test Suite**:
+    - `VendorPoServiceTest.java` - 15+ test cases covering CRUD operations, business logic, and edge cases
+    - `VendorPoControllerTest.java` - MockMvc tests for all endpoints including email sending scenarios
+    - `VendorPoRestControllerTest.java` - PATCH endpoint tests with comprehensive validation
+    - `VendorPdfServiceIntegrationTest.java` - PDF generation integration tests including concurrent generation
+- **Database Migration**: V17__add_vendor_purchase_orders.sql with vendor_purchase_order and vendor_purchase_order_item tables
+- **Entities & Services**: Complete entity hierarchy (VendorPo, VendorPoItem, VendorPoStatus) with tenant-aware service implementation
+- **Templates**: PDF HTML template (`vendor/pdf/vendor_po.html`) and MVC templates for list/form/view operations
+- **Multi-tenant Compliance**: All service methods use `SecurityContextHelper.getCompanyIdFromContext()` for proper tenant isolation
+- **Status**: ✅ **COMPLETED** - Full end-to-end Vendor PO feature with PDF generation, email workflow, and comprehensive test coverage
+
+## Accounting-Grade GST Calculation Implementation (2026-04-12)
+- **Implemented audit-safe GST calculation system for Vendor POs:**
+  - **Entity Update**: Added `gstAmount` field to `VendorPoItem` entity with precision(12, scale=2) for per-item GST storage
+  - **Database Migration**: V25__add_gst_amount_to_vendor_po_item.sql adds `gst_amount` column to vendor_purchase_order_item table
+  - **Calculation Logic**: Updated `VendorPo.recalcTotal()` to compute per-item GST using formula: `gstAmount = lineTotal × gstPercentage / 100` with HALF_UP rounding
+  - **Subtotal Storage**: `VendorPo.totalAmount` now stores subtotal (sum of lineTotals) without GST, maintaining clean separation
+  - **PDF Service Update**: `VendorPdfServiceImpl.generatePdf()` now computes:
+    - Back-calculates taxable value from GST-inclusive lineTotal: `taxable = lineTotal / (1 + gstPercentage/100)`
+    - Computes gstAmount as `lineTotal - taxable` and stores per-item for PDF usage
+    - Sums taxable values for subtotal (not lineTotals)
+    - `totalGst` by summing all item `gstAmount` values
+    - `cgst` and `sgst` as `totalGst / 2` each with HALF_UP rounding
+    - `finalTotal` as `subtotal + totalGst` (matches original GST-inclusive total)
+    - Passes all values to template context
+  - **Template Update**: `vendor_po.html` now displays:
+    - GST % and GST Amt columns per item in product table
+    - Dynamic subtotal, CGST, SGST, and finalTotal from backend context
+    - Removed hardcoded 9% calculations, replaced with computed values
+- **Audit Safety**: GST amounts are stored as snapshots at PO creation time, ensuring invoices remain unchanged even if product GST rates change later
+- **Mixed GST Support**: System now correctly handles products with different GST percentages in the same PO
+- **Design Decision**: System stores GST-inclusive prices in DB/UI, but PDF shows proper tax breakup (taxable + GST) via back-calculation at PDF generation layer only
+- **Test Documentation**: Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with test cases VPO-09 through VPO-15 covering GST calculation logic
+- **Status**: ✅ **COMPLETED** - Accounting-grade GST calculation with per-item storage, audit-safe design, and industry-standard implementation
+
+## PDF-Only GST Back-Calculation Implementation (2026-04-12)
+- **Updated PDF service to back-calculate taxable values from GST-inclusive prices:**
+  - **Design Decision**: DB/UI store GST-inclusive prices (unitPrice, lineTotal), PDF shows tax breakup (taxable + GST)
+  - **Implementation**: `VendorPdfServiceImpl.generatePdf()` now:
+    - Loops through items and back-calculates: `taxable = lineTotal / (1 + gstPercentage/100)`
+    - Computes `gstAmount = lineTotal - taxable` per item
+    - Stores gstAmount on item for PDF template usage
+    - Calculates taxableRate per unit: `taxable / quantity`
+    - Sums taxable values (not lineTotals) for subtotal
+    - Splits totalGst into cgst/sgst (50/50 split)
+    - finalTotal = subtotal + totalGst (matches original inclusive total)
+  - **Fix**: Corrected finalTotal calculation - was previously double-counting GST by adding to already-inclusive subtotal
+  - **Critical Fix**: Added transient `taxableRate` field to `VendorPoItem` and updated PDF template to display taxableRate (pre-GST unit price) instead of unitPrice (GST-inclusive) in Rate column
+  - **No Breaking Changes**: UI/DB remain unchanged, only PDF generation layer modified
+  - **Test Documentation**: Updated VPO-12, VPO-13, and VPO-14 in `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` to reflect back-calculation logic and taxableRate display
+- **IGST Logic**: Not implemented yet - Company and Vendor entities lack `state` fields needed for intra-state (CGST/SGST) vs inter-state (IGST) determination
+- **Status**: ✅ **COMPLETED** - PDF-only GST back-calculation with proper tax breakup display and correct Rate column showing taxable value
+
+## IGST vs CGST/SGST State-Based GST Upgrade (2026-04-12)
+- **Implemented ERP-level GST taxation system with intra-state (CGST+SGST) vs inter-state (IGST) logic:**
+  - **Entity Updates**: Added `state` field using `IndianState` enum to `Company` and `Vendor` entities with @Enumerated(EnumType.STRING) for GST state comparison
+  - **Database Migration**: V26__add_state_to_companies_and_vendors.sql adds `state` column to both companies and vendors tables
+  - **State Enum**: Created `IndianState` enum with all 37 Indian states/union territories, GST codes (e.g., Maharashtra="27", Gujarat="24"), display names, and lookup methods `fromCode()` and `fromDisplayName()` (case-insensitive)
+  - **PDF Service Update**: `VendorPdfServiceImpl.generatePdf()` now:
+    - Compares company state vs vendor state using IndianState enum (exact match) to determine intra-state vs inter-state
+    - Sets `isIntraState=true` when states match (same state), `false` when different or null
+    - Splits totalGst into cgst/sgst (50/50) for intra-state, uses full totalGst as igst for inter-state
+    - Passes `isIntraState`, `igst`, `cgst`, `sgst` to template context
+  - **Template Update**: `vendor_po.html` now conditionally displays:
+    - CGST + SGST rows when `isIntraState=true` (intra-state transactions)
+    - IGST row when `isIntraState=false` (inter-state transactions)
+    - Subtotal and finalTotal in all cases
+  - **Test Coverage**: Added 5 new test cases to `VendorPdfServiceIntegrationTest.java`:
+    - `generatePdf_intraState_shouldUseCgstAndSgst` - same state scenario using IndianState enum
+    - `generatePdf_interState_shouldUseIgst` - different states scenario using IndianState enum
+    - `generatePdf_nullStates_shouldDefaultToInterState` - null states default to IGST
+    - `generatePdf_nullCompanyState_shouldDefaultToInterState` - null company state
+    - `generatePdf_nullVendorState_shouldDefaultToInterState` - null vendor state
+  - **Enum Tests**: Created `IndianStateTest.java` with 11 test cases covering:
+    - Code lookup (valid/invalid/null)
+    - Display name lookup (valid/invalid/null, case-insensitive)
+    - State count verification (37 states)
+    - Specific state code verification (Maharashtra, Gujarat, Karnataka, Delhi)
+- **Audit Safety**: GST amounts remain stored as snapshots at PO creation time; state comparison only affects PDF display layer
+- **Design Decision**: State comparison happens at PDF generation time, allowing future state updates without affecting historical POs
+- **Test Documentation**: Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with test cases VPO-16 through VPO-19 covering IGST logic, state enum, and entity changes
+- **Status**: ✅ **COMPLETED** - ERP-level GST taxation system with dynamic CGST/SGST vs IGST based on state comparison
+
+## PDF Number Formatting with Commas (2026-04-12)
+- **Added DecimalFormat to format all numeric values with comma separators for cleaner display:**
+  - **Implementation**: `VendorPdfServiceImpl.generatePdf()` now:
+    - Uses `DecimalFormat("#,##0.00")` to format all numeric values
+    - Formats totals (subtotal, cgst, sgst, finalTotal) as strings with comma separators
+    - Added transient formatted string fields to `VendorPoItem`: `formattedTaxableRate`, `formattedGstAmount`, `formattedLineTotal`
+    - Formats item-level values (taxableRate, gstAmount, lineTotal) as strings
+    - Passes formatted strings to template context instead of raw BigDecimal values
+  - **Template Update**: `vendor_po.html` now displays:
+    - `formattedTaxableRate` in Rate column (e.g., "188.57" instead of "188.56999999999997")
+    - `formattedGstAmount` in GST Amt column (e.g., "9.43" instead of "9.430000000000015")
+    - `formattedLineTotal` in Amount column (e.g., "10,714.29" instead of "10714.29")
+    - Formatted totals with comma separators (e.g., "10,714.29" instead of "10714.29")
+  - **No Breaking Changes**: UI/DB remain unchanged, only PDF generation layer modified
+  - **Test Documentation**: Updated VPO-13 in `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` to reflect number formatting
+- **Status**: ✅ **COMPLETED** - All PDF numeric values now display with proper comma separators and consistent decimal formatting
+
 ## Current Baseline (2026-03-20)
 - Existing automated tests before this update:
   - `src/test/java/com/example/ordermanager/platform/aspect/MethodLoggingAspectTest.java`
@@ -48,6 +154,38 @@ Use this file as the session-to-session handoff log for test implementation.
 - [ ] Add REST error mapping tests for `/api/orders/{id}` not-found and invalid payload handling
 - [ ] Add password-reset security edge tests (`TooManyAttemptsException`, token expiry) (TooManyAttempts controller path covered)
 - [ ] Add owner-company access toggle edge tests (`APPROVED` gate for reactivation)
+
+## Planned Work (2026-04-04 — Vendor PO feature)
+This planned batch adds tenant-scoped Vendor Purchase Order (Vendor PO) support: creation, storage, PDF generation, and email delivery. All changes MUST follow tenant rules: use `SecurityContextHelper.getCompanyIdFromContext()` and repository methods like `findByCompanyId(...)`.
+
+Implementation checklist
+- [ ] Add Flyway migration(s): `V{N}__add_vendor_purchase_orders.sql` (tables: `vendor_purchase_order`, `vendor_purchase_order_item`, company/vendor FKs)
+- [ ] Extend `Vendor` entity and admin vendor form to store `gstn` (add field, template, and DB migration if needed)
+- [ ] Extend `Product` entity to add `hsnCode` and `unit` fields; update `products/form.html` and migrations
+- [ ] Create `VendorPo` & `VendorPoItem` entities, `VendorPoStatus` enum with `isFinal()`/`getDisplayName()` helpers
+- [ ] Add `VendorPoRepository` with tenant-scoped finder methods
+- [ ] Implement `VendorPoService` + `VendorPoServiceImpl` (always derive `companyId` via `SecurityContextHelper`)
+- [ ] Add `VendorPoController` (MVC) and `VendorPoRestController` (PATCH API for status updates)
+- [ ] Add Thymeleaf templates: `vendor/list.html`, `vendor/form.html`, `vendor/view.html`, `vendor/pdf/vendor_po.html`
+- [ ] Implement PDF generation service (Thymeleaf -> HTML -> PDF) and wire into `VendorPoService.generatePdf(...)`
+- [ ] Implement email send flow (use existing `EmailService`/`BrevoEmailService` pattern) to attach PO PDF and email vendor + company admin(s)
+- [ ] Add unit tests: `VendorPoServiceTest`, `VendorPoEmailServiceTest`
+- [ ] Add controller tests: `VendorPoControllerTest`, `VendorPoRestControllerTest`
+- [ ] Add template tests: `VendorPoTemplateTest` to assert key PDF HTML fields (vendor name, GSTN, PO no, product rows, totals)
+- [ ] Add integration test: `VendorPoIntegrationTest` (end-to-end create -> PDF -> email attach; mock external Brevo client)
+
+Acceptance criteria (test mapping)
+- Vendor tab shows Vendor List + Vendor PO (template/controller test)
+- Vendor GSTN stored and displayed (vendor tests + PDF template test)
+- Vendor PO can be created and saved (service/controller tests)
+- Vendor PO list is company-filtered (repository/controller tests)
+- PDF is generated correctly (template + integration tests)
+- Email sent with correct recipients and PDF attached (integration test)
+- Multi-tenant isolation maintained (cross-company access failure tests)
+
+Notes
+- Follow existing patterns used by `Order` and `OrderItem` entities for multi-product rows and form handling.
+- Add at least one happy-path and one edge/failure-path test per new controller/service method as mandated by repository rules.
 
 ## Batch Completed (2026-03-20)
 - Implemented `CompanyServiceTest` with happy + edge coverage for:

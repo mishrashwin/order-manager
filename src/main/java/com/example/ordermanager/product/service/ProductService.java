@@ -6,6 +6,8 @@ import com.example.ordermanager.product.entity.Product;
 import com.example.ordermanager.product.repository.ProductRepository;
 import com.example.ordermanager.utils.Helper;
 import com.example.ordermanager.vendor.repository.VendorRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -28,6 +30,18 @@ public class ProductService {
 
   public List<Product> getProductsByCompanyId(Long companyId) {
     return productRepository.findByCompanyId(companyId);
+  }
+
+  public Page<Product> getProductsByCompanyId(Long companyId, Pageable pageable) {
+    return productRepository.findByCompanyId(companyId, pageable);
+  }
+
+  public Page<Product> searchProducts(Long companyId, String search, Pageable pageable) {
+    if (search == null || search.trim().isEmpty()) {
+      return productRepository.findByCompanyId(companyId, pageable);
+    }
+    return productRepository.findByCompanyIdAndNameContainingIgnoreCase(companyId, search,
+        pageable);
   }
 
   public Product getProductById(Long id) {
@@ -54,6 +68,18 @@ public class ProductService {
     // Resolve vendor entity by id if only id is present on the bound object
     if (product.getVendor() != null && product.getVendor().getId() != null) {
       product.setVendor(vendorRepository.findById(product.getVendor().getId()).orElse(null));
+    }
+
+    // Calculate GST-inclusive price from pre-GST price if pre-GST price is set
+    if (product.getPreGstPrice() != null) {
+      product.calculateGstInclusivePrice();
+    } else if (product.getPrice() != null && product.getGstPercentage() != null) {
+      // For backward compatibility: if only legacy price is set, calculate pre-GST price
+      java.math.BigDecimal gstMultiplier = product.getGstPercentage()
+          .divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+      java.math.BigDecimal preGstPrice = java.math.BigDecimal.valueOf(product.getPrice())
+          .divide(java.math.BigDecimal.ONE.add(gstMultiplier), 2, java.math.RoundingMode.HALF_UP);
+      product.setPreGstPrice(preGstPrice);
     }
 
     return productRepository.save(product);

@@ -3,6 +3,7 @@ package com.example.ordermanager.user.repository;
 import com.example.ordermanager.user.entity.User;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,8 +15,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
   Optional<User> findByMobileNumber(String mobileNumber);
 
+  @EntityGraph(attributePaths = {"company"})
   Optional<User> findFirstByCompanyIdAndRoleOrderByIdAsc(Long companyId, String role);
 
+  @EntityGraph(attributePaths = {"company"})
   List<User> findByCompanyId(Long companyId);
 
   long countByCompanyId(Long companyId);

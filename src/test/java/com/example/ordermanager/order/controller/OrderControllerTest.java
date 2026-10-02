@@ -3,6 +3,7 @@ package com.example.ordermanager.order.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -26,6 +27,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.ui.ConcurrentModel;
 import org.springframework.ui.Model;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -59,13 +64,30 @@ class OrderControllerTest {
   void listOrders_success_returnsOrderListWithDefaultDateRange() {
     List<Order> orders = Arrays.asList(new Order(), new Order());
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
-    when(orderService.getOrdersByCompanyIdAndDateRange(anyLong(), any(), any())).thenReturn(orders);
+    when(orderService.searchOrders(eq(5L), eq(null), any(LocalDate.class), any(LocalDate.class),
+        any(Pageable.class))).thenReturn(new PageImpl<>(orders));
 
     Model model = new ConcurrentModel();
-    String view = orderController.listOrders(null, null, model);
+    String view = orderController.listOrders(null, null, null, 0, 10, model);
 
     assertThat(view).isEqualTo("orders/list");
     assertThat(model.getAttribute("orders")).isEqualTo(orders);
+  }
+
+  @Test
+  void listOrders_withDateRange_passesRangeToSearchService() {
+    List<Order> orders = List.of(new Order());
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    when(orderService.searchOrders(eq(5L), eq("widget"), eq(LocalDate.of(2025, 1, 10)),
+        eq(LocalDate.of(2025, 1, 20)), any(Pageable.class))).thenReturn(new PageImpl<>(orders));
+
+    Model model = new ConcurrentModel();
+    String view = orderController.listOrders("2025-01-10", "2025-01-20", "widget", 0, 10, model);
+
+    assertThat(view).isEqualTo("orders/list");
+    assertThat(model.getAttribute("orders")).isEqualTo(orders);
+    verify(orderService).searchOrders(5L, "widget", LocalDate.of(2025, 1, 10),
+        LocalDate.of(2025, 1, 20), PageRequest.of(0, 10));
   }
 
   @Test
@@ -93,6 +115,7 @@ class OrderControllerTest {
     RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    when(orderService.createOrderWithCompany(order, 5L)).thenReturn(order);
 
     String view = orderController.saveOrder(order, null, null, null, model, redirectAttributes);
 

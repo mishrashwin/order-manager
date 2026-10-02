@@ -36,8 +36,17 @@
     <!-- Search & Filters -->
     <div class="search-box om-list-toolbar">
         <div class="om-list-toolbar-row">
-            <input type="text" id="searchInput" class="form-control-custom om-list-search-input"
-                   placeholder="🔍 Search products by name, brand, category, vendor...">
+            <form method="get" action="/products" class="d-flex gap-2 flex-grow-1">
+                <input type="text" name="search" class="form-control-custom om-list-search-input"
+                       placeholder="🔍 Search products by name, brand, category, vendor..."
+                       th:value="${search}">
+                <button type="submit" class="btn btn-primary om-btn-icon" title="Search">
+                    <i class="bi bi-search"></i>
+                </button>
+                <a th:href="@{/products}" class="btn btn-outline-secondary om-btn-icon" title="Clear Search">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </form>
             <div class="om-list-actions">
                 <button id="resetSortBtn" class="btn btn-outline-secondary om-btn-icon">
                 <i class="bi bi-arrow-clockwise"></i> Reset Sort
@@ -64,10 +73,11 @@
                 <tr>
                     <th class="om-sortable">#</th>
                     <th class="om-sortable">Product Name</th>
-                    <th class="om-sortable">Similar / Other Name</th>
+                    <th class="om-sortable">HSN Code</th>
                     <th class="om-sortable">Brand</th>
                     <th class="om-sortable">Category</th>
                     <th class="text-end om-sortable">Price</th>
+                    <th class="text-end om-sortable">GST %</th>
                     <th class="om-sortable">Vendor</th>
                     <th class="om-sortable">Used In Order</th>
                     <th class="text-center no-sort">Actions</th>
@@ -76,18 +86,20 @@
                 <tbody>
                 <tr th:each="product, iterStat : ${products}">
                     <td th:text="${iterStat.index + 1}"></td>
-                    <td><strong th:text="${product.name}"></strong>
-                        <div th:if="${product.description != null and !#strings.isEmpty(product.description)}"
-                             class="text-muted small" th:text="${#strings.abbreviate(product.description, 60)}"></div>
-                    </td>
-                    <td th:text="${product.similarName}"></td>
+                    <td><strong th:text="${product.name}"></strong></td>
+                    <td th:text="${product.hsnCode}"></td>
                     <td th:text="${product.brand}"></td>
                     <td><span th:if="${product.category != null}"
                               class="badge bg-secondary"
                               th:text="${product.category}"></span></td>
-                    <td class="text-end">
+                    <td class="text-end" th:data-sort-value="${product.price != null ? product.price : 0}">
                         <span th:if="${product.price != null}"
                               th:text="${'₹' + #numbers.formatDecimal(product.price, 1, 'COMMA', 2, 'POINT')}"></span>
+                    </td>
+                    <td class="text-end">
+                        <span th:if="${product.gstPercentage != null}"
+                              th:text="${#numbers.formatDecimal(product.gstPercentage, 1, 'COMMA', 2, 'POINT') + '%'}"></span>
+                        <span th:if="${product.gstPercentage == null}" class="text-muted">—</span>
                     </td>
                     <td>
                         <span th:if="${product.vendor != null}" th:text="${product.vendor.companyName}"></span>
@@ -128,10 +140,33 @@
                 </tbody>
             </table>
         </div>
-        <div class="unified-card-body">
+        <div class="unified-card-body d-flex justify-content-between align-items-center">
             <p class="text-muted-custom mb-0">
-                <i class="bi bi-info-circle"></i> Total Products: <strong th:text="${products.size()}"></strong>
+                <i class="bi bi-info-circle"></i> Total Products: <strong th:text="${totalElements}"></strong>
             </p>
+            <nav th:if="${totalPages > 1}" aria-label="Product pagination">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item" th:classappend="${currentPage <= 1} ? 'disabled' : ''">
+                        <a class="page-link"
+                           th:href="${currentPage <= 1} ? '#' : @{/products(search=${search}, page=${currentPage - 2})}">
+                            <i class="bi bi-chevron-left"></i> Prev
+                        </a>
+                    </li>
+                    <li class="page-item"
+                        th:each="i : ${#numbers.sequence(1, totalPages)}"
+                        th:classappend="${i == currentPage} ? 'active' : ''">
+                        <a class="page-link"
+                           th:href="@{/products(search=${search}, page=${i - 1})}"
+                           th:text="${i}">1</a>
+                    </li>
+                    <li class="page-item" th:classappend="${currentPage >= totalPages} ? 'disabled' : ''">
+                        <a class="page-link"
+                           th:href="${currentPage >= totalPages} ? '#' : @{/products(search=${search}, page=${currentPage})}">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
         </div>
     </div>
 </div>

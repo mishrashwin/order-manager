@@ -8,6 +8,8 @@ import com.example.ordermanager.client.repository.ClientRepository;
 import com.example.ordermanager.order.repository.OrderRepository;
 import com.example.ordermanager.utils.Helper;
 import com.example.ordermanager.utils.PhoneNumberUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -30,6 +32,17 @@ public class ClientService {
 
   public List<Client> getClientsByCompanyId(Long companyId) {
     return clientRepository.findByCompanyId(companyId);
+  }
+
+  public Page<Client> getClientsByCompanyId(Long companyId, Pageable pageable) {
+    return clientRepository.findByCompanyId(companyId, pageable);
+  }
+
+  public Page<Client> searchClients(Long companyId, String search, Pageable pageable) {
+    if (search == null || search.trim().isEmpty()) {
+      return clientRepository.findByCompanyId(companyId, pageable);
+    }
+    return clientRepository.findByCompanyIdAndNameContainingIgnoreCase(companyId, search, pageable);
   }
 
   public Client getClientById(Long id) {

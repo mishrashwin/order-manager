@@ -72,6 +72,44 @@
                 <label class="form-label text-muted"><i class="bi bi-info-square"></i> Company Bio</label>
                 <p class="text-muted fst-italic">No bio added yet. Click "Edit Company" to add one.</p>
             </div>
+
+            <div class="col-md-6 mb-4">
+                <label class="form-label text-muted"><i class="bi bi-receipt"></i> Company GSTN</label>
+                <p class="h5" th:text="${company.gstn ?: 'Not provided'}"></p>
+            </div>
+
+            <div class="col-md-6 mb-4">
+                <label class="form-label text-muted"><i class="bi bi-geo-alt-fill"></i> State</label>
+                <p class="h5" th:text="${company.state?.displayName ?: 'Not provided'}"></p>
+            </div>
+
+            <div class="col-12 mb-4" th:if="${company.address != null and !company.address.isEmpty()}">
+                <label class="form-label text-muted"><i class="bi bi-geo-alt"></i> Company Address</label>
+                <p class="lead" th:text="${company.address}" style="white-space: pre-wrap;"></p>
+            </div>
+
+            <div class="col-12 mb-4" th:if="${company.address == null or company.address.isEmpty()}">
+                <label class="form-label text-muted"><i class="bi bi-geo-alt"></i> Company Address</label>
+                <p class="text-muted fst-italic">No address added yet. Click "Edit Company" to add one.</p>
+            </div>
+
+            <div class="col-md-6 mb-4">
+                <label class="form-label text-muted"><i class="bi bi-image"></i> Company Logo</label>
+                <div th:if="${logoBase64 != null}">
+                    <img th:src="${logoBase64}"
+                         style="max-height: 80px; max-width: 300px;" alt="Company Logo">
+                </div>
+                <p th:if="${logoBase64 == null}" class="text-muted fst-italic">No logo uploaded yet.</p>
+            </div>
+
+            <div class="col-md-6 mb-4">
+                <label class="form-label text-muted"><i class="bi bi-pencil-square"></i> Authorized Signature</label>
+                <div th:if="${signatureBase64 != null}">
+                    <img th:src="${signatureBase64}"
+                         style="max-height: 60px; max-width: 300px;" alt="Signature">
+                </div>
+                <p th:if="${signatureBase64 == null}" class="text-muted fst-italic">No signature uploaded yet.</p>
+            </div>
         </div>
 
         <div class="border-top pt-3 mt-3">
