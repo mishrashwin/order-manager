@@ -2,10 +2,10 @@
 
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen)
 ![Java](https://img.shields.io/badge/Java-17+-orange)
-![MySQL](https://img.shields.io/badge/MySQL-8.0-blue)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15%2B-blue)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-A comprehensive web-based **Order Management System** with multi-tenant architecture, built using Spring Boot 3, Thymeleaf, and MySQL. Designed for businesses to manage orders, clients, and vendors with complete tenant isolation.
+A comprehensive web-based **Order Management System** with multi-tenant architecture, built using Spring Boot 3, Thymeleaf, and PostgreSQL. Designed for businesses to manage orders, clients, vendors, and owner-approved company onboarding with complete tenant isolation.
 
 ---
 
@@ -15,7 +15,7 @@ A comprehensive web-based **Order Management System** with multi-tenant architec
 - **Complete tenant isolation** - Each company's data is fully separated
 - **Secure context extraction** - Company ID extracted from authenticated user (never from request)
 - **Automatic data filtering** - All queries filtered by company ID
-- **Company registration** - Self-service company creation with admin user
+- **Company onboarding** - Public signup is disabled; companies register through `/company/register` and enter a pending-approval flow before users can log in
 
 ### 🔐 **Authentication & Security**
 - **BCrypt password hashing** - Industry-standard password encryption
@@ -23,6 +23,7 @@ A comprehensive web-based **Order Management System** with multi-tenant architec
 - **Password reset flow** - 3-step secure password reset with 6-digit codes
   - Request reset code → Verify code → Set new password
   - 15-minute code expiry with one-time use
+- **Owner approval workflow** - Pending, rejected, and inactive companies cannot authenticate until the owner approves them
 - **Role-based access control** - USER, MANAGER, ADMIN roles
 - **Spring Security integration** - Form-based authentication with custom failure handling
 
@@ -50,12 +51,12 @@ A comprehensive web-based **Order Management System** with multi-tenant architec
 - **Spring Boot 3** - Modern Java framework with auto-configuration
 - **Thymeleaf Templates** - Server-side rendering with Bootstrap 5
 - **Spring Data JPA** - Simplified database operations
-- **MySQL Database** - Reliable relational database with foreign key constraints
+- **PostgreSQL Database** - Primary runtime database in the committed dev/qa/prod profiles
 - **Flyway Migrations** - Version-controlled database schema (optional)
 - **DTO Validation** - Input validation with jakarta.validation
-- **Email Service** - SMTP integration (Gmail/Brevo support)
+- **Email Service** - Brevo API integration via WebClient
 - **RESTful API** - JSON endpoints for order operations
-- **Swagger UI** - Interactive API documentation
+- **OpenAPI Dependency** - SpringDoc is included, but Swagger UI is disabled by default in the committed profiles
 
 ---
 
@@ -63,8 +64,8 @@ A comprehensive web-based **Order Management System** with multi-tenant architec
 
 - **Java 17+** (JDK 17 or higher)
 - **Maven 3.6+**
-- **MySQL 8.0+**
-- **Gmail Account** (for email functionality) or Brevo SMTP
+- **PostgreSQL** (used by the active dev/qa/prod profiles)
+- **Brevo API key** and `MAIL_FROM` value for outbound email
 
 ---
 
@@ -76,52 +77,52 @@ cd F:\AshLabsCompany\order-manager
 ```
 
 ### 2. Configure Database
-Create MySQL database:
+Create the PostgreSQL database:
 ```sql
 CREATE DATABASE order_manager_db;
 ```
 
-Set the required environment variable before running the application:
+For the default dev profile, set the database credentials and ensure PostgreSQL is running locally:
 ```bash
 # Linux/macOS
-export DB_PASSWORD=your_mysql_password
+export DB_PASSWORD=your_postgres_password
 
 # Windows (Command Prompt)
-set DB_PASSWORD=your_mysql_password
+set DB_PASSWORD=your_postgres_password
 
 # Windows (PowerShell)
-$env:DB_PASSWORD="your_mysql_password"
+$env:DB_PASSWORD="your_postgres_password"
 ```
 
-The `application.properties` reads this as `spring.datasource.password=${DB_PASSWORD}`.
+The profile-specific configuration reads the database values from `DB_USERNAME`, `DB_PASSWORD`, and the active profile's datasource URL.
 
 ### 3. Configure Email (Required for verification/password reset)
 Set the following environment variables:
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `MAIL_USERNAME` | SMTP account username (email address) | `your_email@gmail.com` |
-| `MAIL_PASSWORD` | SMTP account password or app password | `your_app_password` |
-| `MAIL_FROM` | From address used in sent emails | `your_email@gmail.com` |
+| `BREVO_API_KEY` | Brevo API token used for outbound mail | `xkeysib-...` |
+| `MAIL_FROM` | From address used in sent emails | `noreply@yourdomain.com` |
+| `APP_BASE_URL` | Base URL used for links in emails and callbacks | `https://your-app.example.com` |
 
 ```bash
 # Linux/macOS
-export MAIL_USERNAME=your_email@gmail.com
-export MAIL_PASSWORD=your_app_password
-export MAIL_FROM=your_email@gmail.com
+export BREVO_API_KEY=your_brevo_api_key
+export MAIL_FROM=noreply@yourdomain.com
+export APP_BASE_URL=https://your-app.example.com
 
 # Windows (Command Prompt)
-set MAIL_USERNAME=your_email@gmail.com
-set MAIL_PASSWORD=your_app_password
-set MAIL_FROM=your_email@gmail.com
+set BREVO_API_KEY=your_brevo_api_key
+set MAIL_FROM=noreply@yourdomain.com
+set APP_BASE_URL=https://your-app.example.com
 
 # Windows (PowerShell)
-$env:MAIL_USERNAME="your_email@gmail.com"
-$env:MAIL_PASSWORD="your_app_password"
-$env:MAIL_FROM="your_email@gmail.com"
+$env:BREVO_API_KEY="your_brevo_api_key"
+$env:MAIL_FROM="noreply@yourdomain.com"
+$env:APP_BASE_URL="https://your-app.example.com"
 ```
 
-> **Gmail users**: Enable "App Passwords" in your Google Account settings and use the generated app password as `MAIL_PASSWORD`.
+> **Brevo users**: The app sends email through Brevo's HTTP API, so no SMTP username/password is required.
 
 ### 4. Run Application
 ```powershell
@@ -130,8 +131,7 @@ mvn spring-boot:run
 
 ### 5. Access Application
 - **Application**: http://localhost:8080
-- **Swagger UI**: http://localhost:8080/swagger-ui/index.html
-- **API Docs**: http://localhost:8080/v3/api-docs
+- **API Docs**: disabled by default in the committed profiles; enable SpringDoc if you need interactive docs locally
 
 ---
 
@@ -141,6 +141,7 @@ mvn spring-boot:run
 1. **Register Company** → http://localhost:8080/company/register
    - Enter company name, admin details
    - Admin user created with ADMIN role
+   - Company stays pending until owner approval
    
 2. **Verify Email** → Check inbox for verification link
    - Click verification link (valid 24 hours)
@@ -222,19 +223,19 @@ order-manager/
 |-------|-----------|
 | **Backend** | Spring Boot 3.x, Spring MVC, Spring Security |
 | **Data Access** | Spring Data JPA, Hibernate |
-| **Database** | MySQL 8.0 |
+| **Database** | PostgreSQL |
 | **View Layer** | Thymeleaf, Bootstrap 5 |
 | **Build Tool** | Maven |
-| **Email** | Spring Mail (SMTP) |
+| **Email** | Brevo API via WebClient |
 | **Validation** | Jakarta Validation (Bean Validation) |
-| **API Docs** | SpringDoc OpenAPI (Swagger) |
+| **API Docs** | SpringDoc OpenAPI dependency included; UI disabled by default |
 
 ---
 
 ## 🔒 Security Features
 
 ✅ **BCrypt Password Hashing** - Passwords never stored in plain text  
-✅ **CSRF Protection** - Disabled for development (enable in production)  
+✅ **CSRF Protection** - Enabled for MVC, with `/api/**` and `/support` excluded for AJAX flows
 ✅ **Email Verification** - Prevents unauthorized account creation  
 ✅ **Password Reset** - Secure 3-step process with time-limited codes  
 ✅ **Tenant Isolation** - Company data completely separated  
@@ -248,28 +249,28 @@ order-manager/
 
 ### Manual Testing
 1. **Company Registration**: `/company/register`
-2. **Email Verification**: Check email and click link
-3. **Login**: `/login` with verified credentials
-4. **Admin Panel**: `/admin/users` (ADMIN role required)
-5. **Order Management**: `/orders` (all authenticated users)
-6. **Password Reset**: `/forgot-password` (public access)
+2. **Owner Approval**: Approve or reject pending companies from `/owner/dashboard`
+3. **Email Verification**: Check email and click link
+4. **Login**: `/login` with verified credentials and an approved company
+5. **Admin Panel**: `/admin/users` (ADMIN role required)
+6. **Order Management**: `/orders` (all authenticated users)
+7. **Password Reset**: `/forgot-password` (public access)
 
 ### API Testing
-- **Swagger UI**: http://localhost:8080/swagger-ui/index.html
-- **Postman**: Import from `/v3/api-docs`
+- **OpenAPI**: SpringDoc is present, but the UI is disabled by default in the shipped profiles
+- **Postman**: Import from `/v3/api-docs` only after enabling SpringDoc locally
 
 ---
 
 ## 🐛 Troubleshooting
 
 ### Email Not Sending
-- Check `MAIL_USERNAME` and `MAIL_PASSWORD` environment variables
-- For Gmail: Enable "App Passwords" in Google Account settings
-- Verify SMTP settings in `application.properties`
+- Check `BREVO_API_KEY`, `MAIL_FROM`, and `APP_BASE_URL`
+- Verify Brevo API access and sender identity in `application.properties`
 
 ### Database Connection Issues
-- Ensure MySQL is running: `mysql -u root -p`
-- Verify database exists: `SHOW DATABASES;`
+- Ensure PostgreSQL is running locally or that the remote database URL is reachable
+- Verify the `order_manager_db` database exists
 - Check credentials in `application.properties`
 
 ### Login Redirects to Login Page
@@ -325,6 +326,7 @@ order-manager/
 - ✅ **2026-02-24**: Database schema cleanup and foreign key constraint implementation
 - ✅ **2026-02-20**: Email verification system with 24-hour token expiry
 - ✅ **2026-02-15**: Multi-tenant architecture with complete data isolation
+- ✅ **2026-07-04**: Documentation aligned with the live PostgreSQL/Brevo runtime, owner approval flow, and disabled Swagger defaults
 
 ---
 

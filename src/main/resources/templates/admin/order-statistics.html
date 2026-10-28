@@ -278,8 +278,8 @@
                             <span th:class="'badge badge-custom bg-' + ${order.status.badgeColor}"
                                   th:text="${order.status.displayName}"></span>
                         </td>
-                        <td th:text="${#temporals.format(order.orderDate, 'dd MMM yyyy')}"></td>
-                        <td th:text="${order.deliveryDate != null ? #temporals.format(order.deliveryDate, 'dd MMM yyyy') : '-'}"></td>
+                        <td th:text="${#temporals.format(order.orderDate, 'dd MMM yyyy')}" th:data-sort-value="${#temporals.format(order.orderDate, 'yyyy-MM-dd')}"></td>
+                        <td th:text="${order.deliveryDate != null ? #temporals.format(order.deliveryDate, 'dd MMM yyyy') : '-'}" th:data-sort-value="${order.deliveryDate != null ? #temporals.format(order.deliveryDate, 'yyyy-MM-dd') : ''}"></td>
                     </tr>
                     </tbody>
                 </table>

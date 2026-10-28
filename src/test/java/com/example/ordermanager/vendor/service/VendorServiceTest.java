@@ -42,7 +42,11 @@ class VendorServiceTest {
     Vendor vendor = new Vendor();
     vendor.setCompanyName("beta supply");
     vendor.setContactPerson("jane SMITH");
+    vendor.setEmail("jane@example.com");
     vendor.setPhone("+1 (202) 555-0185");
+    vendor.setGstn("27AAAPL1234C1ZV");
+    vendor.setState(com.example.ordermanager.utils.IndianState.MAHARASHTRA);
+    vendor.setAddress("123 Main Street");
 
     when(companyService.getCompanyById(5L)).thenReturn(Optional.of(company));
     when(vendorRepository.save(any(Vendor.class)))
@@ -63,13 +67,40 @@ class VendorServiceTest {
 
     Vendor vendor = new Vendor();
     vendor.setCompanyName("beta supply");
+    vendor.setContactPerson("Jane Smith");
+    vendor.setEmail("jane@example.com");
     vendor.setPhone("abc");
+    vendor.setGstn("27AAAPL1234C1ZV");
+    vendor.setState(com.example.ordermanager.utils.IndianState.MAHARASHTRA);
+    vendor.setAddress("123 Main Street");
 
     when(companyService.getCompanyById(5L)).thenReturn(Optional.of(company));
 
     assertThatThrownBy(() -> vendorService.saveVendorWithCompany(vendor, 5L))
         .isInstanceOf(IllegalArgumentException.class).hasMessageContaining(
             "Vendor Phone No is invalid. Use country code + mobile number (for example +919876543210)");
+
+    verify(vendorRepository, never()).save(any(Vendor.class));
+  }
+
+  @Test
+  void saveVendorWithCompany_requiresGstnStateAndAddress() {
+    Company company = new Company();
+    company.setId(5L);
+
+    Vendor vendor = new Vendor();
+    vendor.setCompanyName("Beta Supply");
+    vendor.setContactPerson("Jane Smith");
+    vendor.setEmail("jane@example.com");
+    vendor.setPhone("+919876543210");
+    vendor.setGstn(" ");
+    vendor.setState(null);
+    vendor.setAddress(" ");
+
+    when(companyService.getCompanyById(5L)).thenReturn(Optional.of(company));
+
+    assertThatThrownBy(() -> vendorService.saveVendorWithCompany(vendor, 5L))
+        .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("GSTN");
 
     verify(vendorRepository, never()).save(any(Vendor.class));
   }
