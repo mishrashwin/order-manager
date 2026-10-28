@@ -5,6 +5,11 @@ Implement configurable Terms & Conditions page for Vendor PO PDF with company-le
 
 ## Detailed Change Summary
 
+### Lazy-Loaded Order Owner Fix
+- The Vendor PO list displays `po.orderOwner.username`. Entity graphs previously fetched company, vendor, and items but omitted `orderOwner`, so Thymeleaf could dereference an uninitialized Hibernate proxy after the repository session closed.
+- Added `orderOwner` to all Vendor PO repository entity graphs (company list, paged list, search, status list, and company-scoped ID lookup). Tenant filtering remains unchanged.
+- Added a backend rule: include associations needed after a repository call explicitly in an `@EntityGraph`, because a fetch graph may leave omitted relationships unavailable outside the persistence context.
+
 ### Company-Level Configuration
 - Added `vendor_po_terms_conditions` (`TEXT`) to store a JSON array of term strings and `vendor_po_terms_conditions_enabled` (`BOOLEAN`, default `true`) to the `companies` table in migration V29.
 - Added matching fields to `Company`. The settings are shared across the company's Vendor POs, rather than stored independently on each PO.
@@ -99,6 +104,8 @@ Implement configurable Terms & Conditions page for Vendor PO PDF with company-le
 - ✅ Existing records handled safely (NULL values treated as empty/default)
 
 ## Verification
+- Vendor PO list rendering now fetches the assigned order owner through its entity graph, matching the `po.orderOwner.username` view access.
+- Fetch-graph rule added to `ARCHITECTURE_BACKEND_RULES.md`: include associations consumed after the query in the explicit entity graph.
 - Code follows existing architecture patterns (Controller → Service → Repository)
 - Multi-tenant isolation enforced via SecurityContextHelper
 - JSON serialization/deserialization handled with Jackson ObjectMapper

@@ -15,20 +15,20 @@ import java.util.Optional;
 @Repository
 public interface VendorPoRepository extends JpaRepository<VendorPo, Long> {
 
-  @EntityGraph(attributePaths = {"company", "vendor", "items"})
+  @EntityGraph(attributePaths = {"company", "vendor", "items", "orderOwner"})
   List<VendorPo> findByCompany_Id(Long companyId);
 
-  @EntityGraph(attributePaths = {"company", "vendor", "items"})
+  @EntityGraph(attributePaths = {"company", "vendor", "items", "orderOwner"})
   Page<VendorPo> findByCompany_Id(Long companyId, Pageable pageable);
 
-  @EntityGraph(attributePaths = {"company", "vendor", "items"})
+  @EntityGraph(attributePaths = {"company", "vendor", "items", "orderOwner"})
   Page<VendorPo> findByCompany_IdAndPoNumberContainingIgnoreCase(Long companyId, String search,
       Pageable pageable);
 
-  @EntityGraph(attributePaths = {"company", "vendor", "items"})
+  @EntityGraph(attributePaths = {"company", "vendor", "items", "orderOwner"})
   List<VendorPo> findByCompany_IdAndStatus(Long companyId, VendorPoStatus status);
 
-  @EntityGraph(attributePaths = {"company", "vendor", "items"})
+  @EntityGraph(attributePaths = {"company", "vendor", "items", "orderOwner"})
   Optional<VendorPo> findByIdAndCompany_Id(Long id, Long companyId);
 
   long countByCompany_Id(Long companyId);

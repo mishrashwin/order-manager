@@ -166,6 +166,7 @@ Example:
 ## Lazy vs Eager:
 - Default → Lazy
 - Use eager only when needed
+- When a Spring Data JPA `@EntityGraph` is used, explicitly include every association read by the view or service after the repository call. Fetch graphs can leave omitted relationships unavailable after the persistence context closes, even when the entity mapping declares them eager.
 
 ---
 
