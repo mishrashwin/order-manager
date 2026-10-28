@@ -4,6 +4,8 @@ import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.company.repository.CompanyRepository;
 import com.example.ordermanager.product.entity.Product;
 import com.example.ordermanager.product.repository.ProductRepository;
+import com.example.ordermanager.user.entity.User;
+import com.example.ordermanager.user.repository.UserRepository;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import com.example.ordermanager.vendor.entity.Vendor;
 import com.example.ordermanager.vendor.entity.VendorPo;
@@ -27,19 +29,22 @@ public class VendorPoServiceImpl implements VendorPoService {
   private final VendorRepository vendorRepository;
   private final CompanyRepository companyRepository;
   private final ProductRepository productRepository;
+  private final UserRepository userRepository;
   private final SecurityContextHelper securityContextHelper;
   private final com.example.ordermanager.vendor.service.VendorPdfService vendorPdfService;
   private final com.example.ordermanager.utils.Helper helper;
 
   public VendorPoServiceImpl(VendorPoRepository vendorPoRepository,
       VendorRepository vendorRepository, CompanyRepository companyRepository,
-      ProductRepository productRepository, SecurityContextHelper securityContextHelper,
+      ProductRepository productRepository, UserRepository userRepository,
+      SecurityContextHelper securityContextHelper,
       com.example.ordermanager.vendor.service.VendorPdfService vendorPdfService,
       com.example.ordermanager.utils.Helper helper) {
     this.vendorPoRepository = vendorPoRepository;
     this.vendorRepository = vendorRepository;
     this.companyRepository = companyRepository;
     this.productRepository = productRepository;
+    this.userRepository = userRepository;
     this.securityContextHelper = securityContextHelper;
     this.vendorPdfService = vendorPdfService;
     this.helper = helper;
@@ -78,6 +83,17 @@ public class VendorPoServiceImpl implements VendorPoService {
     po.setCreatedAt(OffsetDateTime.now());
     po.setUpdatedAt(OffsetDateTime.now());
     po.setCreatedBy(securityContextHelper.getCurrentUsername());
+
+    // Set orderOwner if provided (with tenant validation)
+    if (po.getOrderOwner() != null && po.getOrderOwner().getId() != null) {
+      User orderOwner = userRepository.findById(po.getOrderOwner().getId())
+          .orElseThrow(() -> new IllegalArgumentException("Order owner not found"));
+      if (!orderOwner.getCompany().getId().equals(companyId)) {
+        throw new IllegalStateException("Order owner does not belong to company");
+      }
+      po.setOrderOwner(orderOwner);
+    }
+
     if (po.getStatus() == null) {
       po.setStatus(VendorPoStatus.DRAFT);
     }
@@ -112,6 +128,16 @@ public class VendorPoServiceImpl implements VendorPoService {
     }
 
     // PO number is auto-generated and non-amendable - skip update
+
+    // Update orderOwner if provided (with tenant validation)
+    if (po.getOrderOwner() != null && po.getOrderOwner().getId() != null) {
+      User orderOwner = userRepository.findById(po.getOrderOwner().getId())
+          .orElseThrow(() -> new IllegalArgumentException("Order owner not found"));
+      if (!orderOwner.getCompany().getId().equals(companyId)) {
+        throw new IllegalArgumentException("Order owner does not belong to this company");
+      }
+      existing.setOrderOwner(orderOwner);
+    }
 
     // Update remaining editable fields
     existing.setDeliveryDate(po.getDeliveryDate());

@@ -79,6 +79,7 @@ public class VendorPoController {
     model.addAttribute("vendorPo", new VendorPo());
     model.addAttribute("vendors", vendorService.getVendorsByCompanyId(companyId));
     model.addAttribute("products", productService.getProductsByCompanyId(companyId));
+    model.addAttribute("users", userService.getUsersByCompany(companyId));
     return "vendor/pos-form-new";
   }
 
@@ -113,6 +114,7 @@ public class VendorPoController {
     model.addAttribute("vendorPo", po);
     model.addAttribute("vendors", vendorService.getVendorsByCompanyId(companyId));
     model.addAttribute("products", productService.getProductsByCompanyId(companyId));
+    model.addAttribute("users", userService.getUsersByCompany(companyId));
     return "vendor/pos-form-new";
   }
 
@@ -148,6 +150,7 @@ public class VendorPoController {
       model.addAttribute("vendorPo", vendorPo);
       model.addAttribute("vendors", vendorService.getVendorsByCompanyId(companyId));
       model.addAttribute("products", productService.getProductsByCompanyId(companyId));
+      model.addAttribute("users", userService.getUsersByCompany(companyId));
       return "vendor/pos-form-new";
     }
   }

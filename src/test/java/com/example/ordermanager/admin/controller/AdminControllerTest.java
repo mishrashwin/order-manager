@@ -435,7 +435,7 @@ class AdminControllerTest {
     when(companyService.updateCompany(5L, updatedCompany)).thenReturn(existingCompany);
 
     RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
-    String view = adminController.updateCompany(updatedCompany, redirectAttributes);
+    String view = adminController.updateCompany(updatedCompany, null, null, redirectAttributes);
 
     assertThat(view).isEqualTo("redirect:/admin/company");
     assertThat(redirectAttributes.getFlashAttributes().get("message"))
@@ -456,7 +456,7 @@ class AdminControllerTest {
         .thenThrow(new IllegalArgumentException("Company with ID 5 not found"));
 
     RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
-    String view = adminController.updateCompany(updatedCompany, redirectAttributes);
+    String view = adminController.updateCompany(updatedCompany, null, null, redirectAttributes);
 
     assertThat(view).isEqualTo("redirect:/admin/company/edit");
     assertThat(redirectAttributes.getFlashAttributes().get("error"))
@@ -475,7 +475,7 @@ class AdminControllerTest {
         new IllegalArgumentException("Company with name 'Duplicate Company Name' already exists"));
 
     RedirectAttributes redirectAttributes = new RedirectAttributesModelMap();
-    String view = adminController.updateCompany(updatedCompany, redirectAttributes);
+    String view = adminController.updateCompany(updatedCompany, null, null, redirectAttributes);
 
     assertThat(view).isEqualTo("redirect:/admin/company/edit");
     assertThat(redirectAttributes.getFlashAttributes().get("error"))

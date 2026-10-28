@@ -1,6 +1,9 @@
 package com.example.ordermanager.product.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -23,6 +26,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.ui.ConcurrentModel;
 import org.springframework.ui.Model;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -55,11 +60,12 @@ class ProductControllerTest {
     Product product = new Product("Steel Rod", null, null, "SAIL", "Raw Material", 50.0);
     product.setId(1L);
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(3L);
-    when(productService.getProductsByCompanyId(3L)).thenReturn(List.of(product));
+    when(productService.searchProducts(eq(3L), isNull(), any(PageRequest.class)))
+        .thenReturn(new PageImpl<>(List.of(product), PageRequest.of(0, 10), 1));
     when(orderItemRepository.findByProductCompanyId(3L)).thenReturn(Collections.emptyList());
 
     Model model = new ConcurrentModel();
-    String view = productController.listProducts(model);
+    String view = productController.listProducts(null, 0, 10, model);
 
     assertThat(view).isEqualTo("products/list");
     assertThat(model.getAttribute("products")).isEqualTo(List.of(product));
@@ -72,14 +78,15 @@ class ProductControllerTest {
     product.setId(1L);
 
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(3L);
-    when(productService.getProductsByCompanyId(3L)).thenReturn(List.of(product));
+    when(productService.searchProducts(eq(3L), isNull(), any(PageRequest.class)))
+        .thenReturn(new PageImpl<>(List.of(product), PageRequest.of(0, 10), 1));
     when(orderItemRepository.findByProductCompanyId(3L))
         .thenReturn(List.of(orderItem(product, 10L, "PO-010"), orderItem(product, 7L, "PO-007"),
             orderItem(product, 9L, "PO-009"), orderItem(product, 8L, "PO-008"),
             orderItem(product, 9L, "PO-009")));
 
     Model model = new ConcurrentModel();
-    productController.listProducts(model);
+    productController.listProducts(null, 0, 10, model);
 
     @SuppressWarnings("unchecked")
     Map<Long, List<ProductOrderRef>> orderUsageMap =

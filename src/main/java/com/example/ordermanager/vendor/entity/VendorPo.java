@@ -2,6 +2,7 @@ package com.example.ordermanager.vendor.entity;
 
 import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.product.entity.Product;
+import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.vendor.entity.Vendor;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -57,6 +58,10 @@ public class VendorPo {
   private VendorPoStatus status;
 
   private String createdBy;
+
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "order_owner_id")
+  private User orderOwner;
 
   private OffsetDateTime createdAt;
   private OffsetDateTime updatedAt;

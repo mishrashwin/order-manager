@@ -82,6 +82,19 @@
     .nowrap {
        white-space: nowrap;
      }
+
+    /* NOTES &amp; TERMS */
+    .notes-section {
+      max-width: 50%;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    /* COMPANY ADDRESS */
+    .address-section {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
   </style>
 </head>
 
@@ -108,7 +121,7 @@
           GST: <span th:text="${company.gstn}"></span>
         </div>
 
-        <div style="margin-top:4px; line-height:1.4;"
+        <div class="address-section" style="margin-top:4px; line-height:1.4;"
              th:text="${company.address}">
         </div>
       </td>
@@ -134,6 +147,7 @@
       <td>
         <strong>Vendor</strong><br/>
         <span th:text="${#strings.escapeXml(vendorPo.vendorName)}"></span><br/>
+        <span th:if="${vendorPo.vendor != null}" th:text="${#strings.escapeXml(vendorPo.vendor.address)}"></span><br/>
         GST: <span th:text="${vendorPo.vendorGstn}"></span>
       </td>
 
@@ -232,7 +246,7 @@
   <!-- NOTES -->
   <div class="section">
     <strong>Notes &amp; Terms</strong>
-    <p th:text="${#strings.escapeXml(vendorPo.note)}"></p>
+    <p class="notes-section" th:text="${#strings.escapeXml(vendorPo.note)}"></p>
   </div>
 
   <!-- SIGN -->

@@ -12,8 +12,113 @@ and calculating GST-inclusive amounts across Product, Order, and Vendor PO modul
 **Order Form Header Layout**: Combine Customer Name and PO Order No fields into a single row with 3:1 ratio for better space utilization.
 **Vendor PO Form Enhancement**: Add "Add Vendor" button to Vendor PO form to match Order form's "Add Client" functionality.
 **Edit Mode Add Existing Product Fix**: Fix "Add Existing Product" button not working in Edit Vendor PO mode by enhancing fallback logic to remove selected attributes from copied options.
+**Vendor PO PDF Enhancement**: Add vendor address between vendor name and GSTN in the PDF template for complete vendor information display.
+**Vendor PO Created By and Order Owner Fields**: Add two fields to track who created the PO and who is responsible for bringing the order.
 
 ## Work Done
+
+### [2026-10-28] Vendor PO Created By and Order Owner Fields Addition
+**Problem**: Vendor PO module lacked tracking for who created the PO and who is responsible for bringing the order (order owner).
+
+**Root Cause Identified**:
+- `createdBy` field existed but was not being used in UI
+- No `orderOwner` field existed to track the employee responsible for the order
+- No dropdown in Create/Edit forms to select order owner from company users
+
+**Solution Implemented**:
+- Confirmed `createdBy` field already exists in VendorPo entity and is automatically captured during create
+- Added `orderOwner` field as @ManyToOne relationship to User entity in VendorPo
+- Updated service layer to handle orderOwner with tenant validation (must belong to same company)
+- Updated controller to pass company users to Create and Edit forms
+- Added Order Owner dropdown in Create/Edit templates with user display (Name + Username)
+- Created database migration V28 to add order_owner_id column with foreign key constraint
+- Confirmed PDF template already excludes both createdBy and orderOwner fields
+
+**Key Technical Changes**:
+```java
+// VendorPo.java - Added orderOwner relationship
+@ManyToOne(fetch = FetchType.EAGER)
+@JoinColumn(name = "order_owner_id")
+private User orderOwner;
+
+// VendorPoServiceImpl.java - Create method
+po.setCreatedBy(securityContextHelper.getCurrentUsername());
+if (po.getOrderOwner() != null && po.getOrderOwner().getId() != null) {
+  User orderOwner = userRepository.findById(po.getOrderOwner().getId())
+      .orElseThrow(() -> new IllegalArgumentException("Order owner not found"));
+  if (!orderOwner.getCompany().getId().equals(companyId)) {
+    throw new IllegalStateException("Order owner does not belong to company");
+  }
+  po.setOrderOwner(orderOwner);
+}
+
+// VendorPoServiceImpl.java - Update method
+// createdBy is NOT updated (preserved during edits)
+// orderOwner is updated with tenant validation if provided
+```
+
+```html
+<!-- pos-form-new.html - Added Order Owner dropdown -->
+<div class="row mb-4">
+  <div class="col-md-12">
+    <label class="form-label"><i class="bi bi-person"></i> Order Owner</label>
+    <select class="form-select form-control-custom" th:field="*{orderOwner.id}">
+      <option value="">-- Select Order Owner (Optional) --</option>
+      <option th:each="user : ${users}" th:value="${user.id}"
+        th:text="${user.firstName + ' ' + user.lastName + ' (' + user.username + ')'}">User Name</option>
+    </select>
+    <div class="form-text">Employee responsible for bringing this order (optional).</div>
+  </div>
+</div>
+```
+
+**Files Modified**:
+- `src/main/java/com/example/ordermanager/vendor/entity/VendorPo.java` - Added orderOwner field
+- `src/main/java/com/example/ordermanager/vendor/service/impl/VendorPoServiceImpl.java` - Added orderOwner handling with tenant validation
+- `src/main/java/com/example/ordermanager/vendor/controller/VendorPoController.java` - Added users to model for dropdown
+- `src/main/resources/templates/vendor/pos-form-new.html` - Added Order Owner dropdown
+- `src/main/resources/db/migration/V28__add_order_owner_to_vendor_po.sql` - Database migration
+
+**Outcome**:
+- ✅ createdBy automatically captured from logged-in user during create
+- ✅ createdBy preserved during edits (never modified)
+- ✅ orderOwner dropdown available on Create and Edit pages
+- ✅ orderOwner restricted to current organization users (tenant validation)
+- ✅ Both fields excluded from Vendor PO PDFs (already excluded)
+- ✅ Multi-tenant rules followed (company-scoped user validation)
+
+### [2026-10-27] Vendor PO PDF Vendor Address Addition
+**Problem**: Vendor PO PDF only showed vendor name and GSTN, missing the vendor address between these two values.
+
+**Root Cause Identified**:
+- The PDF template `vendor_po.html` displayed vendor name and GSTN but did not include vendor address
+- Vendor address field exists in the Vendor entity but was not referenced in the PDF template
+
+**Solution Implemented**:
+- Added vendor address display between vendor name and GSTN in the PDF template
+- Used `vendorPo.vendor.address` with null check to safely display the address
+- Applied `#strings.escapeXml()` for security to prevent XSS attacks
+
+**Key Technical Changes**:
+```html
+<!-- Before -->
+<strong>Vendor</strong><br/>
+<span th:text="${#strings.escapeXml(vendorPo.vendorName)}"></span><br/>
+GST: <span th:text="${vendorPo.vendorGstn}"></span>
+
+<!-- After -->
+<strong>Vendor</strong><br/>
+<span th:text="${#strings.escapeXml(vendorPo.vendorName)}"></span><br/>
+<span th:if="${vendorPo.vendor != null}" th:text="${#strings.escapeXml(vendorPo.vendor.address)}"></span><br/>
+GST: <span th:text="${vendorPo.vendorGstn}"></span>
+```
+
+**Files Modified**:
+- `src/main/resources/templates/vendor/pdf/vendor_po.html`
+
+**Outcome**:
+- ✅ Vendor address now displays between vendor name and GSTN in PDF
+- ✅ Complete vendor information is now visible in the generated PDF
 
 ### [2026-07-04] Documentation alignment
 **Problem**: The project README still described the older MySQL/Gmail runtime and Swagger defaults, which no longer matched the committed profiles and security/email configuration.

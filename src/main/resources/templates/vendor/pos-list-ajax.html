@@ -126,6 +126,8 @@
               <th class="om-sortable">Delivery Date</th>
               <th class="om-sortable">Total</th>
               <th class="om-sortable">Status</th>
+              <th class="om-sortable">Created By</th>
+              <th class="om-sortable">Order Owner</th>
               <th class="text-center no-sort">Actions</th>
             </tr>
             </thead>
@@ -170,6 +172,16 @@
                     <i th:classappend="${po.status.icon}"></i>
                     <span th:text="${po.status.shortName}"></span>
                   </span>
+              </td>
+
+              <!-- Created By -->
+              <td>
+                <span th:text="${po.createdBy != null ? po.createdBy : '—'}"></span>
+              </td>
+
+              <!-- Order Owner -->
+              <td>
+                <span th:text="${po.orderOwner != null ? po.orderOwner.username : '—'}"></span>
               </td>
 
               <!-- ACTIONS -->

@@ -99,6 +99,19 @@
           </div>
         </div>
 
+        <!-- Order Owner -->
+        <div class="row mb-4">
+          <div class="col-md-12">
+            <label class="form-label"><i class="bi bi-person"></i> Order Owner</label>
+            <select class="form-select form-control-custom" th:field="*{orderOwner.id}">
+              <option value="">-- Select Order Owner (Optional) --</option>
+              <option th:each="user : ${users}" th:value="${user.id}"
+                th:text="${user.firstName + ' ' + user.lastName + ' (' + user.username + ')'}">User Name</option>
+            </select>
+            <div class="form-text">Employee responsible for bringing this order (optional).</div>
+          </div>
+        </div>
+
         <!-- Product Items -->
         <div class="mb-4">
           <label class="form-label"><i class="bi bi-boxes"></i> Products <span class="text-danger">*</span></label>
