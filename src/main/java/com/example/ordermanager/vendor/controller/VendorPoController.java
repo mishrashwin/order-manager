@@ -1,6 +1,7 @@
 package com.example.ordermanager.vendor.controller;
 
 import com.example.ordermanager.company.entity.Company;
+import com.example.ordermanager.company.repository.CompanyRepository;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.product.entity.Product;
 import com.example.ordermanager.product.service.ProductService;
@@ -36,19 +37,22 @@ public class VendorPoController {
   private final BrevoEmailService brevoEmailService;
   private final UserService userService;
   private final CompanyService companyService;
+  private final CompanyRepository companyRepository;
   private final VendorService vendorService;
   private final ProductService productService;
   private final SecurityContextHelper securityContextHelper;
   private final PasswordVerificationService passwordVerificationService;
 
   public VendorPoController(VendorPoService vendorPoService, BrevoEmailService brevoEmailService,
-      UserService userService, CompanyService companyService, VendorService vendorService,
-      ProductService productService, SecurityContextHelper securityContextHelper,
+      UserService userService, CompanyService companyService, CompanyRepository companyRepository,
+      VendorService vendorService, ProductService productService,
+      SecurityContextHelper securityContextHelper,
       PasswordVerificationService passwordVerificationService) {
     this.vendorPoService = vendorPoService;
     this.brevoEmailService = brevoEmailService;
     this.userService = userService;
     this.companyService = companyService;
+    this.companyRepository = companyRepository;
     this.vendorService = vendorService;
     this.productService = productService;
     this.securityContextHelper = securityContextHelper;
@@ -211,6 +215,83 @@ public class VendorPoController {
       ra.addFlashAttribute("poError", "Failed to delete PO: " + e.getMessage());
     }
     return "redirect:/vendors#vendor-po";
+  }
+
+  // ── Terms & Conditions ───────────────────────────────────────────────────────
+
+  /**
+   * GET endpoint to load company-level Terms & Conditions for Vendor PO PDFs. Returns JSON with
+   * terms array and enabled toggle state.
+   */
+  @GetMapping("/terms-conditions")
+  @ResponseBody
+  public java.util.Map<String, Object> getTermsConditions() {
+    Long companyId = securityContextHelper.getCompanyIdFromContext();
+    Company company = companyService.getCompanyById(companyId)
+        .orElseThrow(() -> new IllegalStateException("Company not found"));
+
+    java.util.Map<String, Object> response = new java.util.HashMap<>();
+
+    // Parse JSON terms array
+    java.util.List<String> terms = new java.util.ArrayList<>();
+    if (company.getVendorPoTermsConditions() != null
+        && !company.getVendorPoTermsConditions().isBlank()) {
+      try {
+        com.fasterxml.jackson.databind.ObjectMapper mapper =
+            new com.fasterxml.jackson.databind.ObjectMapper();
+        terms = mapper.readValue(company.getVendorPoTermsConditions(),
+            new com.fasterxml.jackson.core.type.TypeReference<java.util.List<String>>() {});
+      } catch (Exception e) {
+        // If parsing fails, treat as empty
+        terms = new java.util.ArrayList<>();
+      }
+    }
+
+    response.put("terms", terms);
+    response.put("enabled",
+        company.getVendorPoTermsConditionsEnabled() != null
+            ? company.getVendorPoTermsConditionsEnabled()
+            : true);
+    return response;
+  }
+
+  /**
+   * POST endpoint to save company-level Terms & Conditions for Vendor PO PDFs. Accepts form data
+   * with terms array and enabled toggle.
+   */
+  @PostMapping("/terms-conditions")
+  @ResponseBody
+  public java.util.Map<String, Object> saveTermsConditions(
+      @RequestParam(required = false, defaultValue = "false") String termsConditionsEnabled,
+      @RequestParam(required = false) java.util.List<String> termsConditions) {
+
+    Long companyId = securityContextHelper.getCompanyIdFromContext();
+    Company company = companyService.getCompanyById(companyId)
+        .orElseThrow(() -> new IllegalStateException("Company not found"));
+
+    // Convert terms list to JSON
+    String termsJson = "[]";
+    if (termsConditions != null && !termsConditions.isEmpty()) {
+      try {
+        com.fasterxml.jackson.databind.ObjectMapper mapper =
+            new com.fasterxml.jackson.databind.ObjectMapper();
+        // Filter out empty strings
+        java.util.List<String> filteredTerms =
+            termsConditions.stream().filter(t -> t != null && !t.trim().isBlank()).toList();
+        termsJson = mapper.writeValueAsString(filteredTerms);
+      } catch (Exception e) {
+        throw new RuntimeException("Failed to serialize terms", e);
+      }
+    }
+
+    company.setVendorPoTermsConditions(termsJson);
+    company.setVendorPoTermsConditionsEnabled("true".equalsIgnoreCase(termsConditionsEnabled));
+
+    companyRepository.save(company);
+
+    java.util.Map<String, Object> response = new java.util.HashMap<>();
+    response.put("success", true);
+    return response;
   }
 
   // ── Private helpers ────────────────────────────────────────────────────────

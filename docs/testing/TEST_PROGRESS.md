@@ -1,5 +1,11 @@
 # Test Progress Log
 
+## Vendor PO Terms & Conditions Modal Fix (2026-10-28)
+- Added `VendorPoControllerTest` cases for saving enabled terms, safely defaulting a missing toggle to disabled, and preserving an explicit disabled value; each verifies GET reload persistence.
+- Focused save/load controller tests pass (3/3), and `VendorFormTemplateTest` passes (1/1). The full `VendorPoControllerTest` run reports 8 unrelated stale failures (14 tests total).
+- `VendorPoServiceTest` reports 10 errors caused by stale repository mock setup; `VendorPdfServiceIntegrationTest` reports 14 context-load errors because `${DATABASE_URL}` is unresolved in the test profile.
+- Browser UI inventory did not expose a usable browser tab for interaction or console verification. The modal handlers were moved to the persistent parent page because the PO fragment is inserted through `innerHTML`.
+
 Use this file as the session-to-session handoff log for test implementation.
 
 ## Vendor Purchase Order (Vendor PO) Feature Implementation (2026-04-04)

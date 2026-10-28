@@ -41,6 +41,13 @@
             <button id="resetSortBtnPo" class="btn btn-outline-secondary om-btn-icon">
               <i class="bi bi-arrow-clockwise"></i> Reset Sort
             </button>
+            <button type="button"
+                    class="btn btn-outline-primary om-btn-icon"
+                    data-bs-toggle="modal"
+                    data-bs-target="#termsConditionsModal"
+                    title="Configure Terms & Conditions">
+              <i class="bi bi-file-text"></i> Terms & Conditions
+            </button>
           </div>
         </div>
       </div>
@@ -362,5 +369,52 @@
       });
     })();
   </script>
+
+  <!-- Terms & Conditions Modal -->
+  <div class="modal fade" id="termsConditionsModal" tabindex="-1" aria-labelledby="termsConditionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="termsConditionsModalLabel">
+            <i class="bi bi-file-text me-2"></i>Configure Terms & Conditions
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="termsConditionsForm" class="terms-modal-form" method="post" th:action="@{/vendor/pos/terms-conditions}">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <input type="hidden" id="termsConditionsEnabledValue" name="termsConditionsEnabled" value="false">
+          <div class="modal-body terms-modal-body">
+            <!-- Toggle Switch -->
+            <div class="form-check form-switch mb-4">
+              <input class="form-check-input" type="checkbox" id="termsConditionsEnabled" checked>
+              <label class="form-check-label fw-semibold" for="termsConditionsEnabled">
+                Include Terms & Conditions in PDF
+              </label>
+              <div class="form-text">When ON, terms will appear as a separate page at the end of the PDF</div>
+            </div>
+
+            <!-- Terms List -->
+            <div class="terms-list-section mb-3">
+              <label class="form-label fw-semibold">Terms & Conditions (Numbered List)</label>
+              <div id="termsList" class="mb-2">
+                <!-- Dynamic terms will be added here -->
+              </div>
+              <button type="button" class="btn btn-outline-primary btn-sm" id="addTermBtn">
+                <i class="bi bi-plus-circle"></i> Add Term
+              </button>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              <i class="bi bi-x-circle"></i> Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-circle"></i> Save
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 
 </th:block>

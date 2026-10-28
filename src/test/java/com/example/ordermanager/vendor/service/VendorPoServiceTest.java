@@ -43,7 +43,11 @@ class VendorPoServiceTest {
   @Mock
   ProductRepository productRepository;
   @Mock
+  com.example.ordermanager.user.repository.UserRepository userRepository;
+  @Mock
   SecurityContextHelper securityContextHelper;
+  @Mock
+  com.example.ordermanager.vendor.service.VendorPdfService vendorPdfService;
   @Mock
   com.example.ordermanager.utils.Helper helper;
 
@@ -55,7 +59,7 @@ class VendorPoServiceTest {
   @BeforeEach
   void setUp() {
     service = new VendorPoServiceImpl(vendorPoRepository, vendorRepository, companyRepository,
-        productRepository, securityContextHelper, po -> new byte[0], helper);
+        productRepository, userRepository, securityContextHelper, vendorPdfService, helper);
 
     // Setup test data
     testCompany = new Company();
@@ -185,12 +189,14 @@ class VendorPoServiceTest {
   @Test
   void generatePdf_returnsPdfBytes() {
     when(vendorPoRepository.findById(1L)).thenReturn(Optional.of(testVendorPo));
+    when(vendorPdfService.generatePdf(testVendorPo)).thenReturn(new byte[0]);
 
     byte[] result = service.generatePdf(1L);
 
     assertNotNull(result);
-    assertEquals(0, result.length); // Placeholder implementation returns empty bytes
+    assertEquals(0, result.length);
     verify(vendorPoRepository).findById(1L);
+    verify(vendorPdfService).generatePdf(testVendorPo);
   }
 
   @Test

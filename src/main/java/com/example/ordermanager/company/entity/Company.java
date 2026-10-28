@@ -83,6 +83,13 @@ public class Company {
   @Column(name = "signature_content_type", length = 100)
   private String signatureContentType;
 
+  // VENDOR PO TERMS & CONDITIONS
+  @Column(name = "vendor_po_terms_conditions", columnDefinition = "TEXT")
+  private String vendorPoTermsConditions; // JSON array of terms and conditions strings
+
+  @Column(name = "vendor_po_terms_conditions_enabled", nullable = false)
+  private Boolean vendorPoTermsConditionsEnabled = true; // Default to ON
+
   // Constructor with name
   public Company(String name) {
     this.name = name;
