@@ -1,12 +1,15 @@
 package com.example.ordermanager.vendor.controller;
 
 import com.example.ordermanager.company.entity.Company;
+import com.example.ordermanager.company.repository.CompanyRepository;
 import com.example.ordermanager.company.service.CompanyService;
 import com.example.ordermanager.product.entity.Product;
 import com.example.ordermanager.product.service.ProductService;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.service.BrevoEmailService;
 import com.example.ordermanager.user.service.UserService;
+import com.example.ordermanager.utils.PasswordVerificationService;
+import com.example.ordermanager.utils.SecurityContextHelper;
 import com.example.ordermanager.vendor.entity.Vendor;
 import com.example.ordermanager.vendor.entity.VendorPo;
 import com.example.ordermanager.vendor.service.VendorPoService;
@@ -55,6 +58,15 @@ class VendorPoControllerTest {
   private CompanyService companyService;
 
   @MockBean
+  private CompanyRepository companyRepository;
+
+  @MockBean
+  private SecurityContextHelper securityContextHelper;
+
+  @MockBean
+  private PasswordVerificationService passwordVerificationService;
+
+  @MockBean
   private VendorService vendorService;
 
   @MockBean
@@ -68,6 +80,7 @@ class VendorPoControllerTest {
 
   @BeforeEach
   void setUp() {
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
     testCompany = new Company();
     testCompany.setId(1L);
     testCompany.setName("Test Company");
@@ -96,6 +109,68 @@ class VendorPoControllerTest {
     testVendorPo.setDeliveryDate(LocalDate.now().plusWeeks(2));
     testVendorPo.setTotalAmount(1000.00);
     testVendorPo.setEmails("vendor1@test.com, vendor2@test.com");
+  }
+
+  @Test
+  @WithMockUser(username = "test@example.com", roles = {"USER"})
+  void saveTermsConditions_shouldPersistTermsAndExplicitEnabledState() throws Exception {
+    when(companyService.getCompanyById(1L)).thenReturn(Optional.of(testCompany));
+
+    mockMvc.perform(post("/vendor/pos/terms-conditions")
+        .with(csrf())
+        .param("termsConditionsEnabled", "true")
+        .param("termsConditions", "First term", "Second term"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true));
+
+    org.junit.jupiter.api.Assertions.assertEquals("[\"First term\",\"Second term\"]",
+        testCompany.getVendorPoTermsConditions());
+    org.junit.jupiter.api.Assertions.assertTrue(testCompany.getVendorPoTermsConditionsEnabled());
+    verify(companyRepository).save(testCompany);
+
+    mockMvc.perform(get("/vendor/pos/terms-conditions"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.enabled").value(true))
+        .andExpect(jsonPath("$.terms[0]").value("First term"))
+        .andExpect(jsonPath("$.terms[1]").value("Second term"));
+  }
+
+  @Test
+  @WithMockUser(username = "test@example.com", roles = {"USER"})
+  void saveTermsConditions_shouldDefaultMissingEnabledStateToOff() throws Exception {
+    when(companyService.getCompanyById(1L)).thenReturn(Optional.of(testCompany));
+
+    mockMvc.perform(post("/vendor/pos/terms-conditions")
+        .with(csrf())
+        .param("termsConditions", "Saved while disabled"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true));
+
+    org.junit.jupiter.api.Assertions.assertFalse(testCompany.getVendorPoTermsConditionsEnabled());
+    verify(companyRepository).save(testCompany);
+
+    mockMvc.perform(get("/vendor/pos/terms-conditions"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.enabled").value(false))
+        .andExpect(jsonPath("$.terms[0]").value("Saved while disabled"));
+  }
+
+  @Test
+  @WithMockUser(username = "test@example.com", roles = {"USER"})
+  void saveTermsConditions_shouldPreserveExplicitOffState() throws Exception {
+    testCompany.setVendorPoTermsConditionsEnabled(true);
+    when(companyService.getCompanyById(1L)).thenReturn(Optional.of(testCompany));
+
+    mockMvc
+        .perform(post("/vendor/pos/terms-conditions").with(csrf())
+            .param("termsConditionsEnabled", "false")
+            .param("termsConditions", "Explicitly disabled term"))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.success").value(true));
+
+    org.junit.jupiter.api.Assertions.assertFalse(testCompany.getVendorPoTermsConditionsEnabled());
+    mockMvc.perform(get("/vendor/pos/terms-conditions")).andExpect(status().isOk())
+        .andExpect(jsonPath("$.enabled").value(false))
+        .andExpect(jsonPath("$.terms[0]").value("Explicitly disabled term"));
   }
 
   @Test

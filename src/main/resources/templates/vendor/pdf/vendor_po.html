@@ -88,11 +88,35 @@
        white-space: nowrap;
      }
 
-    /* NOTES &amp; TERMS */
+    /* NOTES */
     .notes-section {
       max-width: 50%;
       white-space: pre-wrap;
       word-wrap: break-word;
+    }
+
+    /* TERMS & CONDITIONS PAGE */
+    .tnc-page {
+      page-break-before: always;
+    }
+
+    .tnc-title {
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      margin: 20px 0 15px;
+      letter-spacing: 1px;
+    }
+
+    .tnc-list {
+      margin: 20px 0;
+      padding-left: 20px;
+    }
+
+    .tnc-list li {
+      margin-bottom: 10px;
+      text-align: justify;
+      line-height: 1.5;
     }
 
     /* COMPANY ADDRESS */
@@ -250,7 +274,7 @@
 
   <!-- NOTES -->
   <div class="section">
-    <strong>Notes &amp; Terms</strong>
+    <strong>Notes</strong>
     <p class="notes-section" th:text="${#strings.escapeXml(vendorPo.note)}"></p>
   </div>
 
@@ -278,6 +302,14 @@
     This is a system-generated Purchase Order.
   </div>
 
+</div>
+
+<!-- TERMS & CONDITIONS PAGE (separate page when enabled) -->
+<div th:if="${termsConditionsEnabled and !#lists.isEmpty(termsConditions)}" class="container tnc-page">
+  <div class="tnc-title">TERMS &amp; CONDITIONS</div>
+  <ol class="tnc-list">
+    <li th:each="term : ${termsConditions}" th:text="${#strings.escapeXml(term)}"></li>
+  </ol>
 </div>
 
 </body>

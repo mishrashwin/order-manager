@@ -117,6 +117,25 @@ public class VendorPdfServiceImpl implements VendorPdfService {
       String formattedFinalTotal = df.format(finalTotal);
 
       String amountInWords = NumberToWordsUtil.convertToWords(finalTotal.doubleValue());
+
+      // Parse company-level Terms & Conditions
+      java.util.List<String> termsConditions = new java.util.ArrayList<>();
+      if (company.getVendorPoTermsConditions() != null
+          && !company.getVendorPoTermsConditions().isBlank()) {
+        try {
+          com.fasterxml.jackson.databind.ObjectMapper mapper =
+              new com.fasterxml.jackson.databind.ObjectMapper();
+          termsConditions = mapper.readValue(company.getVendorPoTermsConditions(),
+              new com.fasterxml.jackson.core.type.TypeReference<java.util.List<String>>() {});
+        } catch (Exception e) {
+          log.warn("Failed to parse terms conditions for company id={}: {}", company.getId(),
+              e.getMessage());
+        }
+      }
+      Boolean termsConditionsEnabled = company.getVendorPoTermsConditionsEnabled() != null
+          ? company.getVendorPoTermsConditionsEnabled()
+          : true;
+
       // Prepare Thymeleaf context with base64 images
       Context context = new Context();
       Map<String, Object> variables = new java.util.HashMap<>();
@@ -132,10 +151,13 @@ public class VendorPdfServiceImpl implements VendorPdfService {
       variables.put("logoBase64", toBase64(company.getLogoData(), company.getLogoContentType()));
       variables.put("signatureBase64",
           toBase64(company.getSignatureData(), company.getSignatureContentType()));
+      variables.put("termsConditions", termsConditions);
+      variables.put("termsConditionsEnabled", termsConditionsEnabled);
       context.setVariables(variables);
 
       // Render HTML template
       String html = templateEngine.process("vendor/pdf/vendor_po", context);
+      html = escapeUnescapedAmpersands(html);
 
       // Convert HTML to PDF
       ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -165,6 +187,15 @@ public class VendorPdfServiceImpl implements VendorPdfService {
       return null;
     }
     return "data:" + contentType + ";base64," + Base64.getEncoder().encodeToString(data);
+  }
+
+  /**
+   * OpenHTMLtoPDF parses the rendered template as XML. Thymeleaf escapes normal text output, but
+   * literal template text or any future unescaped fragment can still contain a bare ampersand.
+   * Preserve valid XML entities and escape all other ampersands before handing XHTML to the parser.
+   */
+  private String escapeUnescapedAmpersands(String html) {
+    return html.replaceAll("&(?!(?:#\\d+|#x[0-9A-Fa-f]+|amp|lt|gt|apos|quot);)", "&amp;");
   }
 }
 
