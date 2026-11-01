@@ -4,6 +4,7 @@ import com.example.ordermanager.aspect.SkipMethodLogging;
 import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.payment.entity.Payment;
 import com.example.ordermanager.user.entity.User;
+import com.example.ordermanager.vendor.entity.VendorPo;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.concurrent.TimeoutException;
@@ -246,6 +247,81 @@ public class BrevoEmailService {
     }
   }
 
+  /**
+   * Public wrapper to send email with optional attachment. This mirrors private behavior and is
+   * used by other services (for example Vendor PO email send).
+   */
+  public void sendEmailWithAttachmentPublic(String to, String subject, String htmlContent,
+      byte[] attachmentContent, String attachmentFilename, String attachmentContentType) {
+    // Reuse the same behavior as private sendEmailWithAttachment
+    if (brevoApiKey == null || brevoApiKey.isEmpty()) {
+      throw new RuntimeException("Brevo API key is not configured");
+    }
+
+    try {
+      String requestBody = buildBrevoRequest(to, subject, htmlContent, attachmentContent,
+          attachmentFilename, attachmentContentType);
+
+      webClient.post().uri("/v3/smtp/email").header("api-key", brevoApiKey)
+          .header("Content-Type", "application/json").bodyValue(requestBody).retrieve()
+          .bodyToMono(String.class).timeout(requestTimeout).block();
+
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to send email via Brevo: " + e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Send email with multiple recipients and optional CC recipients
+   */
+  public void sendEmailWithMultipleRecipients(String[] toEmails, String[] ccEmails, String subject,
+      String htmlContent, byte[] attachmentContent, String attachmentFilename,
+      String attachmentContentType) {
+    if (brevoApiKey == null || brevoApiKey.isEmpty()) {
+      throw new RuntimeException("Brevo API key is not configured");
+    }
+
+    try {
+      String requestBody = buildBrevoRequestWithMultipleRecipients(toEmails, ccEmails, subject,
+          htmlContent, attachmentContent, attachmentFilename, attachmentContentType);
+
+      webClient.post().uri("/v3/smtp/email").header("api-key", brevoApiKey)
+          .header("Content-Type", "application/json").bodyValue(requestBody).retrieve()
+          .bodyToMono(String.class).timeout(requestTimeout).block();
+
+    } catch (WebClientResponseException e) {
+      log.error("Brevo API rejected email request. status={}, to={}, response={}",
+          e.getStatusCode(), java.util.Arrays.toString(toEmails), e.getResponseBodyAsString(), e);
+      throw new RuntimeException("Brevo API returned an error while sending email", e);
+    } catch (WebClientRequestException e) {
+      log.error("Brevo is unreachable while sending email to: {}",
+          java.util.Arrays.toString(toEmails), e);
+      throw new RuntimeException("Brevo is currently unreachable. Please try again shortly.", e);
+    } catch (RuntimeException e) {
+      if (isTimeout(e)) {
+        log.error("Brevo request timed out after {} ms for recipients: {}",
+            requestTimeout.toMillis(), java.util.Arrays.toString(toEmails), e);
+        throw new RuntimeException("Brevo request timed out. Please try again shortly.", e);
+      }
+      log.error("Unexpected error sending email via Brevo to: {}",
+          java.util.Arrays.toString(toEmails), e);
+      throw new RuntimeException("Unexpected error while sending email", e);
+    }
+  }
+
+  public void sendVendorPoEmail(VendorPo po, Company company, String[] toEmails, String[] ccEmails,
+      byte[] pdf) {
+    String subject = "Purchase Order " + escapeHtml(po.getPoNumber());
+    String body = "<html><body>" + "<p>Dear Sir/Madam,</p>"
+        + "<p>Please find attached the Purchase Order <strong>" + escapeHtml(po.getPoNumber())
+        + "</strong>.</p>" + "<p>Delivery Date: " + po.getDeliveryDate() + "</p>"
+        + "<p>Total Amount: " + po.getTotalAmount() + "</p>" + "<p>Best regards,<br/>"
+        + escapeHtml(company.getName()) + "</p>" + getEmailSignature() + "</body></html>";
+
+    sendEmailWithMultipleRecipients(toEmails, ccEmails, subject, body, pdf,
+        "po-" + po.getPoNumber() + ".pdf", "application/pdf");
+  }
+
   private boolean isTimeout(Throwable throwable) {
     Throwable current = throwable;
     while (current != null) {
@@ -298,6 +374,59 @@ public class BrevoEmailService {
           escapeJson(htmlContent), attachmentJson);
     } catch (Exception e) {
       log.error("Error building Brevo request", e);
+      throw new RuntimeException("Error building email request: " + e.getMessage(), e);
+    }
+  }
+
+  private String buildBrevoRequestWithMultipleRecipients(String[] toEmails, String[] ccEmails,
+      String subject, String htmlContent, byte[] attachmentContent, String attachmentFilename,
+      String attachmentContentType) {
+    try {
+      // Build TO recipients
+      String toJson = String.join(", ", java.util.Arrays.stream(toEmails)
+          .map(email -> "{\"email\": \"" + escapeJson(email) + "\"}").toArray(String[]::new));
+
+      // Build CC recipients if provided
+      String ccJson = "";
+      if (ccEmails != null && ccEmails.length > 0) {
+        ccJson = ", \"cc\": ["
+            + String.join(", ", java.util.Arrays.stream(ccEmails)
+                .map(email -> "{\"email\": \"" + escapeJson(email) + "\"}").toArray(String[]::new))
+            + "]";
+      }
+
+      // Build attachment if provided
+      String attachmentJson = "";
+      if (attachmentContent != null && attachmentContent.length > 0 && attachmentFilename != null
+          && !attachmentFilename.isBlank()) {
+        String base64Content = Base64.getEncoder().encodeToString(attachmentContent);
+        String mimeType = attachmentContentType != null && !attachmentContentType.isBlank()
+            ? attachmentContentType
+            : "application/octet-stream";
+        attachmentJson = """
+            , "attachment": [
+              {
+                "content": "%s",
+                "name": "%s",
+                "type": "%s"
+              }
+            ]""".formatted(base64Content, escapeJson(attachmentFilename), escapeJson(mimeType));
+      }
+
+      return """
+          {
+            "sender": {
+              "name": "Order Manager",
+              "email": "%s"
+            },
+            "to": [%s]%s,
+            "subject": "%s",
+            "htmlContent": "%s"%s
+          }
+          """.formatted(escapeJson(fromEmail), toJson, ccJson, escapeJson(subject),
+          escapeJson(htmlContent), attachmentJson);
+    } catch (Exception e) {
+      log.error("Error building Brevo request with multiple recipients", e);
       throw new RuntimeException("Error building email request: " + e.getMessage(), e);
     }
   }

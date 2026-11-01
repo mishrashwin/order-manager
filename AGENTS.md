@@ -1,8 +1,107 @@
 # AGENTS.md
 
+## 📌 Engineering Rule Evolution (MANDATORY)
+
+This repository follows a strict engineering playbook located under /docs.
+
+RULE:
+- If any new pattern, bug fix, or architectural improvement is identified:
+    1. It MUST be documented in the relevant engineering file:
+        - @Architecture → docs/architecture/ARCHITECTURE_BACKEND_RULES.md
+        - Architecture Overview → docs/architecture/ARCHITECTURE_OVERVIEW.md
+        - Multi-Tenant/Domain → docs/architecture/MULTI_TENANT_DOMAIN_RULES.md
+        - Testing → docs/testing/TESTING_RULES.md
+        - UI → docs/ui/UI_DESIGN_RULES.md
+        - Project Overview → README.md
+    2. It MUST NOT remain only in code.
+    3. Documentation must be updated in the SAME PR.
+
+Failure to update documentation = REJECT PR
+
+Goal:
+Engineering knowledge must evolve WITH the system, not after it.
+
+---
+
+## 📌 Branch-Based Documentation Strategy
+
+### Branch Documentation Directory: `docs/branches/`
+
+**Purpose**: Track work done per branch/feature for easy reference and knowledge sharing.
+
+**Process**:
+1. **Create branch-specific file**: When starting new work, create `docs/branches/{branch-name}.md`
+2. **Document intent**: State what this branch aims to achieve
+3. **Track progress**: Log work done, decisions made, and outcomes
+4. **Reference in AGENTS.md**: This file is automatically consulted for context
+
+**Benefits**:
+- Clear separation of concerns between branches
+- Historical record of what was done and why
+- Easy knowledge transfer between developers
+- Context preservation for future work
+
+**Example Structure**:
+```markdown
+# Branch: vendor-po-enhancement
+
+## Intent
+Enhance Vendor PO feature with advanced GST calculations and multi-vendor support.
+
+## Work Done
+- [2026-04-15] Added IGST vs CGST/SGST logic based on state comparison
+- [2026-04-16] Implemented multi-vendor PO bulk operations
+- [2026-04-17] Added vendor performance analytics
+
+## Key Decisions
+- State-based GST calculation chosen over manual GST type selection
+- Bulk operations use transactional approach for data consistency
+- Analytics dashboard uses cached data for performance
+
+## Outcomes
+- ✅ GST calculation accuracy improved by 95%
+- ✅ Bulk operations reduced processing time by 60%
+- ✅ Vendor analytics dashboard adopted by 80% of users
+```
+
+**Usage**:
+- Before starting work on a branch, check if `docs/branches/{current-branch}.md` exists
+- Read the file to understand previous work and context
+- Update the file as work progresses
+- Reference key decisions when implementing related features
+
+This ensures all developers have full context of what was done, why, and with what results.
+
+## 📌 Mandatory Engineering Checklist (CRITICAL)
+
+**For EVERY prompt/work session, you MUST follow this exact sequence**:
+
+**Phase 1: Pre-Implementation Review**
+1. **Read engineering rule files**:
+   - [ ] `docs/architecture/ARCHITECTURE_BACKEND_RULES.md`
+   - [ ] `docs/architecture/ARCHITECTURE_OVERVIEW.md`
+   - [ ] `docs/architecture/MULTI_TENANT_DOMAIN_RULES.md`
+   - [ ] `docs/testing/TESTING_RULES.md`
+   - [ ] `docs/ui/UI_DESIGN_RULES.md`
+2. **Get current branch**: `git branch --show-current`
+3. **Check branch documentation**: `docs/branches/{branch-name}.md` exists?
+4. **Read existing branch file** for context and previous decisions
+
+**Phase 2: Documentation & Implementation**
+5. **Create/update branch file** with current intent
+6. **Implement changes** following documented patterns
+7. **Update branch file** with work done, decisions, outcomes
+8. **Reference branch decisions** for implementation guidance
+
+**Phase 3: Completion**
+9. **Update outcomes** and final decisions in branch file
+10. **Reference specific rule sections** in commit messages when applicable
+
+**Failure to follow this checklist = REJECT WORK**
+
 ## Scope + Existing AI Instructions
 - This repo currently has one dedicated AI rule file (`AGENTS.md`) plus `README.md` from the requested glob scan; no other AI rule files were found.
-- Treat `README.md`, `ARCHITECTURE_OVERVIEW.md`, and `DEPLOYMENT.md` as context, but prefer code as source of truth when docs conflict.
+- Treat `README.md`, `docs/architecture/ARCHITECTURE_OVERVIEW.md`, and `DEPLOYMENT.md` as context, but prefer code as source of truth when docs conflict.
 
 ## Big Picture Architecture
 - Stack: Spring Boot 3.3, Java 17, Thymeleaf MVC + small REST surface (`OrderRestController`), JPA/Hibernate, Flyway, Spring Security.
@@ -55,4 +154,15 @@
 - `SecurityConfig` registers a context-aware `AccessDeniedHandler` that redirects to `/access-denied?reason=suspended|pending-approval|rejected|forbidden`; `ErrorPageController` resolves the `reason` param to user-facing messages. Successful login routes the owner to `/owner/dashboard` and all tenant roles to `/dashboard`.
 - Keep-alive behavior is code-driven: `KeepAliveScheduler` is enabled by `app.keepalive.enabled`, uses `RestTemplate`, and pings `APP_BASE_URL + "/login"`; container health checks separately target `/actuator/health`.
 - Deployment assets: `Dockerfile`, `docker-compose.yml`, and `render.yaml` (Render + Neon PostgreSQL assumptions).
+
+## Recent Notes
+
+- [2026-05-03] Vendor PO: edit-mode product-selection parity
+  - Developers: when modifying Vendor PO UI/JS ensure both server-rendered edit rows and client-side ROW_TEMPLATE share identical
+    column widths, name attributes and data-* attributes on option elements. The recommended pattern is to cache product option
+    HTML at page load and to explicitly reset select.value for new rows. See `docs/branches/Vendor-PO.md` and
+    `src/main/resources/templates/vendor/pos-form-new.html` for the canonical implementation details.
+- [2026-07-04] Documentation alignment
+  - README now reflects the live PostgreSQL-first profiles, Brevo mail delivery, owner approval flow, disabled Swagger UI defaults, and enabled MVC CSRF behavior.
+  - Keep future documentation changes aligned with `src/main/resources/application-dev.properties`, `application-qa.properties`, `application-prod.properties`, and `config/SecurityConfig.java`.
 

@@ -1498,3 +1498,52 @@ footer strong {
   color: #fff;
 }
 
+/* Keep the Vendor PO Terms & Conditions controls fixed while the list scrolls. */
+#termsConditionsModal .modal-content {
+  max-height: 90vh;
+}
+
+#termsConditionsModal .terms-modal-form {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+#termsConditionsModal .terms-modal-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#termsConditionsModal .form-check {
+  flex: 0 0 auto;
+}
+
+#termsConditionsModal .terms-list-section {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  margin-bottom: 0 !important;
+}
+
+#termsConditionsModal #termsList {
+  flex: 1 1 auto;
+  max-height: 45vh;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+#termsConditionsModal #termsList .term-item,
+#termsConditionsModal #termsList .form-control {
+  min-width: 0;
+}
+
+#termsConditionsModal .modal-footer {
+  flex: 0 0 auto;
+}
+

@@ -16,4 +16,12 @@ public class Helper {
         .map(w -> w.substring(0, 1).toUpperCase() + w.substring(1).toLowerCase())
         .collect(Collectors.joining(" "));
   }
+
+  public String extractInitials(String name) {
+    if (name == null || name.isBlank()) {
+      return "";
+    }
+    return Arrays.stream(name.trim().split("\\s+")).filter(w -> !w.isEmpty())
+        .map(w -> w.substring(0, 1).toUpperCase()).collect(Collectors.joining());
+  }
 }
