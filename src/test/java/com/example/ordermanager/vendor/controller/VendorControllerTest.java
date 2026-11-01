@@ -10,6 +10,7 @@ import com.example.ordermanager.utils.PasswordVerificationService;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import com.example.ordermanager.vendor.entity.Vendor;
 import com.example.ordermanager.vendor.service.VendorService;
+import com.example.ordermanager.vendor.service.VendorBulkUploadService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +27,8 @@ class VendorControllerTest {
   @Mock
   private VendorService vendorService;
   @Mock
+  private VendorBulkUploadService vendorBulkUploadService;
+  @Mock
   private CompanyService companyService;
   @Mock
   private SecurityContextHelper securityContextHelper;
@@ -36,8 +39,8 @@ class VendorControllerTest {
 
   @BeforeEach
   void setUp() {
-    vendorController = new VendorController(vendorService, companyService, securityContextHelper,
-        passwordVerificationService);
+    vendorController = new VendorController(vendorService, vendorBulkUploadService, companyService,
+        securityContextHelper, passwordVerificationService);
   }
 
   @Test
