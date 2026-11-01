@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <title>Admin Dashboard | Order Manager</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
@@ -19,7 +21,24 @@
         <h1><i class="bi bi-shield-check"></i> Admin Dashboard</h1>
     </div>
 
-    <div class="admin-cards-container">
+    <ul class="nav nav-tabs mb-4" id="adminDashboardTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="admin-overview-tab" data-bs-toggle="tab"
+                    data-bs-target="#admin-overview" type="button" role="tab" aria-controls="admin-overview"
+                    aria-selected="true">Admin Panel</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="vendor-management-tab" data-bs-toggle="tab"
+                    data-bs-target="#vendor-management" type="button" role="tab"
+                    aria-controls="vendor-management" aria-selected="false">
+                <i class="bi bi-building"></i> Vendor Management
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="adminDashboardTabContent">
+      <div class="tab-pane fade show active" id="admin-overview" role="tabpanel" aria-labelledby="admin-overview-tab">
+       <div class="admin-cards-container">
         <div class="admin-action-card company-card">
             <div class="card-icon-wrap">
                 <i class="bi bi-building-gear"></i>
@@ -40,6 +59,17 @@
             <a class="btn btn-users" th:href="@{/admin/users}">
                 <i class="bi bi-person-plus-fill"></i> Manage Users
             </a>
+        </div>
+
+        <div class="admin-action-card vendor-management-card">
+            <div class="card-icon-wrap">
+                <i class="bi bi-building"></i>
+            </div>
+            <h3>Vendor Management</h3>
+            <p>Review recent vendor uploads, registration reports, and unresolved upload requests.</p>
+            <button id="openVendorManagementTab" class="btn btn-primary" type="button">
+                <i class="bi bi-clipboard-data"></i> Manage Vendor Uploads
+            </button>
         </div>
 
         <div class="admin-action-card stats-card">
@@ -74,6 +104,46 @@
                 <i class="bi bi-clock-history"></i> View Activity
             </a>
         </div>
+       </div>
+      </div>
+
+      <div class="tab-pane fade" id="vendor-management" role="tabpanel" aria-labelledby="vendor-management-tab">
+        <section class="card mb-4" aria-labelledby="bulkUploadHistoryHeading">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2 id="bulkUploadHistoryHeading" class="h6 mb-0">Recent Vendor Uploads</h2>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshBulkUploadHistory">Refresh</button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead><tr><th>Reference</th><th>Workbook</th><th>Status</th><th>Started</th><th>Outcome</th><th>Actions</th></tr></thead>
+                    <tbody id="bulkUploadHistoryRows"><tr><td colspan="6" class="text-muted">Open this tab to load registrations.</td></tr></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="card" aria-labelledby="bulkUploadReconcileHeading">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2 id="bulkUploadReconcileHeading" class="h6 mb-0">Unresolved Uploads</h2>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshBulkUploadReconciliation">Refresh</button>
+            </div>
+            <div id="bulkUploadReconciliationRows" class="card-body"><span class="text-muted">Open this tab to load unresolved requests.</span></div>
+        </section>
+      </div>
+    </div>
+</div>
+
+<div class="modal fade" id="vendorRegistrationDetailsModal" tabindex="-1" aria-labelledby="vendorRegistrationDetailsTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title h5" id="vendorRegistrationDetailsTitle">Vendor Registration Details</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="vendorRegistrationDetailsBody" aria-live="polite">
+                <p class="text-muted mb-0">Select a registration to view its results.</p>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div>
+        </div>
     </div>
 </div>
 
@@ -81,5 +151,161 @@
 <div th:replace="~{fragments/footer :: footer}"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(() => {
+    const historyRows = document.getElementById('bulkUploadHistoryRows');
+    const reconciliationRows = document.getElementById('bulkUploadReconciliationRows');
+    const detailsBody = document.getElementById('vendorRegistrationDetailsBody');
+    let historyLoaded = false;
+
+    // Reads JSON responses consistently and reports controlled endpoint errors to the UI.
+    async function readJson(url, options = {}) {
+        const response = await fetch(url, {credentials: 'same-origin', ...options});
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Unable to load vendor upload information.');
+        return data;
+    }
+
+    // Loads company-scoped upload history and exposes view and report actions for completed rows.
+    async function loadBulkUploadHistory() {
+        historyRows.replaceChildren();
+        try {
+            const records = await readJson('/vendors/bulk-upload/registrations');
+            if (!records.length) {
+                historyLoaded = true;
+                const row = document.createElement('tr');
+                const cell = document.createElement('td');
+                cell.colSpan = 6; cell.className = 'text-muted'; cell.textContent = 'No registration attempts yet.';
+                row.appendChild(cell); historyRows.appendChild(row); return;
+            }
+            records.forEach(item => {
+                const row = document.createElement('tr');
+                const outcome = (item.registeredRowCount ?? '—') + ' registered / ' +
+                    (item.registrationFailureCount ?? '—') + ' failed / ' + (item.skippedRowCount ?? '—') + ' skipped';
+                [item.registrationReference, item.uploadedFilename, item.status, item.startedAt, outcome]
+                    .forEach(value => { const cell = document.createElement('td'); cell.textContent = value ?? '—'; row.appendChild(cell); });
+                const actions = document.createElement('td');
+                if (item.status === 'COMPLETED') {
+                    const view = document.createElement('button'); view.type = 'button';
+                    view.className = 'btn btn-sm btn-outline-secondary me-1'; view.textContent = 'View';
+                    view.addEventListener('click', () => showRegistrationDetails(item.registrationReference));
+                    actions.appendChild(view);
+                    ['complete', 'errors'].forEach(type => {
+                        const link = document.createElement('a');
+                        link.className = 'btn btn-sm btn-outline-primary me-1';
+                        link.href = '/vendors/bulk-upload/registrations/' + encodeURIComponent(item.registrationReference) + '/report?type=' + type;
+                        link.textContent = type === 'complete' ? 'Complete Report' : 'Error Report';
+                        actions.appendChild(link);
+                    });
+                } else {
+                    actions.textContent = item.reconciliationState || item.status;
+                }
+                row.appendChild(actions); historyRows.appendChild(row);
+            });
+            historyLoaded = true;
+        } catch (error) {
+            appendMessageRow(historyRows, 6, error.message);
+        }
+    }
+
+    // Renders stored registration details into the visible modal using text-only DOM nodes.
+    async function showRegistrationDetails(reference) {
+        detailsBody.replaceChildren(document.createTextNode('Loading registration details…'));
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('vendorRegistrationDetailsModal')).show();
+        try {
+            const data = await readJson('/vendors/bulk-upload/registrations/' + encodeURIComponent(reference));
+            const summary = document.createElement('p');
+            summary.className = 'fw-semibold';
+            summary.textContent = 'Reference ' + (data.registrationReference ?? reference) + ' · ' +
+                Number(data.registeredRowCount || 0) + ' registered · ' +
+                Number(data.registrationFailureCount || 0) + ' failed · ' +
+                Number(data.skippedRowCount || 0) + ' skipped · ' +
+                Number(data.totalParsedRows || 0) + ' total processed';
+            const tableWrap = document.createElement('div'); tableWrap.className = 'table-responsive vendor-registration-details-scroll';
+            const table = document.createElement('table'); table.className = 'table table-sm table-bordered align-middle';
+            const head = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            ['Excel Row', 'Vendor', 'Status', 'Registration Failure', 'Validation Errors'].forEach(label => {
+                const cell = document.createElement('th'); cell.scope = 'col'; cell.textContent = label; headerRow.appendChild(cell);
+            });
+            head.appendChild(headerRow); table.appendChild(head);
+            const body = document.createElement('tbody');
+            (Array.isArray(data.rowResults) ? data.rowResults : []).forEach(result => {
+                const row = document.createElement('tr');
+                [result.excelRowNumber, result.vendorCompanyName, result.status, result.failureReason,
+                    Array.isArray(result.validationErrors) ? result.validationErrors.join('\n') : '']
+                    .forEach((value, index) => {
+                        const cell = document.createElement('td'); cell.textContent = value == null || value === '' ? '—' : String(value);
+                        if (index === 4) cell.classList.add('vendor-registration-errors');
+                        row.appendChild(cell);
+                    });
+                body.appendChild(row);
+            });
+            table.appendChild(body); tableWrap.appendChild(table);
+            detailsBody.replaceChildren(summary, tableWrap);
+        } catch (error) {
+            detailsBody.replaceChildren();
+            const alert = document.createElement('div'); alert.className = 'alert alert-danger mb-0'; alert.textContent = error.message;
+            detailsBody.appendChild(alert);
+        }
+    }
+
+    // Loads unresolved requests and applies explicit reconciliation only after an admin action.
+    async function loadBulkUploadReconciliation() {
+        reconciliationRows.replaceChildren();
+        try {
+            const records = await readJson('/vendors/bulk-upload/reconciliation');
+            if (!records.length) { reconciliationRows.textContent = 'No unresolved registrations.'; return; }
+            records.forEach(item => {
+                const row = document.createElement('div'); row.className = 'border rounded p-2 mb-2';
+                const summary = document.createElement('p'); summary.className = 'small mb-2';
+                summary.textContent = 'Request ' + item.registrationReference + ' · ' + item.initiatedBy +
+                    ' · ' + item.startedAt + ' · fingerprint ' + item.workbookFingerprint + ' · ' + item.status;
+                row.appendChild(summary);
+                const button = document.createElement('button'); button.type = 'button';
+                button.className = 'btn btn-sm btn-warning'; button.textContent = 'Reconcile';
+                button.addEventListener('click', async () => {
+                    button.disabled = true;
+                    try {
+                        const token = document.querySelector('meta[name="_csrf"]')?.content;
+                        const header = document.querySelector('meta[name="_csrf_header"]')?.content;
+                        const headers = {'Accept': 'application/json'};
+                        if (token && header) headers[header] = token;
+                        const result = await readJson('/vendors/bulk-upload/registrations/' + encodeURIComponent(item.registrationReference) + '/reconcile',
+                            {method: 'POST', headers});
+                        window.alert(result.reconciliationState + ': ' + result.details);
+                        await Promise.all([loadBulkUploadHistory(), loadBulkUploadReconciliation()]);
+                    } catch (error) {
+                        window.alert(error.message); button.disabled = false;
+                    }
+                });
+                row.appendChild(button); reconciliationRows.appendChild(row);
+            });
+        } catch (error) {
+            reconciliationRows.replaceChildren();
+            const alert = document.createElement('div'); alert.className = 'alert alert-danger mb-0'; alert.textContent = error.message;
+            reconciliationRows.appendChild(alert);
+        }
+    }
+
+    // Adds an accessible fallback row when an audit endpoint cannot be reached.
+    function appendMessageRow(container, columnCount, message) {
+        const row = document.createElement('tr'); const cell = document.createElement('td');
+        cell.colSpan = columnCount; cell.className = 'text-danger'; cell.textContent = message;
+        row.appendChild(cell); container.appendChild(row);
+    }
+
+    document.getElementById('refreshBulkUploadHistory').addEventListener('click', loadBulkUploadHistory);
+    document.getElementById('refreshBulkUploadReconciliation').addEventListener('click', loadBulkUploadReconciliation);
+    // Opens the Vendor Management tab from its dashboard card while keeping tab state synchronized.
+    document.getElementById('openVendorManagementTab').addEventListener('click', () => {
+        bootstrap.Tab.getOrCreateInstance(document.getElementById('vendor-management-tab')).show();
+    });
+    document.getElementById('vendor-management-tab').addEventListener('shown.bs.tab', () => {
+        if (!historyLoaded) loadBulkUploadHistory();
+        loadBulkUploadReconciliation();
+    });
+})();
+</script>
 </body>
 </html>
