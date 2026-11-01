@@ -248,27 +248,115 @@
 <!-- Bulk Upload Modal -->
 
 <div class="modal fade" id="bulkUploadModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
+  <div class="modal-dialog vendor-bulk-upload-dialog">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title"><i class="bi bi-upload"></i> Bulk Upload Vendors</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <form id="bulkUploadForm" enctype="multipart/form-data">
-          <div class="mb-3">
-            <label for="vendorExcelFile" class="form-label">Select Excel File (.xlsx)</label>
-            <input type="file" class="form-control" id="vendorExcelFile" name="file" accept=".xlsx" required>
-            <div class="form-text">Download the template and fill it with vendor data before uploading.</div>
+        <div class="row g-3 align-items-stretch vendor-upload-top">
+          <div class="col-12 col-lg-9">
+            <form id="bulkUploadForm" class="vendor-bulk-upload-form" enctype="multipart/form-data">
+              <div class="mb-2">
+                <label for="vendorExcelFile" class="form-label">Select Excel File (.xlsx)</label>
+                <input type="file" class="form-control" id="vendorExcelFile" name="file" accept=".xlsx" required>
+                <div class="form-text">Download the template and fill it with vendor data before uploading.</div>
+              </div>
+              <div id="fileInfo" class="alert alert-info py-2 mb-2 d-none">
+                <i class="bi bi-file-earmark-excel"></i> Selected: <span id="selectedFileName"></span>
+              </div>
+              <div id="uploadError" class="alert alert-danger py-2 mb-2 d-none"></div>
+              <div id="uploadProcessing" class="alert alert-info py-2 mb-2 d-none" role="status" aria-live="polite">
+                <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                Uploading and validating vendor rows…
+              </div>
+          <div id="registrationProcessing" class="alert alert-info py-2 mb-2 d-none" role="status" aria-live="polite">
+            <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+            Registering valid vendor rows…
           </div>
-          <div id="fileInfo" class="alert alert-info d-none">
-            <i class="bi bi-file-earmark-excel"></i> Selected: <span id="selectedFileName"></span>
+            </form>
           </div>
-          <div id="uploadError" class="alert alert-danger d-none"></div>
-        </form>
+          <div class="col-12 col-lg-3">
+            <div class="vendor-preview-summary d-none" id="previewSummary" aria-label="Validation summary">
+              <div class="card border-primary-subtle bg-primary-subtle">
+                <div class="card-body py-2 px-3"><span>Total records</span><strong id="totalRecordCount" class="d-block fs-5">0</strong></div>
+              </div>
+              <div class="card border-success-subtle bg-success-subtle">
+                <div class="card-body py-2 px-3"><span>Valid records</span><strong id="validRecordCount" class="d-block fs-5">0</strong></div>
+              </div>
+              <div class="card border-danger-subtle bg-danger-subtle">
+                <div class="card-body py-2 px-3"><span>Invalid records</span><strong id="invalidRecordCount" class="d-block fs-5">0</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <section id="vendorPreview" class="vendor-upload-preview d-none mt-3" aria-live="polite">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <button type="button" class="btn btn-link p-0 text-decoration-none" id="validationPreviewToggle" aria-expanded="true" aria-controls="validationPreviewContent">
+              Hide Validation Preview
+            </button>
+          </div>
+          <div id="validationPreviewContent" class="vendor-validation-preview-content">
+            <div id="previewNoRows" class="alert alert-secondary d-none" role="status">
+              No vendor rows were found in this workbook.
+            </div>
+            <div id="previewTableContainer" class="table-responsive vendor-preview-scroll d-none">
+                <table class="table table-sm table-bordered table-hover align-middle vendor-preview-table mb-0">
+              <colgroup>
+                <col class="vendor-preview-col-row">
+                <col class="vendor-preview-col-company">
+                <col class="vendor-preview-col-contact">
+                <col class="vendor-preview-col-email">
+                <col class="vendor-preview-col-phone">
+                <col class="vendor-preview-col-gstin">
+                <col class="vendor-preview-col-state">
+                <col class="vendor-preview-col-address">
+                <col class="vendor-preview-col-status">
+                <col class="vendor-preview-col-errors">
+              </colgroup>
+              <thead class="table-light">
+                <tr>
+                  <th scope="col">Excel Row</th><th scope="col">Company Name</th>
+                  <th scope="col">Contact Person</th><th scope="col">Email</th>
+                  <th scope="col">Phone</th><th scope="col">GSTIN</th>
+                  <th scope="col">State</th><th scope="col">Address</th>
+                  <th scope="col">Status</th><th scope="col">Validation Errors</th>
+                </tr>
+              </thead>
+              <tbody id="vendorPreviewRows"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+        <section id="registrationResults" class="vendor-registration-results d-none mt-3" aria-live="polite">
+            <h6>Registration Results</h6>
+            <p class="small mb-2">Registration reference: <strong id="registrationReferenceValue">—</strong></p>
+            <div class="d-flex gap-2 flex-wrap mb-3" id="registrationReportActions">
+              <a class="btn btn-sm btn-outline-primary d-none" id="completeRegistrationReport" href="#">Download Complete Report</a>
+              <a class="btn btn-sm btn-outline-warning d-none" id="errorRegistrationReport" href="#">Download Error Report</a>
+              <button class="btn btn-sm btn-outline-secondary d-none" id="registrationDetailsButton" type="button">View Registration Details</button>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6 col-lg-3"><div class="card border-success-subtle bg-success-subtle"><div class="card-body py-2 px-3">Registered<strong id="registeredCount" class="d-block fs-5">0</strong></div></div></div>
+              <div class="col-6 col-lg-3"><div class="card border-danger-subtle bg-danger-subtle"><div class="card-body py-2 px-3">Failed<strong id="registrationFailedCount" class="d-block fs-5">0</strong></div></div></div>
+              <div class="col-6 col-lg-3"><div class="card border-warning-subtle bg-warning-subtle"><div class="card-body py-2 px-3">Skipped (Invalid)<strong id="registrationSkippedInvalidCount" class="d-block fs-5">0</strong></div></div></div>
+              <div class="col-6 col-lg-3"><div class="card border-primary-subtle bg-primary-subtle"><div class="card-body py-2 px-3">Total Processed<strong id="registrationTotalProcessedCount" class="d-block fs-5">0</strong></div></div></div>
+            </div>
+            <div class="table-responsive vendor-registration-results-scroll">
+              <table class="table table-sm table-bordered align-middle mb-0">
+                <thead class="table-light"><tr><th>Excel Row</th><th>Vendor</th><th>Registration Status</th><th>Registration Error</th><th>Validation Errors</th></tr></thead>
+                <tbody id="registrationResultRows"></tbody>
+              </table>
+            </div>
+            <p id="registrationRefreshNote" class="text-success small d-none">Close this window to refresh the vendor list.</p>
+        </section>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary d-none" id="registerValidVendorsBtn" disabled>
+          <i class="bi bi-check2-circle"></i> Register Valid Vendors
+        </button>
         <button type="button" class="btn btn-success-custom" id="uploadBtn" disabled>
           <i class="bi bi-upload"></i> Upload
         </button>
@@ -473,14 +561,289 @@
       const fileInfo = document.getElementById('fileInfo');
       const selectedFileName = document.getElementById('selectedFileName');
       const uploadError = document.getElementById('uploadError');
+      const uploadProcessing = document.getElementById('uploadProcessing');
+      const vendorPreview = document.getElementById('vendorPreview');
+      const previewRows = document.getElementById('vendorPreviewRows');
+      const previewSummary = document.getElementById('previewSummary');
+      const bulkUploadModal = document.getElementById('bulkUploadModal');
+      const registerValidBtn = document.getElementById('registerValidVendorsBtn');
+      const validationPreviewContent = document.getElementById('validationPreviewContent');
+      const validationPreviewToggle = document.getElementById('validationPreviewToggle');
+      let previewFile = null;
+      let registrationCompleted = false;
+      let registrationIdempotencyKey = null;
+
+      // Creates a fresh token for each selected workbook while retaining it across request retries.
+      function newRegistrationIdempotencyKey() {
+          return window.crypto?.randomUUID ? window.crypto.randomUUID()
+              : 'bulk-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+      }
+
+      // Clears previous results when a new workbook is selected for preview.
+      function clearVendorPreview() {
+          vendorPreview.classList.add('d-none');
+          vendorPreview.classList.remove('is-collapsed');
+          previewSummary.classList.add('d-none');
+          previewRows.replaceChildren();
+          document.getElementById('previewTableContainer').classList.add('d-none');
+          document.getElementById('previewNoRows').classList.add('d-none');
+          validationPreviewContent.classList.remove('d-none');
+          validationPreviewToggle.setAttribute('aria-expanded', 'true');
+          validationPreviewToggle.textContent = 'Hide Validation Preview';
+          document.getElementById('registrationResults').classList.add('d-none');
+          document.getElementById('registrationResultRows').replaceChildren();
+          document.getElementById('registrationReferenceValue').textContent = '—';
+          document.getElementById('completeRegistrationReport').classList.add('d-none');
+          document.getElementById('errorRegistrationReport').classList.add('d-none');
+          document.getElementById('registrationDetailsButton').classList.add('d-none');
+          registerValidBtn.classList.add('d-none');
+          registerValidBtn.disabled = true;
+          previewFile = null;
+          registrationCompleted = false;
+          const resultsScroll = bulkUploadModal.querySelector('.vendor-registration-results-scroll');
+          resultsScroll.style.height = 'auto';
+          resultsScroll.style.maxHeight = 'none';
+          bulkUploadModal.querySelector('.modal-content').style.height = 'auto';
+      }
+
+      // Fits the modal and registration table to available content and viewport space.
+      function sizeBulkUploadModal() {
+          const content = bulkUploadModal.querySelector('.modal-content');
+          const header = bulkUploadModal.querySelector('.modal-header');
+          const body = bulkUploadModal.querySelector('.modal-body');
+          const footer = bulkUploadModal.querySelector('.modal-footer');
+          const resultsScroll = bulkUploadModal.querySelector('.vendor-registration-results-scroll');
+          if (resultsScroll) {
+              resultsScroll.style.height = 'auto';
+              resultsScroll.style.maxHeight = 'none';
+          }
+          content.style.height = 'auto';
+          const naturalHeight = header.offsetHeight + body.scrollHeight + footer.offsetHeight + 2;
+          content.style.height = Math.min(naturalHeight, window.innerHeight * 0.85) + 'px';
+          sizeRegistrationResultsTable();
+      }
+
+      // Sizes the results scroller to the rendered rows or remaining space above the fixed footer.
+      function sizeRegistrationResultsTable() {
+          const results = document.getElementById('registrationResults');
+          const scroll = bulkUploadModal.querySelector('.vendor-registration-results-scroll');
+          if (results.classList.contains('d-none')) return;
+          scroll.style.height = 'auto';
+          scroll.style.maxHeight = 'none';
+          const naturalHeight = scroll.scrollHeight;
+          const footerTop = bulkUploadModal.querySelector('.modal-footer').getBoundingClientRect().top;
+          const availableHeight = Math.max(100, footerTop - scroll.getBoundingClientRect().top - 16);
+          const scrollHeight = Math.min(naturalHeight, availableHeight);
+          scroll.style.height = scrollHeight + 'px';
+          scroll.style.maxHeight = availableHeight + 'px';
+      }
+
+      // Expands or collapses the original preview without discarding its rendered validation data.
+      function setValidationPreviewExpanded(expanded) {
+          validationPreviewContent.classList.toggle('d-none', !expanded);
+          vendorPreview.classList.toggle('is-collapsed', !expanded);
+          validationPreviewToggle.setAttribute('aria-expanded', String(expanded));
+          validationPreviewToggle.textContent = expanded ? 'Hide Validation Preview' : 'Show Validation Preview';
+          if (!document.getElementById('registrationResults').classList.contains('d-none')) {
+              window.requestAnimationFrame(sizeBulkUploadModal);
+          }
+      }
+
+      // Toggles the validation preview while retaining all original row results in the DOM.
+      validationPreviewToggle.addEventListener('click', function() {
+          setValidationPreviewExpanded(validationPreviewContent.classList.contains('d-none'));
+      });
+
+      // Adds a safely escaped table cell from a server-provided value.
+      function appendPreviewCell(rowElement, value) {
+          const cell = document.createElement('td');
+          cell.textContent = value == null || value === '' ? '—' : String(value);
+          rowElement.appendChild(cell);
+      }
+
+      // Renders all validation errors with a distinct duplicate marker where applicable.
+      function appendValidationErrors(cell, errors) {
+          if (!errors || errors.length === 0) {
+              cell.textContent = '—';
+              return;
+          }
+          const details = document.createElement('details');
+          const summary = document.createElement('summary');
+          summary.textContent = errors.length + (errors.length === 1 ? ' error' : ' errors');
+          details.appendChild(summary);
+          const list = document.createElement('ul');
+          list.className = 'mb-0 ps-3';
+          errors.forEach(function(error) {
+              const item = document.createElement('li');
+              const isDuplicate = /duplicate|already exists/i.test(error);
+              const marker = document.createElement('span');
+              marker.className = 'badge me-1 ' + (isDuplicate ? 'text-bg-warning' : 'text-bg-danger');
+              marker.textContent = isDuplicate ? 'Duplicate' : 'Field';
+              item.appendChild(marker);
+              item.appendChild(document.createTextNode(error));
+              list.appendChild(item);
+          });
+          details.appendChild(list);
+          cell.appendChild(details);
+      }
+
+      // Labels invalid skipped rows distinctly while preserving any other skipped-row reason.
+      function registrationStatusLabel(result) {
+          if (result.status === 'SKIPPED' && result.validationErrors?.length) {
+              return 'SKIPPED – INVALID';
+          }
+          return result.status || 'SKIPPED';
+      }
+
+      // Replaces the current modal preview with all rows and their validation outcomes.
+      function renderVendorPreview(data) {
+          const rows = Array.isArray(data.rows) ? data.rows : [];
+          document.getElementById('totalRecordCount').textContent = data.totalParsedRows ?? rows.length;
+          document.getElementById('validRecordCount').textContent = data.validRowCount ?? 0;
+          document.getElementById('invalidRecordCount').textContent = data.invalidRowCount ?? 0;
+          previewRows.replaceChildren();
+          previewSummary.classList.remove('d-none');
+          const validCount = Number(data.validRowCount || 0);
+          registerValidBtn.classList.toggle('d-none', validCount < 1);
+          registerValidBtn.disabled = validCount < 1;
+          registerValidBtn.innerHTML = '<i class="bi bi-check2-circle"></i> Register Valid Vendors (' + validCount + ')';
+          vendorPreview.classList.remove('d-none');
+          document.getElementById('previewNoRows').classList.toggle('d-none', rows.length !== 0);
+          document.getElementById('previewTableContainer').classList.toggle('d-none', rows.length === 0);
+          setValidationPreviewExpanded(true);
+          rows.forEach(function(result) {
+              const vendor = result.vendorData || {};
+              const tr = document.createElement('tr');
+              tr.className = result.status === 'VALID' ? 'table-success' : 'table-danger';
+              appendPreviewCell(tr, result.excelRowNumber);
+              appendPreviewCell(tr, vendor.companyName);
+              appendPreviewCell(tr, vendor.contactPerson);
+              appendPreviewCell(tr, vendor.email);
+              appendPreviewCell(tr, vendor.phone);
+              appendPreviewCell(tr, vendor.gstn);
+              appendPreviewCell(tr, vendor.state);
+              appendPreviewCell(tr, vendor.address);
+              const statusCell = document.createElement('td');
+              const statusBadge = document.createElement('span');
+              statusBadge.className = 'badge ' + (result.status === 'VALID' ? 'text-bg-success' : 'text-bg-danger');
+              statusBadge.textContent = result.status || 'INVALID';
+              statusCell.appendChild(statusBadge);
+              tr.appendChild(statusCell);
+              const errorCell = document.createElement('td');
+              errorCell.className = 'vendor-preview-errors';
+              appendValidationErrors(errorCell, result.errors);
+              tr.appendChild(errorCell);
+              previewRows.appendChild(tr);
+          });
+          window.requestAnimationFrame(sizeBulkUploadModal);
+      }
+
+      // Renders registration outcomes and keeps validation errors distinct from save failures.
+      function renderRegistrationResults(data) {
+          const registeredCount = Number(data.registeredRowCount || 0);
+          const failedCount = Number(data.registrationFailureCount || 0);
+          const skippedCount = Number(data.skippedRowCount || 0);
+          document.getElementById('registeredCount').textContent = registeredCount;
+          document.getElementById('registrationFailedCount').textContent = data.registrationFailureCount ?? 0;
+          document.getElementById('registrationSkippedInvalidCount').textContent = skippedCount;
+          document.getElementById('registrationTotalProcessedCount').textContent =
+              data.totalParsedRows ?? (registeredCount + failedCount + skippedCount);
+          const tbody = document.getElementById('registrationResultRows');
+          const reference = data.registrationReference;
+          document.getElementById('registrationReferenceValue').textContent = reference ?? '—';
+          const completeReport = document.getElementById('completeRegistrationReport');
+          const errorReport = document.getElementById('errorRegistrationReport');
+          const detailsButton = document.getElementById('registrationDetailsButton');
+          completeReport.classList.toggle('d-none', reference == null);
+          errorReport.classList.toggle('d-none', reference == null);
+          detailsButton.classList.toggle('d-none', reference == null);
+          if (reference != null) {
+              completeReport.href = '/vendors/bulk-upload/registrations/' + encodeURIComponent(reference) + '/report?type=complete';
+              errorReport.href = '/vendors/bulk-upload/registrations/' + encodeURIComponent(reference) + '/report?type=errors';
+              detailsButton.dataset.registrationReference = reference;
+          }
+          tbody.replaceChildren();
+          (Array.isArray(data.rowResults) ? data.rowResults : []).forEach(function(result) {
+              const tr = document.createElement('tr');
+              appendPreviewCell(tr, result.excelRowNumber);
+              appendPreviewCell(tr, result.vendorCompanyName);
+              const statusCell = document.createElement('td');
+              const badge = document.createElement('span');
+              const statusClass = result.status === 'REGISTERED' ? 'text-bg-success'
+                  : result.status === 'FAILED' ? 'text-bg-danger' : 'text-bg-secondary';
+              badge.className = 'badge ' + statusClass;
+              badge.textContent = registrationStatusLabel(result);
+              statusCell.appendChild(badge);
+              tr.appendChild(statusCell);
+              appendPreviewCell(tr, result.failureReason);
+              const validationCell = document.createElement('td');
+              appendValidationErrors(validationCell, result.validationErrors);
+              tr.appendChild(validationCell);
+              tbody.appendChild(tr);
+          });
+          setValidationPreviewExpanded(false);
+          document.getElementById('registrationResults').classList.remove('d-none');
+          const refreshNote = document.getElementById('registrationRefreshNote');
+          registrationCompleted = Number(data.registeredRowCount || 0) > 0;
+          refreshNote.classList.toggle('d-none', !registrationCompleted);
+          window.requestAnimationFrame(sizeBulkUploadModal);
+      }
+
+      // Retrieves a persisted result by request reference without reprocessing its workbook.
+      function loadRegistrationDetails(reference) {
+          const modalInstance = bootstrap.Modal.getOrCreateInstance(bulkUploadModal);
+          const rows = document.getElementById('registrationResultRows');
+          // Fetches and renders the saved result after the modal is measurable and visible.
+          const loadResult = function() {
+              fetch('/vendors/bulk-upload/registrations/' + encodeURIComponent(reference), {
+                  credentials: 'same-origin', headers: {'Accept': 'application/json'}
+              }).then(response => response.json().then(data => ({response, data})))
+                .then(({response, data}) => {
+                    if (!response.ok || !data.success) throw new Error(data.message || 'Unable to load registration details.');
+                    renderRegistrationResults(data);
+                }).catch(error => {
+                    rows.replaceChildren();
+                    const row = document.createElement('tr');
+                    const cell = document.createElement('td'); cell.colSpan = 5; cell.className = 'text-danger'; cell.textContent = error.message;
+                    row.appendChild(cell); rows.appendChild(row);
+                    document.getElementById('registrationResults').classList.remove('d-none');
+                    window.requestAnimationFrame(sizeBulkUploadModal);
+                });
+          };
+          if (bulkUploadModal.classList.contains('show')) {
+              loadResult();
+              return;
+          }
+          setValidationPreviewExpanded(false);
+          document.getElementById('registrationResults').classList.remove('d-none');
+          rows.replaceChildren();
+          const loadingRow = document.createElement('tr');
+          const loadingCell = document.createElement('td'); loadingCell.colSpan = 5; loadingCell.textContent = 'Loading registration details…';
+          loadingRow.appendChild(loadingCell); rows.appendChild(loadingRow);
+          bulkUploadModal.addEventListener('shown.bs.modal', loadResult, {once: true});
+          modalInstance.show();
+      }
+
+      // Recalculates preview height after viewport changes while preserving the row-derived size.
+      window.addEventListener('resize', function() {
+          if (!vendorPreview.classList.contains('d-none')) sizeBulkUploadModal();
+      });
+
+      document.getElementById('registrationDetailsButton')?.addEventListener('click', function() {
+          loadRegistrationDetails(this.dataset.registrationReference);
+      });
 
       if (fileInput) {
+          // Validates selected workbook constraints and clears stale preview results.
           fileInput.addEventListener('change', function() {
               const file = this.files[0];
+              registrationIdempotencyKey = file ? newRegistrationIdempotencyKey() : null;
+              previewFile = null;
               uploadError.classList.add('d-none');
+              clearVendorPreview();
 
               if (file) {
-                  if (!file.name.endsWith('.xlsx')) {
+                  if (!file.name.toLowerCase().endsWith('.xlsx')) {
                       uploadError.textContent = 'Please select a valid .xlsx file.';
                       uploadError.classList.remove('d-none');
                       uploadBtn.disabled = true;
@@ -504,10 +867,20 @@
           });
       }
 
+      const bulkUploadForm = document.getElementById('bulkUploadForm');
+      if (bulkUploadForm) {
+          // Keeps keyboard form submission on the same guarded AJAX upload path.
+          bulkUploadForm.addEventListener('submit', function(event) {
+              event.preventDefault();
+              if (!uploadBtn.disabled) uploadBtn.click();
+          });
+      }
+
       if (uploadBtn) {
+          // Uploads the workbook with the session CSRF header and renders its validation results.
           uploadBtn.addEventListener('click', function() {
-              const file = fileInput.files[0];
-              if (!file) return;
+              const file = fileInput?.files[0];
+              if (!file || uploadBtn.disabled) return;
 
               const formData = new FormData();
               formData.append('file', file);
@@ -524,7 +897,8 @@
               }
 
               uploadBtn.disabled = true;
-              uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Uploading...';
+              uploadProcessing.classList.remove('d-none');
+              uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> Processing...';
 
               fetch('/vendors/bulk-upload', {
                   method: 'POST',
@@ -533,50 +907,75 @@
                   body: formData
               })
               .then(response => {
-                  if (!response.ok) {
-                      const statusMessages = {
-                          400: 'Bad request - check file format',
-                          403: 'Access denied - invalid or missing CSRF token',
-                          413: 'File too large - maximum 5MB',
-                          500: 'Server error - please try again later'
-                      };
-                      throw new Error(statusMessages[response.status] || 'Upload failed with status: ' + response.status);
-                  }
-                  return response.text();
+                  return response.text().then(text => ({response, text}));
               })
-              .then(text => {
+              .then(({response, text}) => {
                   let data;
-                  try {
-                      data = JSON.parse(text);
-                  } catch (e) {
-                      throw new Error('Invalid server response');
-                  }
-
-                  if (data.success) {
-                      bootstrap.Modal.getInstance(document.getElementById('bulkUploadModal')).hide();
-                      const alertDiv = document.createElement('div');
-                      alertDiv.className = 'alert alert-success alert-dismissible fade show';
-                      alertDiv.innerHTML = '<i class="bi bi-check-circle-fill"></i> ' + data.message + ' <button class="btn-close" data-bs-dismiss="alert"></button>';
-                      document.querySelector('.unified-card-header').after(alertDiv);
-                      setTimeout(() => alertDiv.remove(), 5000);
-                      fileInput.value = '';
-                      fileInfo.classList.add('d-none');
-                      uploadBtn.disabled = true;
-                  } else {
-                      uploadError.textContent = data.message || 'Upload failed.';
-                      uploadError.classList.remove('d-none');
-                  }
+                  try { data = JSON.parse(text); }
+                  catch (e) { throw new Error(response.ok ? 'Invalid server response.' : 'Upload rejected (HTTP ' + response.status + ').'); }
+                  if (!response.ok || !data.success) throw new Error(data.message || 'Upload failed (HTTP ' + response.status + ').');
+                  previewFile = file;
+                  renderVendorPreview(data);
+                  fileInput.value = '';
               })
               .catch(error => {
-                  uploadError.textContent = 'Error uploading file: ' + error.message;
+                  uploadError.textContent = 'Unable to upload and validate the workbook: ' + error.message;
                   uploadError.classList.remove('d-none');
               })
               .finally(() => {
-                  uploadBtn.disabled = false;
+                  uploadProcessing.classList.add('d-none');
+                  uploadBtn.disabled = !fileInput?.files.length;
                   uploadBtn.innerHTML = '<i class="bi bi-upload"></i> Upload';
               });
           });
       }
+
+      // Confirms, disables repeat clicks, and submits the same key when an uncertain request is retried.
+      registerValidBtn.addEventListener('click', function() {
+          const validCount = Number(document.getElementById('validRecordCount').textContent || 0);
+          if (!previewFile || validCount < 1 || registerValidBtn.disabled) return;
+          if (!window.confirm('Register ' + validCount + ' valid vendors? Invalid rows will be skipped.')) return;
+
+          const formData = new FormData();
+          formData.append('file', previewFile);
+          const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+          const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+          const headers = {'Accept': 'application/json'};
+          if (csrfToken && csrfHeader) headers[csrfHeader] = csrfToken;
+          headers['Idempotency-Key'] = registrationIdempotencyKey;
+
+          registerValidBtn.disabled = true;
+          uploadBtn.disabled = true;
+          registerValidBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> Registering...';
+          document.getElementById('registrationProcessing').classList.remove('d-none');
+          fetch('/vendors/bulk-upload/register', {
+              method: 'POST', headers: headers, credentials: 'same-origin', body: formData
+          })
+          .then(response => response.text().then(text => ({response, text})))
+          .then(({response, text}) => {
+              let data;
+              try { data = JSON.parse(text); }
+              catch (e) { throw new Error(response.ok ? 'Invalid server response.' : 'Registration rejected (HTTP ' + response.status + ').'); }
+              if (!response.ok || !data.success) throw new Error(data.message || 'Registration failed (HTTP ' + response.status + ').');
+              renderRegistrationResults(data);
+              registerValidBtn.innerHTML = '<i class="bi bi-check2-circle"></i> Registration Complete';
+          })
+          .catch(error => {
+              uploadError.textContent = 'Unable to register valid vendors: ' + error.message;
+              uploadError.classList.remove('d-none');
+              registerValidBtn.disabled = false;
+              registerValidBtn.innerHTML = '<i class="bi bi-check2-circle"></i> Register Valid Vendors (' + validCount + ')';
+          })
+          .finally(() => {
+              document.getElementById('registrationProcessing').classList.add('d-none');
+              uploadBtn.disabled = !fileInput?.files.length;
+          });
+      });
+
+      // Refreshes the vendor list after the completed registration preview is closed.
+      bulkUploadModal.addEventListener('hidden.bs.modal', function() {
+          if (registrationCompleted) window.location.reload();
+      });
 
   });
 </script>

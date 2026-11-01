@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "vendors")
@@ -32,6 +33,15 @@ public class Vendor {
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "company_id", nullable = false)
   private Company company;
+
+  @Column(name = "bulk_upload_request_id")
+  private Long bulkUploadRequestId;
+
+  @Column(name = "bulk_upload_row_number")
+  private Integer bulkUploadRowNumber;
+
+  @Column(name = "bulk_upload_processed_at")
+  private LocalDateTime bulkUploadProcessedAt;
 
   // Constructors
   public Vendor() {}

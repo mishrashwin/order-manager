@@ -13,6 +13,7 @@ Violation of any rule → **DO NOT MERGE**
 - **Every business row MUST carry `company_id`**
 - Tenant context is derived from authentication (`SecurityContextHelper`), **NOT** from request parameters
 - Each company's data is completely isolated from others
+- Idempotency keys for tenant-facing bulk operations must be unique per company, and claims must derive company ownership only from the authenticated context. Never delete an unresolved in-progress claim automatically.
 
 ## 1.2 Entity Requirements
 All business entities MUST include:
