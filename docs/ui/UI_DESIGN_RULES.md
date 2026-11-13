@@ -147,6 +147,13 @@ Use shared fragments for repeated UI:
 </table>
 ```
 
+Admin subpages should place a `Back to Admin Panel` link beside the page heading inside
+`.content-header`. Use `.unified-card` and `.unified-table` for administrative tables, with a
+scoped page class for any page-specific spacing or responsive adjustments.
+
+For JavaScript-generated text in templates, use `\uXXXX` escapes for non-ASCII punctuation and
+HTML entities for static punctuation so labels remain correct if response decoding differs.
+
 ## 4.2 Status Badge Classes
 Use Bootstrap badge classes with custom variants:
 - `.om-status-pill-active` - Green for active status
@@ -164,7 +171,7 @@ Use Bootstrap badge classes with custom variants:
 - Build dynamic preview content with DOM nodes and `textContent` to avoid interpreting uploaded data as HTML.
 - Preserve the configured CSRF header and same-origin credentials for MVC AJAX uploads.
 - For bulk registration, disable the submit control immediately and retain the same request idempotency key across uncertain network retries; generate a new key only when the selected workbook changes.
-- Keep registration audit history and unresolved upload reconciliation in the Admin Dashboard's Vendor Management tab; do not place administrative audit tables in the general vendor list.
+- Keep registration audit history and unresolved upload reconciliation on the dedicated Vendor Management page linked from the Admin Dashboard; do not place administrative audit tables in the general vendor list.
 - Load persisted registration details only after the Bootstrap modal is visible so dynamic result sizing uses measurable layout dimensions. Show loading and controlled error states in the modal instead of opening an empty dialog.
 
 ---

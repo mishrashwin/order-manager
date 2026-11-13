@@ -3,6 +3,7 @@
 - VPO-18 IndianState enum provides all 37 Indian states/union territories with GST codes (e.g., Maharashtra="27", Gujarat="24") and display names, with lookup methods romCode() and romDisplayName() (case-insensitive)
 - VPO-17 PDF template conditionally displays CGST+SGST rows when isIntraState=true, displays IGST row when isIntraState=false, and shows subtotal/finalTotal in all cases
 - VPO-16 VendorPdfService.generatePdf() determines intra-state (CGST+SGST) vs inter-state (IGST) by comparing company and vendor states using IndianState enum (exact match), defaults to IGST when states are null, and passes isIntraState, igst to template context
+- VPO-20 VendorPdfService.generatePdf() renders a valid PDF when the optional Vendor PO items collection is null, treating it as empty
 - VPO-TNC-01 POST `/vendor/pos/terms-conditions` with `termsConditionsEnabled=true` saves the terms and enabled state
 - VPO-TNC-02 POST without `termsConditionsEnabled` succeeds and persists disabled state (safe missing-parameter behavior)
 - VPO-TNC-03 POST with `termsConditionsEnabled=false` preserves disabled state and reloads it as false
@@ -45,5 +46,5 @@
 | VBU-28 | Detect in-file and tenant-scoped GSTIN/email/phone duplicates after normalization, without cross-tenant matches | `VendorBulkUploadServiceTest.validateVendorRows_formattedIdentifiers_areDuplicatesAfterNormalization`, `validateVendorRows_existingGstinForCompany_isInvalid`, `validateVendorRows_existingEmailForCompany_isInvalid`, `validateVendorRows_existingPhoneForCompany_isInvalid`, `validateVendorRows_otherCompanyIdentifiers_areNotDuplicates` |
 | VBU-29 | Produce the same normalized validation results on repeat parsing, and revalidate changed workbook content during registration | `VendorBulkUploadServiceTest.validateVendorRows_previewAndRegistrationParsing_areConsistent`, `VendorControllerTest.registerBulkUpload_revalidatesChangedWorkbookAfterPreview` |
 # Vendor bulk upload audit UI regression coverage
-- Admin dashboard exposes the Vendor Management tab with recent upload history and unresolved uploads; those sections are absent from the general vendor list.
+- Admin dashboard exposes its original tile layout, and the Vendor Management tile opens a dedicated page containing only recent upload history and unresolved uploads; those sections are absent from the general vendor list.
 - Persisted result viewing opens the modal before rendering, ensuring the results layout is measured while visible; the modal renders summary counts and row-level validation/registration errors.

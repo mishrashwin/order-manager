@@ -334,6 +334,13 @@ class VendorControllerTest {
         securityContextHelper, passwordVerificationService, idempotencyService);
   }
 
+  /** Returns the dedicated vendor upload management view without invoking upload business logic. */
+  @Test
+  void vendorUploadManagementPage_returnsDedicatedTemplate() {
+    assertThat(vendorController.vendorUploadManagementPage())
+        .isEqualTo("vendors/bulk-upload-management");
+  }
+
   @Test
   void saveVendor_addSuccess_redirectsToVendorListWithMessage() {
     Vendor vendor = new Vendor();

@@ -37,6 +37,10 @@ public class VendorPdfServiceImpl implements VendorPdfService {
     log.info("Generating PDF for VendorPo id={}", vendorPo.getId());
 
     try {
+      if (vendorPo.getItems() == null) {
+        vendorPo.setItems(java.util.Collections.emptyList());
+      }
+
       // Get company information
       Company company = companyService.getCompanyById(vendorPo.getCompany().getId())
           .orElseThrow(() -> new RuntimeException("Company not found"));

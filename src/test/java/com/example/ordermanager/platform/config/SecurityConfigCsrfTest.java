@@ -80,7 +80,7 @@ class SecurityConfigCsrfTest {
             .param("ownerEmail", "jane@example.com").param("ownerMobile", "1234567890")
             .param("username", "janedoe").param("password", "password123"))
         .andExpect(status().is3xxRedirection())
-        .andExpect(redirectedUrl("/access-denied?reason=forbidden"));
+        .andExpect(redirectedUrl("/access-denied?reason=csrf"));
   }
 
   @Test
@@ -101,7 +101,7 @@ class SecurityConfigCsrfTest {
   @Test
   void logoutPost_withoutCsrf_redirectsToAccessDenied() throws Exception {
     mockMvc.perform(post("/logout")).andExpect(status().is3xxRedirection())
-        .andExpect(redirectedUrl("/access-denied?reason=forbidden"));
+        .andExpect(redirectedUrl("/access-denied?reason=csrf"));
   }
 
   @Test
