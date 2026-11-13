@@ -211,9 +211,13 @@ order-manager/
 
 | Document | Description |
 |----------|-------------|
-| **[ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md)** | Complete system architecture & flow diagrams |
+| **[ARCHITECTURE_OVERVIEW.md](docs/architecture/ARCHITECTURE_OVERVIEW.md)** | Complete system architecture & flow diagrams |
 | **[DEPLOYMENT.md](DEPLOYMENT.md)** | Deployment setup and runtime environment guidance |
 | **[AGENTS.md](AGENTS.md)** | AI coding-agent conventions and project-specific implementation rules |
+
+### Development Documentation Standards
+
+Every development branch maintains an implementation document and a tester-focused testing guide under `docs/branches/`. Update this README when significant changes affect application capabilities or usage. See [Development Documentation Standard](docs/DEVELOPMENT_DOCUMENTATION_STANDARD.md) for requirements and reusable templates.
 
 ---
 
@@ -350,5 +354,5 @@ MIT License - See LICENSE file for details
 
 **Built with ❤️ using Spring Boot**
 
-For detailed architectural information, see [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md)
+For detailed architectural information, see [ARCHITECTURE_OVERVIEW.md](docs/architecture/ARCHITECTURE_OVERVIEW.md)
 
