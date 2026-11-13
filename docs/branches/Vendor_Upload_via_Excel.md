@@ -4,6 +4,7 @@
 Implement Excel-based bulk vendor registration incrementally, preserving existing tenant isolation and vendor registration rules.
 
 ## Work Done
+- [2026-11-13] Restored the Admin Dashboard tile layout and moved upload audit history/reconciliation to a dedicated admin-only page while reusing the existing tenant-scoped APIs and interactions.
 - [2026-11-01] Phase 1: reviewed existing vendor registration, validation, normalization, and company-scoped persistence to establish the bulk-upload integration points.
 - [2026-11-01] Phase 2: added the Apache POI Excel template with vendor fields, instructions, sample row, and Indian-state dropdown.
 - [2026-11-01] Phase 3: added the template download endpoint and vendor-list download control, with controller tests.
@@ -37,7 +38,15 @@ Implement Excel-based bulk vendor registration incrementally, preserving existin
 - Keys are retained without automatic expiry; terminal record cleanup must be a deliberate retention operation, and unresolved IN_PROGRESS records must never be deleted automatically. FAILED records are terminal and are replayed; a new workbook fingerprint is required to start a new attempt.
 - Production hardening phase 5: persisted upload metadata, minimal row manifests, per-vendor request/row correlation, report generation from stored outcomes, tenant-scoped result/report retrieval, recent registration history, and admin-only reconciliation. Correlation-based reconciliation never reruns registration and only completes when every planned valid row has a persisted request/row match.
 - Admin UI refinement: moved Recent Vendor Uploads and Unresolved Uploads into the Admin Dashboard's Vendor Management tab, and placed its dashboard card after User Management and before Order Statistics. Stored results now load only after the modal is shown, preventing blank details dialogs caused by measuring a hidden modal.
+- Admin UI correction: removed tab navigation and restored all six dashboard tiles directly under the heading. The Vendor Management tile links to `/vendors/bulk-upload/management`, which is admin-restricted and contains only upload history and unresolved reconciliation.
 - Retention remains indefinite: no cleanup job is configured, preserving replay and audit history; unresolved requests are never removed. `RECONCILIATION_REQUIRED` entries remain visible until safe reconciliation or manual investigation.
+- Added focused template coverage for the direct tile navigation, standalone page scope, auto-loaded history/reconciliation, details modal, and CSRF metadata, plus a controller view mapping test.
+- Verification: `mvn "-Dtest=VendorBulkUploadPreviewTemplateTest,VendorControllerTest" test` passed (29 tests, 0 failures/errors); `mvn -DskipTests compile` passed.
+- Follow-up UI refinement: added the Admin Dashboard return action to Vendor Management and switched the audit sections to unified cards/tables with responsive page-scoped styling.
+- Verification: `mvn "-Dtest=VendorBulkUploadPreviewTemplateTest" test` passed (8 tests, 0 failures/errors).
+- Fixed Vendor Management result text mojibake by using JavaScript Unicode escapes and static HTML entities; added regression assertions for the displayed summary separators and missing-value marker. Focused template tests passed (8 tests, 0 failures/errors).
+- Removed the existing explicit skips from the Vendor PO controller and PDF integration tests. Fixed the mocked saved-PO fixture and PDF rendering for a null items collection, and configured required test-only mail/owner properties.
+- Verification: all 313 tests pass with 0 failures, errors, or skips after `mvn test`.
 
 ## Outcomes
 - Phase 5 parser and Phase 6 validation return populated row results as JSON; Phase 8 registers only server-revalidated valid rows and returns per-row outcomes.

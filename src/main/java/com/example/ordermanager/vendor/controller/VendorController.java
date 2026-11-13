@@ -87,6 +87,13 @@ public class VendorController {
     return "vendors/list";
   }
 
+  /** Opens the admin-only upload history and unresolved registration reconciliation page. */
+  @PreAuthorize("hasRole('ADMIN')")
+  @GetMapping("/bulk-upload/management")
+  public String vendorUploadManagementPage() {
+    return "vendors/bulk-upload-management";
+  }
+
   /** Returns recent registration audit summaries filtered to the authenticated company. */
   @GetMapping("/bulk-upload/registrations")
   @ResponseBody

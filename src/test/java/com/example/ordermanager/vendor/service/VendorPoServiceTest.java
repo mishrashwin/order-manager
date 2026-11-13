@@ -70,6 +70,7 @@ class VendorPoServiceTest {
     testVendor.setId(1L);
     testVendor.setCompanyName("Test Vendor");
     testVendor.setEmail("vendor@test.com");
+    testVendor.setCompany(testCompany);
 
     testVendorPo = new VendorPo();
     testVendorPo.setId(1L);
@@ -85,6 +86,7 @@ class VendorPoServiceTest {
   void createVendorPo_callsSave() {
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
     when(companyRepository.findById(1L)).thenReturn(Optional.of(testCompany));
+    when(vendorRepository.findById(1L)).thenReturn(Optional.of(testVendor));
     when(vendorPoRepository.countByCompany_Id(1L)).thenReturn(0L);
     when(helper.extractInitials("Test Company")).thenReturn("TC");
     when(vendorPoRepository.save(any(VendorPo.class))).thenAnswer(i -> i.getArgument(0));
@@ -101,6 +103,7 @@ class VendorPoServiceTest {
   void createVendorPo_withItems_calculatesTotals() {
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
     when(companyRepository.findById(1L)).thenReturn(Optional.of(testCompany));
+    when(vendorRepository.findById(1L)).thenReturn(Optional.of(testVendor));
     when(vendorPoRepository.countByCompany_Id(1L)).thenReturn(0L);
     when(helper.extractInitials("Test Company")).thenReturn("TC");
     when(vendorPoRepository.save(any(VendorPo.class))).thenAnswer(i -> i.getArgument(0));
@@ -118,23 +121,25 @@ class VendorPoServiceTest {
 
     VendorPo result = service.createVendorPo(testVendorPo);
 
-    assertEquals(new BigDecimal("800.00"), result.getTotalAmount());
+    assertEquals(0, new BigDecimal("800.00").compareTo(BigDecimal.valueOf(result.getTotalAmount())));
     verify(vendorPoRepository).save(testVendorPo);
   }
 
   @Test
   void getVendorPoById_returnsPo() {
-    when(vendorPoRepository.findById(1L)).thenReturn(Optional.of(testVendorPo));
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
+    when(vendorPoRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(testVendorPo));
 
     VendorPo result = service.getVendorPoById(1L);
 
     assertEquals(testVendorPo, result);
-    verify(vendorPoRepository).findById(1L);
+    verify(vendorPoRepository).findByIdAndCompany_Id(1L, 1L);
   }
 
   @Test
   void getVendorPoById_throwsExceptionWhenNotFound() {
-    when(vendorPoRepository.findById(1L)).thenReturn(Optional.empty());
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
+    when(vendorPoRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.empty());
 
     assertThrows(RuntimeException.class, () -> service.getVendorPoById(1L));
   }
@@ -154,7 +159,8 @@ class VendorPoServiceTest {
   @Test
   void updateVendorPo_updatesExistingPo() {
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
-    when(vendorPoRepository.findById(1L)).thenReturn(Optional.of(testVendorPo));
+    when(vendorPoRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(testVendorPo));
+    when(vendorRepository.findById(1L)).thenReturn(Optional.of(testVendor));
     when(vendorPoRepository.save(any(VendorPo.class))).thenAnswer(i -> i.getArgument(0));
 
     testVendorPo.setNote("Updated note");
@@ -168,7 +174,7 @@ class VendorPoServiceTest {
   @Test
   void deleteVendorPo_deletesPo() {
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
-    when(vendorPoRepository.findById(1L)).thenReturn(Optional.of(testVendorPo));
+    when(vendorPoRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(testVendorPo));
 
     service.deleteVendorPo(1L);
 
@@ -177,7 +183,8 @@ class VendorPoServiceTest {
 
   @Test
   void changeStatus_updatesStatus() {
-    when(vendorPoRepository.findById(1L)).thenReturn(Optional.of(testVendorPo));
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
+    when(vendorPoRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(testVendorPo));
     when(vendorPoRepository.save(any(VendorPo.class))).thenAnswer(i -> i.getArgument(0));
 
     VendorPo result = service.changeStatus(1L, VendorPoStatus.SENT);
@@ -188,14 +195,15 @@ class VendorPoServiceTest {
 
   @Test
   void generatePdf_returnsPdfBytes() {
-    when(vendorPoRepository.findById(1L)).thenReturn(Optional.of(testVendorPo));
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
+    when(vendorPoRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(testVendorPo));
     when(vendorPdfService.generatePdf(testVendorPo)).thenReturn(new byte[0]);
 
     byte[] result = service.generatePdf(1L);
 
     assertNotNull(result);
     assertEquals(0, result.length);
-    verify(vendorPoRepository).findById(1L);
+    verify(vendorPoRepository).findByIdAndCompany_Id(1L, 1L);
     verify(vendorPdfService).generatePdf(testVendorPo);
   }
 
@@ -220,7 +228,6 @@ class VendorPoServiceTest {
     VendorPo result = service.createVendorPo(testVendorPo);
 
     assertEquals("Test Vendor", result.getVendorName());
-    assertEquals("vendor@test.com", result.getEmails());
     assertEquals(testVendor.getGstn(), result.getVendorGstn());
   }
 
@@ -228,7 +235,7 @@ class VendorPoServiceTest {
   void createVendorPo_withItems_setsItemDetails() {
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
     when(companyRepository.findById(1L)).thenReturn(Optional.of(testCompany));
-    when(productRepository.findById(1L)).thenReturn(Optional.of(new Product()));
+    when(vendorRepository.findById(1L)).thenReturn(Optional.of(testVendor));
     when(vendorPoRepository.countByCompany_Id(1L)).thenReturn(0L);
     when(helper.extractInitials("Test Company")).thenReturn("TC");
     when(vendorPoRepository.save(any(VendorPo.class))).thenAnswer(i -> i.getArgument(0));

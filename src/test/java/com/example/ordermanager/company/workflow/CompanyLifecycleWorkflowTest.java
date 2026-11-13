@@ -13,6 +13,7 @@ import com.example.ordermanager.company.entity.CompanyApprovalStatus;
 import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.entity.OrderStatus;
 import com.example.ordermanager.vendor.entity.Vendor;
+import com.example.ordermanager.utils.IndianState;
 import com.example.ordermanager.client.repository.ClientRepository;
 import com.example.ordermanager.company.repository.CompanyRepository;
 import com.example.ordermanager.order.repository.OrderRepository;
@@ -207,6 +208,11 @@ class CompanyLifecycleWorkflowTest {
     Vendor vendor = new Vendor();
     vendor.setCompanyName("beta supply");
     vendor.setContactPerson("jane SMITH");
+    vendor.setEmail("vendor@beta.com");
+    vendor.setPhone("+91 77777 77777");
+    vendor.setGstn("29ABCDE1234F1Z5");
+    vendor.setState(IndianState.KARNATAKA);
+    vendor.setAddress("123 Test Street, Bangalore");
 
     when(vendorRepository.save(any(Vendor.class))).thenAnswer(invocation -> {
       Vendor toSave = invocation.getArgument(0);

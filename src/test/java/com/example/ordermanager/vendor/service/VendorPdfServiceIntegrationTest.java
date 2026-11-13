@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.thymeleaf.TemplateEngine;
 
 import java.math.BigDecimal;
@@ -25,6 +26,13 @@ import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@TestPropertySource(
+    properties = {"spring.datasource.url=jdbc:h2:mem:testdb", "spring.datasource.username=sa",
+        "spring.datasource.password=", "spring.datasource.driver-class-name=org.h2.Driver",
+        "spring.jpa.hibernate.ddl-auto=create-drop", "spring.flyway.enabled=false",
+        "brevo.api-key=test-api-key", "spring.mail.from=test@example.com",
+        "app.owner.email=owner@example.com", "app.owner.username=test-owner",
+        "app.owner.password=test-password", "app.base.url=http://localhost:8080"})
 class VendorPdfServiceIntegrationTest {
 
   @Autowired

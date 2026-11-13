@@ -102,8 +102,7 @@ class VendorBulkUploadPreviewTemplateTest {
   }
 
   /**
-   * Keeps upload audit sections in the admin tab and ensures persisted results load into a visible
-   * modal.
+   * Keeps upload audit sections on their dedicated page and ensures persisted results load visibly.
    */
   @Test
   void vendorManagementAdminTab_containsAuditSectionsAndVisibleDetailsFlow() throws IOException {
@@ -111,14 +110,30 @@ class VendorBulkUploadPreviewTemplateTest {
     String adminTemplate = Files.readString(
         Path.of("src", "main", "resources", "templates", "admin", "dashboard.html"),
         StandardCharsets.UTF_8);
+    String managementTemplate = Files.readString(
+        Path.of("src", "main", "resources", "templates", "vendors", "bulk-upload-management.html"),
+        StandardCharsets.UTF_8);
 
     assertThat(vendorTemplate).doesNotContain("id=\"bulkUploadHistoryRows\"",
         "id=\"bulkUploadReconciliationRows\"");
-    assertThat(adminTemplate).contains("id=\"vendor-management-tab\"", "Vendor Management",
-        "Recent Vendor Uploads", "Unresolved Uploads", "id=\"bulkUploadHistoryRows\"",
-        "id=\"bulkUploadReconciliationRows\"", "id=\"vendorRegistrationDetailsModal\"",
-        "function showRegistrationDetails", "registrationFailureCount", "validationErrors",
-        "id=\"openVendorManagementTab\"");
+    assertThat(adminTemplate).contains("Vendor Management", "@{/vendors/bulk-upload/management}")
+        .doesNotContain("nav-tabs", "tab-content", "tab-pane", "data-bs-toggle=\"tab\"");
+    assertThat(managementTemplate).contains("Recent Vendor Uploads", "Unresolved Uploads",
+        "Back to Admin Panel", "@{/admin/dashboard}", "vendor-upload-section",
+        "vendor-upload-section-header", "unified-table", "Reference", "Workbook", "Status",
+        "Started", "Outcome", "Actions", "Complete Report", "Error Report", "Reconcile",
+        "id=\"refreshBulkUploadHistory\"", "id=\"refreshBulkUploadReconciliation\"",
+        "id=\"vendorRegistrationDetailsModal\"", "function showRegistrationDetails",
+        "registrationFailureCount", "validationErrors", "loadBulkUploadHistory();",
+        "loadBulkUploadReconciliation();", "meta[name=\"_csrf\"]");
+    assertThat(managementTemplate)
+        .contains("'\\u2014'", "\\u00B7", "Loading registration details\\u2026")
+        .doesNotContain("â€”", "Â·");
+    assertThat(managementTemplate).doesNotContain("/vendors/new", "/vendors/{id}", "Vendor CRUD");
+    String styles = Files.readString(STYLE_PATH, StandardCharsets.UTF_8);
+    assertThat(styles).contains(".vendor-upload-section", ".vendor-upload-section-header",
+        ".vendor-upload-section-body", ".vendor-upload-page #bulkUploadHistoryRows td:last-child",
+        "@media (max-width: 576px)");
     assertThat(adminTemplate.indexOf("<h3>User Management</h3>"))
         .isLessThan(adminTemplate.indexOf("<h3>Vendor Management</h3>"));
     assertThat(adminTemplate.indexOf("<h3>Vendor Management</h3>"))

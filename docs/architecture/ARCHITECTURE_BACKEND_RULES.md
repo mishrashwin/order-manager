@@ -232,6 +232,7 @@ Example:
 - DB failure mid-transaction
 - Partial updates
 - Network failure
+- Document/PDF rendering must treat an absent optional collection as empty when an empty section is valid, rather than failing during iteration.
 
 ---
 

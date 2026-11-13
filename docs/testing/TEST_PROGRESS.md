@@ -602,3 +602,20 @@ Notes
 - Moved Recent Vendor Uploads and Unresolved Uploads out of the general vendor list and into a new Admin Dashboard Vendor Management tab, with its dashboard card placed after User Management and before Order Statistics. Added a persisted-result details modal with summary counts and all row-level outcomes.
 - Fixed the blank details dialog by opening the vendor-list modal before fetching/rendering its persisted results, so modal height sizing runs against visible layout dimensions. Added template regression coverage and updated UI guidance.
 - Verification: `mvn "-Dtest=VendorBulkUploadPreviewTemplateTest,VendorControllerTest" test` passed (28 tests, 0 failures/errors); `mvn -DskipTests compile` completed with BUILD SUCCESS.
+
+# 2026-11-13 — Admin Dashboard Tile Layout and Vendor Upload Page
+- Restored all six Admin Dashboard tiles directly below the heading and replaced tab navigation with direct navigation to the dedicated admin-only `/vendors/bulk-upload/management` page.
+- Reused company-scoped upload history/details/report and admin-only unresolved/reconciliation APIs; history and unresolved requests load on page initialization, with existing modal rendering and CSRF handling retained.
+- Verification: `mvn "-Dtest=VendorBulkUploadPreviewTemplateTest,VendorControllerTest" test` passed (29 tests, 0 failures/errors); `mvn -DskipTests compile` passed.
+
+# 2026-11-13 — Vendor Management Navigation and Styling
+- Added a User Management-style Back to Admin Panel action and aligned upload sections/tables with the shared unified card/table styles, including responsive spacing and action-column sizing.
+- Verification: `mvn "-Dtest=VendorBulkUploadPreviewTemplateTest" test` passed (8 tests, 0 failures/errors), covering navigation, shared styles, and scoped responsive CSS.
+
+# 2026-11-13 — Vendor Registration Details Text Encoding
+- Replaced punctuation in JavaScript-generated upload summaries and empty-value placeholders with Unicode escapes, and static loading punctuation with HTML entities to prevent mojibake in the results modal.
+- Verification: `mvn "-Dtest=VendorBulkUploadPreviewTemplateTest" test` passed (8 tests, 0 failures/errors); coverage asserts escaped punctuation and excludes the observed mojibake strings.
+
+# 2026-11-13 — Re-enable Vendor PO and PDF Tests
+- Removed the three explicit `@Disabled` annotations. Added isolated Brevo/owner/mail properties so the PDF integration context loads, normalized null PO item lists to empty lists for rendering, and completed the email-controller fixture with the persisted PO ID and tenant company.
+- Verification: `mvn "-Dtest=VendorPdfServiceIntegrationTest,VendorPoControllerTest" test` passed (28 tests, 0 failures/errors/skips); `mvn test` passed (313 tests, 0 failures/errors/skips).
