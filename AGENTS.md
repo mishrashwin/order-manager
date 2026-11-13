@@ -77,27 +77,41 @@ This ensures all developers have full context of what was done, why, and with wh
 **For EVERY prompt/work session, you MUST follow this exact sequence**:
 
 **Phase 1: Pre-Implementation Review**
-1. **Read engineering rule files**:
+1. **Read repository instructions and documentation standard**:
+   - [ ] `AGENTS.md`
+   - [ ] `docs/DEVELOPMENT_DOCUMENTATION_STANDARD.md`
+   - [ ] Check `docs/branches/README.md` for related branch history
+2. **Read engineering rule files**:
    - [ ] `docs/architecture/ARCHITECTURE_BACKEND_RULES.md`
    - [ ] `docs/architecture/ARCHITECTURE_OVERVIEW.md`
    - [ ] `docs/architecture/MULTI_TENANT_DOMAIN_RULES.md`
    - [ ] `docs/testing/TESTING_RULES.md`
    - [ ] `docs/ui/UI_DESIGN_RULES.md`
-2. **Get current branch**: `git branch --show-current`
-3. **Check branch documentation**: `docs/branches/{branch-name}.md` exists?
-4. **Read existing branch file** for context and previous decisions
+3. **Get current branch and define scope**: `git branch --show-current`; identify the branch objective.
+4. **Check and read existing branch documents** under `docs/branches/` for context and prior decisions.
+5. **Create both required documents before implementation** if absent:
+   - `docs/branches/<branch-name>.md` from `docs/templates/BRANCH_DEVELOPMENT_TEMPLATE.md`
+   - `docs/branches/<branch-name>-TESTING.md` from `docs/templates/BRANCH_TESTING_TEMPLATE.md`
+6. **Define intended documentation updates**, including README and relevant engineering rule changes, in the branch development document.
 
 **Phase 2: Documentation & Implementation**
-5. **Create/update branch file** with current intent
-6. **Implement changes** following documented patterns
-7. **Update branch file** with work done, decisions, outcomes
-8. **Reference branch decisions** for implementation guidance
+7. **Implement changes** following documented patterns; keep the branch development record current with scope, implementation, decisions, and outcomes.
+8. **Keep the testing guide current** as behavior and validation scenarios are introduced or changed; describe observable steps and expected results.
+9. **Update README.md** when capabilities or setup, configuration, usage, technology, or architecture information materially changes. Keep it concise; document why no update applies when appropriate.
+10. **Record applicable impacts** in the branch document: database/entities, migrations, API/controllers/services, UI/templates/static assets, business rules/validation, security/tenant isolation, configuration, dependencies, limitations, and future work.
+11. **Update relevant engineering rules** and `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` / `docs/testing/TEST_PROGRESS.md` when existing rules require it.
+12. **Document Java methods:** Every Java method introduced must have a brief one- or two-line comment explaining its purpose.
 
 **Phase 3: Completion**
-9. **Update outcomes** and final decisions in branch file
-10. **Reference specific rule sections** in commit messages when applicable
+13. **Verify README.md** reflects applicable capability/usage changes, or record why no update applies.
+14. **Verify both branch documents** are complete and accurately reflect final implementation; testing scenarios cover positive/negative behavior, authorization and tenant isolation, regressions, and applicable migration/PDF/export/email checks.
+15. **Record actual test outcomes** as Pass/Fail/Blocked; never report unrun tests as passed.
+16. **Check documentation links**, register the documents in `docs/branches/README.md`, and include all required documentation in the branch commit.
+17. **Report documentation updates** in the final development summary; reference specific rule sections in commit messages when applicable.
 
 **Failure to follow this checklist = REJECT WORK**
+
+A development branch is not complete while either required branch document is missing or materially incomplete. The detailed requirements and reusable templates are in `docs/DEVELOPMENT_DOCUMENTATION_STANDARD.md`.
 
 ## Scope + Existing AI Instructions
 - This repo currently has one dedicated AI rule file (`AGENTS.md`) plus `README.md` from the requested glob scan; no other AI rule files were found.
