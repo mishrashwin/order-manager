@@ -18,6 +18,7 @@ Violation of any rule → **DO NOT MERGE**
 **Every new or changed controller/service method MUST include dedicated automated tests** in the same development cycle:
 - At least one happy-path test case
 - At least one edge/failure-path test case
+- Retry-sensitive writes must include database-backed tests for atomic claims, concurrent requests, tenant scoping, and replayed terminal responses.
 
 ---
 
@@ -287,6 +288,8 @@ mvn clean test jacoco:report
 ---
 
 # 8. ENFORCEMENT CHECKLIST
+
+Spreadsheet upload tests should generate in-memory workbooks for required-sheet/header checks, malformed cell and formula handling, row limits, and empty data. Test both multipart metadata limits and actual OOXML parsing so a spoofed filename or MIME type cannot bypass content validation.
 
 Before merge:
 

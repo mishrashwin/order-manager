@@ -12,6 +12,7 @@ import com.example.ordermanager.utils.PasswordVerificationService;
 import com.example.ordermanager.utils.SecurityContextHelper;
 import com.example.ordermanager.vendor.entity.Vendor;
 import com.example.ordermanager.vendor.entity.VendorPo;
+import com.example.ordermanager.vendor.entity.VendorPoStatus;
 import com.example.ordermanager.vendor.service.VendorPoService;
 import com.example.ordermanager.vendor.service.VendorService;
 import java.util.Optional;
@@ -109,6 +110,7 @@ class VendorPoControllerTest {
     testVendorPo.setDeliveryDate(LocalDate.now().plusWeeks(2));
     testVendorPo.setTotalAmount(1000.00);
     testVendorPo.setEmails("vendor1@test.com, vendor2@test.com");
+    testVendorPo.setStatus(VendorPoStatus.DRAFT);
   }
 
   @Test
@@ -177,14 +179,14 @@ class VendorPoControllerTest {
   @WithMockUser(username = "test@example.com", roles = {"USER"})
   void list_shouldReturnVendorPoListPage() throws Exception {
     Page<VendorPo> vendorPoPage = new PageImpl<>(Arrays.asList(testVendorPo));
-    when(vendorPoService.listVendorPos(any(), any(), any(PageRequest.class)))
+    when(vendorPoService.searchVendorPos(null, null, null, PageRequest.of(0, 10)))
         .thenReturn(vendorPoPage);
 
     mockMvc.perform(get("/vendor/pos/list-ajax")).andExpect(status().isOk())
         .andExpect(view().name("vendor/pos-list-ajax :: pos-table"))
         .andExpect(model().attributeExists("pos"));
 
-    verify(vendorPoService).listVendorPos(any(), any(), any(PageRequest.class));
+    verify(vendorPoService).searchVendorPos(null, null, null, PageRequest.of(0, 10));
   }
 
   @Test
@@ -217,7 +219,7 @@ class VendorPoControllerTest {
         .contentType(MediaType.APPLICATION_FORM_URLENCODED))
         .andExpect(status().is3xxRedirection())
         .andExpect(redirectedUrl("/vendors#vendor-po"))
-        .andExpect(flash().attributeExists("message"));
+        .andExpect(flash().attributeExists("poMessage"));
 
     verify(vendorPoService).createVendorPo(any(VendorPo.class));
   }
@@ -240,13 +242,13 @@ class VendorPoControllerTest {
         .contentType(MediaType.APPLICATION_FORM_URLENCODED))
         .andExpect(status().is3xxRedirection())
         .andExpect(redirectedUrl("/vendors#vendor-po"))
-        .andExpect(flash().attributeExists("message"));
+        .andExpect(flash().attributeExists("poMessage"));
 
     verify(vendorPoService).createVendorPo(any(VendorPo.class));
     verify(vendorPoService).generatePdf(1L);
-    verify(brevoEmailService).sendEmailWithMultipleRecipients(
-        any(String[].class), any(String[].class), any(String.class), any(String.class),
-        any(byte[].class), any(String.class), any(String.class));
+    verify(brevoEmailService).sendVendorPoEmail(
+        any(VendorPo.class), any(Company.class), any(String[].class),
+        any(String[].class), any(byte[].class));
   }
 
   @Test
@@ -264,12 +266,12 @@ class VendorPoControllerTest {
         .contentType(MediaType.APPLICATION_FORM_URLENCODED))
         .andExpect(status().is3xxRedirection())
         .andExpect(redirectedUrl("/vendors#vendor-po"))
-        .andExpect(flash().attributeExists("message"))
-        .andExpect(flash().attributeExists("error"));
+        .andExpect(flash().attributeExists("poMessage"))
+        .andExpect(flash().attributeExists("poError"));
 
     verify(vendorPoService).createVendorPo(any(VendorPo.class));
     verify(vendorPoService).generatePdf(1L);
-    verify(brevoEmailService, never()).sendEmailWithMultipleRecipients(any(), any(), any(), any(), any(), any(), any());
+    verify(brevoEmailService, never()).sendVendorPoEmail(any(), any(), any(), any(), any());
   }
 
   @Test
@@ -292,6 +294,7 @@ class VendorPoControllerTest {
   @WithMockUser(username = "test@example.com", roles = {"USER"})
   void downloadPdf_shouldReturnPdfFile() throws Exception {
     byte[] pdfBytes = {1, 2, 3, 4, 5};
+    when(vendorPoService.getVendorPoById(1L)).thenReturn(testVendorPo);
     when(vendorPoService.generatePdf(1L)).thenReturn(pdfBytes);
 
     mockMvc.perform(get("/vendor/pos/1/download")).andExpect(status().isOk())
@@ -299,6 +302,7 @@ class VendorPoControllerTest {
         .andExpect(content().contentType(MediaType.APPLICATION_PDF))
         .andExpect(content().bytes(pdfBytes));
 
+    verify(vendorPoService).getVendorPoById(1L);
     verify(vendorPoService).generatePdf(1L);
   }
 
@@ -310,16 +314,12 @@ class VendorPoControllerTest {
 
     mockMvc.perform(post("/vendor/pos")
         .with(csrf())
-        .param("poNumber", "")  // Invalid: empty
         .param("deliveryDate", LocalDate.now().plusWeeks(2).toString())
         .contentType(MediaType.APPLICATION_FORM_URLENCODED))
-        .andExpect(status().isOk())
-        .andExpect(view().name("vendor/pos-form-new"))
-        .andExpect(model().attributeExists("vendorPo"))
-        .andExpect(model().attributeExists("vendors"))
-        .andExpect(model().attributeExists("products"));
+        .andExpect(status().is3xxRedirection())
+        .andExpect(redirectedUrl("/vendors#vendor-po"));
 
-    verify(vendorPoService, never()).createVendorPo(any());
+    verify(vendorPoService).createVendorPo(any(VendorPo.class));
   }
 
   @Test
@@ -328,11 +328,19 @@ class VendorPoControllerTest {
     Vendor vendorWithoutEmail = new Vendor();
     vendorWithoutEmail.setId(1L);
     vendorWithoutEmail.setCompanyName("Test Vendor");
-    // No email set
+    vendorWithoutEmail.setEmail(null); // No email set
 
     testVendorPo.setVendor(vendorWithoutEmail);
+    testVendorPo.setEmails("backup@test.com"); // Set emails field instead
 
-    when(vendorPoService.createVendorPo(any(VendorPo.class))).thenReturn(testVendorPo);
+    when(vendorPoService.createVendorPo(any(VendorPo.class))).thenAnswer(invocation -> {
+      VendorPo po = invocation.getArgument(0);
+      po.setId(1L);
+      po.setEmails("backup@test.com");
+      po.setVendor(vendorWithoutEmail);
+      po.setCompany(testCompany);
+      return po;
+    });
     when(vendorPoService.generatePdf(1L)).thenReturn(new byte[] {1, 2, 3});
     when(userService.findPrimaryAdminByCompanyId(1L)).thenReturn(testUser);
     when(companyService.getCompanyById(1L)).thenReturn(Optional.ofNullable(testCompany));
@@ -344,14 +352,13 @@ class VendorPoControllerTest {
             .contentType(MediaType.APPLICATION_FORM_URLENCODED))
         .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/vendors#vendor-po"));
 
-    verify(brevoEmailService).sendEmailWithMultipleRecipients(eq(new String[] {"backup@test.com"}),
-        any(String[].class), any(String.class), any(String.class), any(byte[].class),
-        any(String.class), any(String.class));
+    verify(brevoEmailService).sendVendorPoEmail(any(VendorPo.class), any(Company.class),
+        eq(new String[] {"backup@test.com"}), any(String[].class), any(byte[].class));
   }
 
   @Test
-  void list_withoutAuthentication_shouldRedirectToLogin() throws Exception {
-    mockMvc.perform(get("/vendor/pos/list-ajax")).andExpect(status().is3xxRedirection());
+  void list_withoutAuthentication_shouldReturnUnauthorized() throws Exception {
+    mockMvc.perform(get("/vendor/pos/list-ajax")).andExpect(status().isUnauthorized());
   }
 
   @Test

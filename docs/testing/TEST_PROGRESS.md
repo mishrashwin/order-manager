@@ -1,5 +1,20 @@
 # Test Progress Log
 
+## Vendor Bulk Upload Phase 8 (2026-11-01)
+- Focused suite `VendorBulkUploadServiceTest`, `VendorControllerTest`, `VendorBulkUploadPreviewTemplateTest`, and `VendorServiceTest`: 41 tests passed, 0 failures/errors.
+- `mvn -DskipTests compile`: BUILD SUCCESS.
+- Registration tests cover valid-only persistence delegation, per-row failure isolation, row/company context preservation, skips, duplicate row references, result counts, and UI confirmation/results.
+
+## Vendor Registration Results UI (2026-11-01)
+- Added bounded vertical scrolling for registration rows and distinct `SKIPPED – INVALID` labels while preserving all row/error fields.
+- Focused tests `VendorBulkUploadPreviewTemplateTest` and `VendorControllerTest`: 17 passed; Maven compile passed.
+
+## Vendor Registration Results Layout Correction (2026-11-01)
+- Changed the registration table viewport to derive its height from rendered result rows and available space above the fixed footer; the results view collapses validation preview by default and can reopen it.
+- Summary uses backend registered, failed, skipped, and total parsed values without double-counting invalid rows.
+- The supplied local 14-row workbook parsed successfully in a temporary focused check. Browser verification at 100% and reduced zoom was unavailable because the browser automation host is unavailable.
+- `VendorBulkUploadPreviewTemplateTest` and `VendorControllerTest`: 18 passed, 0 failures/errors; `mvn -DskipTests compile`: BUILD SUCCESS.
+
 ## Vendor PO Terms & Conditions Modal Fix (2026-10-28)
 - Added `VendorPoControllerTest` cases for saving enabled terms, safely defaulting a missing toggle to disabled, and preserving an explicit disabled value; each verifies GET reload persistence.
 - Focused save/load controller tests pass (3/3), and `VendorFormTemplateTest` passes (1/1). The full `VendorPoControllerTest` run reports 8 unrelated stale failures (14 tests total).
@@ -529,3 +544,78 @@ Notes
 - Verified with targeted suite: `OrderServiceTest`, `OrderControllerTest`, `DashboardControllerTest` (34 tests passing).
 - Updated `docs/testing/CONTROLLER_SERVICE_TEST_CASES.md` with `ORDC-11` and `ORS-15`.
 
+# 2026-11-01 — Vendor Bulk Upload Phase 5
+- Added focused parser tests for column mapping/blank-row handling and missing worksheet failure.
+- Verification: `mvn "-Dtest=VendorBulkUploadServiceTest,VendorControllerTest" test` passed (12 tests); `mvn -DskipTests compile` passed.
+
+# 2026-11-01 — Vendor Bulk Upload Phase 6A
+- Added field-level validation results with original Excel row numbers, all field errors, and valid/invalid status. The upload response includes parsed, valid, and invalid totals; it performs no persistence.
+- Verification: `mvn "-Dtest=VendorBulkUploadServiceTest,VendorControllerTest" test` passed (18 tests); `mvn -DskipTests compile` passed.
+
+# 2026-11-01 — Vendor Bulk Upload Phase 6B
+- Added file-level GSTIN/email/phone duplicate detection and tenant-scoped bulk repository lookups. Duplicate errors are merged with existing validation errors; no rows are persisted.
+- Verification: `mvn "-Dtest=VendorBulkUploadServiceTest,VendorControllerTest" test` passed (27 tests); `mvn -DskipTests compile` passed.
+
+# 2026-11-01 — Vendor Bulk Upload Phase 6B Duplicate Group Correction
+- Changed in-file duplicate handling so every row in a normalized GSTIN/email/phone group is invalid and carries the full Excel row-number group in its field error.
+- Added a generated 14-vendor workbook regression covering first and subsequent occurrences for all three identifiers, plus existing-tenant, cross-tenant, and Phase 6A error retention cases.
+- Verification: `mvn "-Dtest=VendorBulkUploadServiceTest,VendorControllerTest" test` passed (28 tests); `mvn -DskipTests compile` passed.
+
+# 2026-11-01 — Vendor Bulk Upload Phase 7
+- Added modal preview rendering with summary counts, responsive row details, valid/invalid indicators, expandable field and duplicate errors, empty-result handling, loading state, and replacement on new file selection. Existing CSRF token/header and same-origin fetch behavior remain in use.
+- Verification: `mvn "-Dtest=VendorBulkUploadPreviewTemplateTest,VendorControllerTest" test` passed (13 tests); `mvn -DskipTests compile` passed.
+
+# 2026-11-01 — Vendor Bulk Upload Preview Layout
+- Sized the upload dialog to 95vw/85vh, kept header/footer fixed, and isolated vertical/horizontal scrolling to the preview table with sticky headers and a 340px error column.
+- Verification: `mvn "-Dtest=VendorBulkUploadPreviewTemplateTest,VendorControllerTest" test` passed (14 tests); `mvn -DskipTests compile` passed.
+
+# 2026-11-01 — Vendor Bulk Upload Preview Layout Optimization
+- Reorganized the modal into a desktop 75:25 upload/summary row with responsive stacking. Modal height now derives from rendered content and caps at 85vh; long previews scroll within the table area.
+- Verification: `mvn "-Dtest=VendorBulkUploadPreviewTemplateTest,VendorControllerTest" test` passed (14 tests); `mvn -DskipTests compile` passed.
+
+# 2026-11-01 — Vendor Bulk Upload Tenant Isolation Verification
+- Added regression checks that client-supplied company IDs do not override the authenticated context, the bulk persistence path assigns that authenticated Company, and identifiers owned by another company do not trigger duplicate errors.
+- Verification: `mvn "-Dtest=VendorBulkUploadServiceTest,VendorControllerTest" test` passed (36 tests); `mvn -DskipTests compile` passed.
+
+# 2026-11-01 — Vendor Bulk Upload Production Hardening Phase 1
+- Aligned the controller and multipart limits to configurable 5 MB/6 MB file/request bounds; added a configurable 1,000-row ceiling and controlled oversized-request response.
+- Validated OOXML parsing, Vendor Data sheet/header structure, data presence, and supported cell types. Formula cells are rejected without evaluation; formatted numeric phone values avoid scientific notation and retain number-format padding.
+- Verification: `mvn "-Dtest=VendorBulkUploadServiceTest,VendorControllerTest" test` passed (51 tests); `mvn -DskipTests compile` passed.
+
+# 2026-11-01 — Vendor Bulk Upload Production Hardening Phase 2
+- Normalize parsed vendor DTO values for bulk preview and registration, including company/contact casing, email/GSTIN, international phones, enum state names/codes, and line-break-preserving addresses. Duplicate lookups use the same normalized rows; registration continues to reparse and revalidate its uploaded workbook.
+- Verification: `mvn "-Dtest=VendorBulkUploadServiceTest,VendorControllerTest" test` passed (55 tests); `mvn -DskipTests compile` passed.
+
+- Vendor bulk upload production hardening phase 3: independent repository transactions are retained for row-level partial success; recoverable validation/integrity failures are recorded with controlled reasons after rollback, while unexpected persistence failures propagate to the controller's batch-level error handling.
+- Added `VendorBulkUploadTransactionIntegrationTest` using H2 with a company-scoped unique email index to verify that successful rows commit before and after a failed row, the failed row rolls back, and API result counts and original Excel row numbers match persisted outcomes. No vendor identifier uniqueness constraints exist in the current Flyway schema; concurrent duplicate prevention remains subject to a data audit and future company-scoped constraints.
+- Verification: `mvn "-Dtest=VendorBulkUploadServiceTest,VendorControllerTest,VendorBulkUploadTransactionIntegrationTest" test` — 57 tests passed; `mvn -DskipTests compile` pending.
+- Vendor bulk upload production hardening phase 4: added database-backed idempotency claims unique by authenticated company/key and company/SHA-256 workbook fingerprint. Completed and failed responses replay; concurrent identical uploads and changed-content key reuse are handled without a second registration.
+- The crash-recovery policy leaves unresolved `IN_PROGRESS` claims blocked indefinitely for manual reconciliation; no automatic takeover or retention cleanup is performed because per-row commits are not checkpointed with the claim. Migration V30 executed successfully inside a rolled-back transaction against the configured local PostgreSQL 18.4 database, and its syntax is also covered by H2 PostgreSQL mode.
+- Verification: `mvn "-Dtest=VendorBulkUploadServiceTest,VendorControllerTest,VendorBulkUploadTransactionIntegrationTest,VendorBulkUploadPreviewTemplateTest" test` — 69 tests passed, 0 failures/errors; `mvn -DskipTests compile` — BUILD SUCCESS.
+
+# 2026-11-01 — Vendor Bulk Upload Production Hardening Phase 5
+- Added V31 audit metadata and vendor request/row correlation. Added company-owned request history/result/report endpoints, complete/error-only Excel report generation, and admin-only reconciliation fenced against in-flight row writes. Reconciliation does not replay registration and marks requests complete only when every planned valid row has verified persistence correlation.
+- Retention policy is indefinite; no cleanup job exists. IN_PROGRESS and reconciliation-required records are retained for safe manual review. Cross-workbook vendor identifier races remain possible because the schema has no company-scoped identifier uniqueness constraints; adding them requires a separate existing-data audit.
+- Verification: focused vendor bulk upload suite (`VendorBulkUploadServiceTest`, `VendorControllerTest`, `VendorBulkUploadTransactionIntegrationTest`, `VendorBulkUploadPreviewTemplateTest`) passed: 74 tests, 0 failures/errors. `mvn -DskipTests compile` passed. V30 and V31 SQL executed against local PostgreSQL 18.4 inside a transaction and rolled back successfully. `mvn test` ran 311 tests and failed with 11 failures and 25 errors in existing company/order/security/vendor-PO/PDF tests; bulk upload focused tests remained green.
+
+# 2026-11-01 — Vendor Management Admin Tab and Registration Details
+- Moved Recent Vendor Uploads and Unresolved Uploads out of the general vendor list and into a new Admin Dashboard Vendor Management tab, with its dashboard card placed after User Management and before Order Statistics. Added a persisted-result details modal with summary counts and all row-level outcomes.
+- Fixed the blank details dialog by opening the vendor-list modal before fetching/rendering its persisted results, so modal height sizing runs against visible layout dimensions. Added template regression coverage and updated UI guidance.
+- Verification: `mvn "-Dtest=VendorBulkUploadPreviewTemplateTest,VendorControllerTest" test` passed (28 tests, 0 failures/errors); `mvn -DskipTests compile` completed with BUILD SUCCESS.
+
+# 2026-11-13 — Admin Dashboard Tile Layout and Vendor Upload Page
+- Restored all six Admin Dashboard tiles directly below the heading and replaced tab navigation with direct navigation to the dedicated admin-only `/vendors/bulk-upload/management` page.
+- Reused company-scoped upload history/details/report and admin-only unresolved/reconciliation APIs; history and unresolved requests load on page initialization, with existing modal rendering and CSRF handling retained.
+- Verification: `mvn "-Dtest=VendorBulkUploadPreviewTemplateTest,VendorControllerTest" test` passed (29 tests, 0 failures/errors); `mvn -DskipTests compile` passed.
+
+# 2026-11-13 — Vendor Management Navigation and Styling
+- Added a User Management-style Back to Admin Panel action and aligned upload sections/tables with the shared unified card/table styles, including responsive spacing and action-column sizing.
+- Verification: `mvn "-Dtest=VendorBulkUploadPreviewTemplateTest" test` passed (8 tests, 0 failures/errors), covering navigation, shared styles, and scoped responsive CSS.
+
+# 2026-11-13 — Vendor Registration Details Text Encoding
+- Replaced punctuation in JavaScript-generated upload summaries and empty-value placeholders with Unicode escapes, and static loading punctuation with HTML entities to prevent mojibake in the results modal.
+- Verification: `mvn "-Dtest=VendorBulkUploadPreviewTemplateTest" test` passed (8 tests, 0 failures/errors); coverage asserts escaped punctuation and excludes the observed mojibake strings.
+
+# 2026-11-13 — Re-enable Vendor PO and PDF Tests
+- Removed the three explicit `@Disabled` annotations. Added isolated Brevo/owner/mail properties so the PDF integration context loads, normalized null PO item lists to empty lists for rendering, and completed the email-controller fixture with the persisted PO ID and tenant company.
+- Verification: `mvn "-Dtest=VendorPdfServiceIntegrationTest,VendorPoControllerTest" test` passed (28 tests, 0 failures/errors/skips); `mvn test` passed (313 tests, 0 failures/errors/skips).

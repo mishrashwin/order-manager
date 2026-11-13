@@ -105,6 +105,15 @@ public void createOrder(...)
 Rules:
 - Only at service layer
 - Avoid nested transactions unless required
+- For bulk work requiring row-level failure isolation, keep each row write within its repository/service transaction; record the row outcome and continue after a failed row. Do not wrap the whole batch in one transaction unless all-or-nothing behavior is intended.
+- Catch recoverable row failures only after the row transaction has rolled back (for example, repository integrity violations). Unexpected persistence/runtime failures must abort the batch response rather than produce partial counts that imply the batch completed reliably.
+- For externally retried bulk writes, claim a tenant-scoped idempotency key under a database unique constraint and commit that claim before processing. Bind the key to a content fingerprint, persist the final response, and never automatically reclaim unresolved `IN_PROGRESS` work unless each committed row has a durable atomic checkpoint.
+
+### Spreadsheet Upload Validation
+- Enforce configured multipart byte limits before controller processing and validate the workbook's actual OOXML content; never trust the filename extension or MIME header alone.
+- Validate required worksheet headers and cap populated data rows before mapping records. Do not evaluate formulas from user-uploaded workbooks; reject unsupported cell types instead of coercing them into valid-looking values.
+- Return controlled file-level errors separately from row-level business validation errors, without exposing parser internals.
+- Bulk import normalizes one DTO representation before field validation and duplicate lookups; preview and registration must both reparse and run the same normalization/validation path. Keep those normalizations scoped to bulk import unless single-record behavior is deliberately changed.
 
 ---
 
@@ -223,6 +232,7 @@ Example:
 - DB failure mid-transaction
 - Partial updates
 - Network failure
+- Document/PDF rendering must treat an absent optional collection as empty when an empty section is valid, rather than failing during iteration.
 
 ---
 

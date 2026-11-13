@@ -40,7 +40,7 @@ class OrderFormTemplateTest {
     assertThat(template).contains("name=\"itemProductIds\" required");
     assertThat(template).contains("name=\"itemQuantities\" min=\"1\" placeholder=\"Qty\" required");
     assertThat(template).contains(
-        "name=\"itemUnitPrices\" step=\"0.01\" min=\"0\" placeholder=\"Unit Price\" required");
+        "name=\"itemPreGstUnitPrices\" step=\"0.01\" min=\"0\" placeholder=\"Unit Price\" required");
     assertThat(template).contains("id=\"orderSubmitBtn\"");
     assertThat(template).contains(
         "submitButton.disabled = !(areMandatoryOrderFieldsFilled() && validateOrderDatesOnClient())");

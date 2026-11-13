@@ -1547,3 +1547,211 @@ footer strong {
   flex: 0 0 auto;
 }
 
+/* Vendor bulk upload preview: fixed modal chrome with an independently scrolling result table. */
+.vendor-bulk-upload-dialog {
+    width: 95vw;
+    max-width: 1600px;
+    max-height: 85vh;
+    margin: 7.5vh auto;
+}
+
+.vendor-bulk-upload-dialog .modal-content {
+    display: flex;
+    height: auto;
+    max-height: 85vh;
+}
+
+.vendor-bulk-upload-dialog .modal-header,
+.vendor-bulk-upload-dialog .modal-footer {
+    flex: 0 0 auto;
+}
+
+.vendor-bulk-upload-dialog .modal-body {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.vendor-bulk-upload-form {
+    flex: 0 0 auto;
+}
+
+.vendor-upload-top {
+    flex: 0 0 auto;
+}
+
+.vendor-preview-summary {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.vendor-preview-summary .card {
+    flex: 1 1 0;
+}
+
+.vendor-upload-preview {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.vendor-upload-preview.d-none,
+.vendor-registration-results.d-none {
+    display: none !important;
+}
+
+.vendor-upload-preview.is-collapsed {
+    flex: 0 0 auto;
+}
+
+.vendor-preview-scroll {
+    min-height: 0;
+    flex: 1 1 auto;
+    max-height: 100%;
+    overflow: auto;
+    overscroll-behavior: contain;
+}
+
+.vendor-validation-preview-content {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.vendor-registration-results {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.vendor-registration-results > h6,
+.vendor-registration-results > .row,
+.vendor-registration-results > p {
+    flex: 0 0 auto;
+}
+
+.vendor-registration-results-scroll {
+    min-height: 0;
+    flex: 0 1 auto;
+    height: auto;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+    overscroll-behavior: contain;
+}
+
+.vendor-upload-section {
+    padding: 0;
+    overflow: hidden;
+}
+
+.vendor-upload-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.125rem 1.5rem;
+    border-bottom: 1px solid var(--om-border-light);
+}
+
+.vendor-upload-section-header h2 {
+    color: var(--om-text);
+    font-weight: 650;
+}
+
+.vendor-upload-section-body {
+    padding: 1.25rem 1.5rem;
+}
+
+.vendor-upload-page #bulkUploadHistoryRows td:last-child {
+    min-width: 18rem;
+}
+
+.vendor-upload-page #bulkUploadReconciliationRows p {
+    overflow-wrap: anywhere;
+}
+
+.vendor-registration-details-scroll {
+    max-height: 60vh;
+    overflow: auto;
+}
+
+@media (max-width: 576px) {
+    .vendor-upload-section-header {
+        align-items: flex-start;
+        padding: 1rem;
+    }
+
+    .vendor-upload-section-body {
+        padding: 1rem;
+    }
+}
+
+.vendor-registration-errors {
+    white-space: pre-line;
+    min-width: 16rem;
+}
+
+.vendor-preview-table {
+    width: 100%;
+    min-width: 1950px;
+    table-layout: fixed;
+}
+
+.vendor-preview-table th {
+    position: sticky;
+    z-index: 2;
+    top: 0;
+    background: var(--om-surface, #fff);
+}
+
+.vendor-preview-table td {
+    overflow-wrap: anywhere;
+    vertical-align: top;
+}
+
+.vendor-preview-col-row { width: 90px; }
+.vendor-preview-col-company { width: 220px; }
+.vendor-preview-col-contact { width: 190px; }
+.vendor-preview-col-email { width: 240px; }
+.vendor-preview-col-phone { width: 165px; }
+.vendor-preview-col-gstin { width: 190px; }
+.vendor-preview-col-state { width: 190px; }
+.vendor-preview-col-address { width: 270px; }
+.vendor-preview-col-status { width: 125px; }
+.vendor-preview-col-errors { width: 340px; }
+
+.vendor-preview-errors,
+.vendor-preview-errors details,
+.vendor-preview-errors ul {
+    max-width: 340px;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.vendor-preview-errors ul li + li {
+    margin-top: 0.4rem;
+}
+
+@media (max-width: 576px) {
+    .vendor-bulk-upload-dialog {
+        width: 95vw;
+        max-height: 85vh;
+        margin: 7.5vh auto;
+    }
+
+    .vendor-preview-table {
+        min-width: 1950px;
+    }
+}
