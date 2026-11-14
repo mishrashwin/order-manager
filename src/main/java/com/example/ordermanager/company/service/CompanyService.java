@@ -2,6 +2,8 @@ package com.example.ordermanager.company.service;
 
 import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.company.entity.CompanyApprovalStatus;
+import com.example.ordermanager.company.entity.CompanyAddress;
+import com.example.ordermanager.company.repository.CompanyAddressRepository;
 import com.example.ordermanager.company.repository.CompanyRepository;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.service.EmailService;
@@ -28,16 +30,20 @@ public class CompanyService {
   private static final Logger log = LoggerFactory.getLogger(CompanyService.class);
 
   private final CompanyRepository companyRepository;
+  private final CompanyAddressRepository companyAddressRepository;
   private final UserService userService;
   private final EmailService emailService;
   private final BCryptPasswordEncoder passwordEncoder;
   private final String ownerEmail;
   private final String appBaseUrl;
 
-  public CompanyService(CompanyRepository companyRepository, UserService userService,
+  /** Wires Company lifecycle services and the address repository used for initial defaults. */
+  public CompanyService(CompanyRepository companyRepository,
+      CompanyAddressRepository companyAddressRepository, UserService userService,
       EmailService emailService, @Value("${app.owner.email}") String ownerEmail,
       @Value("${app.base.url}") String appBaseUrl) {
     this.companyRepository = companyRepository;
+    this.companyAddressRepository = companyAddressRepository;
     this.userService = userService;
     this.emailService = emailService;
     this.ownerEmail = ownerEmail;
@@ -46,12 +52,12 @@ public class CompanyService {
   }
 
   /**
-   * Register a new company (tenant). This creates the company entry in the system. The first admin
-   * user will then be assigned to this company.
+   * Registers a tenant and its initial active dual-default address for later address completion.
    *
    * @param company Company object with at least name field
    * @return Created Company entity
    */
+  @Transactional
   public Company registerCompany(Company company) {
     // Validate company name is unique
     if (companyRepository.findByName(company.getName()).isPresent()) {
@@ -65,7 +71,9 @@ public class CompanyService {
     company.setApprovedAt(null);
     company.setApprovedBy(null);
 
-    return companyRepository.save(company);
+    Company savedCompany = companyRepository.save(company);
+    seedInitialAddress(savedCompany);
+    return savedCompany;
   }
 
   /**
@@ -109,6 +117,7 @@ public class CompanyService {
     company.setApprovedAt(null);
     company.setApprovedBy(null);
     Company savedCompany = companyRepository.save(company);
+    seedInitialAddress(savedCompany);
 
     // Step 4: Prepare admin user
     adminUser.setCompany(savedCompany); // Assign to company (MUST be set BEFORE saving)
@@ -288,6 +297,21 @@ public class CompanyService {
   public boolean canUsersLogin(Company company) {
     return company != null && company.isActive()
         && CompanyApprovalStatus.APPROVED.equals(company.getApprovalStatus());
+  }
+
+  /** Creates the initial active dual-default address for a newly registered Company. */
+  private void seedInitialAddress(Company company) {
+    CompanyAddress address = new CompanyAddress();
+    address.setCompany(company);
+    address.setNickname("Legacy Address");
+    address.setAddressLine1(company.getAddress());
+    address.setState(company.getState());
+    address.setGstin(company.getGstn());
+    address.setCountry("India");
+    address.setActive(true);
+    address.setDefaultBillTo(true);
+    address.setDefaultShipTo(true);
+    companyAddressRepository.save(address);
   }
 
   /**

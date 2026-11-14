@@ -45,7 +45,7 @@
                     class="btn btn-outline-primary om-btn-icon"
                     data-bs-toggle="modal"
                     data-bs-target="#termsConditionsModal"
-                    title="Configure Terms & Conditions">
+                    title="Configure default Vendor PO Terms & Conditions">
               <i class="bi bi-file-text"></i> Terms & Conditions
             </button>
           </div>
@@ -196,13 +196,21 @@
                 <div class="d-flex gap-1 justify-content-center flex-wrap">
 
                   <!-- Edit -->
-                  <a th:href="@{/vendor/pos/{id}/edit(id=${po.id})}"
+                  <a th:if="${po.status.name() == 'DRAFT'}" th:href="@{/vendor/pos/{id}/edit(id=${po.id})}"
                      class="btn btn-outline-primary btn-sm"
                      title="Edit PO"
                      data-no-ajax="true"
                      onclick="window.location=this.href;">
                     <i class="bi bi-pencil"></i>
                   </a>
+
+                  <a class="btn btn-outline-secondary btn-sm" th:href="@{/vendor/pos/{id}/revisions(id=${po.id})}" title="Revision history">
+                    <i class="bi bi-clock-history"></i>
+                  </a>
+                  <form th:if="${po.status.name() != 'DRAFT'}" th:action="@{/vendor/pos/{id}/revise(id=${po.id})}" method="post" style="display:inline">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <button class="btn btn-outline-warning btn-sm" title="Create amendment"><i class="bi bi-file-earmark-plus"></i></button>
+                  </form>
 
                   <!-- Download — filename built server-side as VendorName_PoNumber.pdf -->
                   <a th:href="@{/vendor/pos/{id}/download(id=${po.id})}"
@@ -376,7 +384,7 @@
       <div class="modal-content">
         <div class="modal-header bg-primary text-white">
           <h5 class="modal-title" id="termsConditionsModalLabel">
-            <i class="bi bi-file-text me-2"></i>Configure Terms & Conditions
+            <i class="bi bi-file-text me-2"></i>Configure default Vendor PO Terms & Conditions
           </h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>

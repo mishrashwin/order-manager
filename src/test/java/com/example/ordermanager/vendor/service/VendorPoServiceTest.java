@@ -1,6 +1,8 @@
 package com.example.ordermanager.vendor.service;
 
 import com.example.ordermanager.company.entity.Company;
+import com.example.ordermanager.company.entity.CompanyAddress;
+import com.example.ordermanager.company.repository.CompanyAddressRepository;
 import com.example.ordermanager.company.repository.CompanyRepository;
 import com.example.ordermanager.product.entity.Product;
 import com.example.ordermanager.product.repository.ProductRepository;
@@ -12,6 +14,10 @@ import com.example.ordermanager.vendor.entity.VendorPoStatus;
 import com.example.ordermanager.vendor.repository.VendorPoRepository;
 import com.example.ordermanager.vendor.repository.VendorRepository;
 import com.example.ordermanager.vendor.service.impl.VendorPoServiceImpl;
+import com.example.ordermanager.vendor.service.VendorPoCalculationService;
+import com.example.ordermanager.vendor.repository.VendorPoTermsTemplateRepository;
+import com.example.ordermanager.vendor.repository.VendorPoDeliveryTermRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,6 +47,8 @@ class VendorPoServiceTest {
   @Mock
   CompanyRepository companyRepository;
   @Mock
+  CompanyAddressRepository companyAddressRepository;
+  @Mock
   ProductRepository productRepository;
   @Mock
   com.example.ordermanager.user.repository.UserRepository userRepository;
@@ -50,27 +58,51 @@ class VendorPoServiceTest {
   com.example.ordermanager.vendor.service.VendorPdfService vendorPdfService;
   @Mock
   com.example.ordermanager.utils.Helper helper;
+  @Mock
+  VendorPoTermsTemplateRepository termsTemplateRepository;
+  @Mock
+  VendorPoDeliveryTermRepository deliveryTermRepository;
 
   VendorPoServiceImpl service;
   private Company testCompany;
   private Vendor testVendor;
   private VendorPo testVendorPo;
+  private CompanyAddress defaultAddress;
 
   @BeforeEach
   void setUp() {
-    service = new VendorPoServiceImpl(vendorPoRepository, vendorRepository, companyRepository,
-        productRepository, userRepository, securityContextHelper, vendorPdfService, helper);
+    service = new VendorPoServiceImpl(vendorPoRepository, companyAddressRepository,
+        vendorRepository, companyRepository, productRepository, userRepository,
+        securityContextHelper, vendorPdfService, helper, new VendorPoCalculationService(),
+        termsTemplateRepository, deliveryTermRepository, new ObjectMapper());
 
     // Setup test data
     testCompany = new Company();
     testCompany.setId(1L);
     testCompany.setName("Test Company");
+    testCompany.setGstn("COMPANY-GST");
 
     testVendor = new Vendor();
     testVendor.setId(1L);
     testVendor.setCompanyName("Test Vendor");
     testVendor.setEmail("vendor@test.com");
+    testVendor.setDefaultPaymentTerms("Net 30 days");
     testVendor.setCompany(testCompany);
+    defaultAddress = new CompanyAddress();
+    defaultAddress.setId(9L);
+    defaultAddress.setCompany(testCompany);
+    defaultAddress.setNickname("Main");
+    defaultAddress.setGstin("ADDRESS-GST");
+    defaultAddress.setDrugLicenseNumber("DL-1");
+    defaultAddress.setActive(true);
+    defaultAddress.setDefaultBillTo(true);
+    defaultAddress.setDefaultShipTo(true);
+    lenient().when(companyAddressRepository.findByCompany_IdAndActiveTrueAndDefaultBillToTrue(1L))
+        .thenReturn(Optional.of(defaultAddress));
+    lenient().when(companyAddressRepository.findByCompany_IdAndActiveTrueAndDefaultShipToTrue(1L))
+        .thenReturn(Optional.of(defaultAddress));
+    lenient().when(companyAddressRepository.findByIdAndCompany_Id(9L, 1L))
+        .thenReturn(Optional.of(defaultAddress));
 
     testVendorPo = new VendorPo();
     testVendorPo.setId(1L);
@@ -80,31 +112,42 @@ class VendorPoServiceTest {
     testVendorPo.setDeliveryDate(LocalDate.now().plusWeeks(2));
     testVendorPo.setStatus(VendorPoStatus.DRAFT);
     testVendorPo.setTotalAmount(1000.00);
+    testVendorPo.setFreightIncluded(true);
+    testVendorPo.setFreightTaxable(false);
+    testVendorPo.setPackingIncluded(true);
+    testVendorPo.setPackingTaxable(false);
+    testVendorPo.setBillToAddress(defaultAddress);
+    testVendorPo.setShipToAddress(defaultAddress);
   }
 
   @Test
   void createVendorPo_callsSave() {
+    testVendorPo.setId(null);
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
     when(companyRepository.findById(1L)).thenReturn(Optional.of(testCompany));
-    when(vendorRepository.findById(1L)).thenReturn(Optional.of(testVendor));
-    when(vendorPoRepository.countByCompany_Id(1L)).thenReturn(0L);
+    when(vendorRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(testVendor));
+    when(vendorPoRepository.countByCompany_IdAndRevisionNumber(1L, 0)).thenReturn(0L);
     when(helper.extractInitials("Test Company")).thenReturn("TC");
     when(vendorPoRepository.save(any(VendorPo.class))).thenAnswer(i -> i.getArgument(0));
 
     VendorPo result = service.createVendorPo(testVendorPo);
 
-    verify(vendorPoRepository, times(1)).save(testVendorPo);
+    verify(vendorPoRepository, times(2)).save(testVendorPo);
     assertEquals(testCompany, result.getCompany());
     assertEquals(VendorPoStatus.DRAFT, result.getStatus());
     assertEquals("TC001", result.getPoNumber());
+    assertEquals("ADDRESS-GST", result.getBuyerGstin());
+    assertEquals("DL-1", result.getBillToSnapshot().getDrugLicenseNumber());
+    assertEquals("Net 30 days", result.getPaymentTerms());
   }
 
   @Test
   void createVendorPo_withItems_calculatesTotals() {
+    testVendorPo.setId(null);
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
     when(companyRepository.findById(1L)).thenReturn(Optional.of(testCompany));
-    when(vendorRepository.findById(1L)).thenReturn(Optional.of(testVendor));
-    when(vendorPoRepository.countByCompany_Id(1L)).thenReturn(0L);
+    when(vendorRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(testVendor));
+    when(vendorPoRepository.countByCompany_IdAndRevisionNumber(1L, 0)).thenReturn(0L);
     when(helper.extractInitials("Test Company")).thenReturn("TC");
     when(vendorPoRepository.save(any(VendorPo.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -121,8 +164,8 @@ class VendorPoServiceTest {
 
     VendorPo result = service.createVendorPo(testVendorPo);
 
-    assertEquals(0, new BigDecimal("800.00").compareTo(BigDecimal.valueOf(result.getTotalAmount())));
-    verify(vendorPoRepository).save(testVendorPo);
+    assertEquals(0, new BigDecimal("800.00").compareTo(result.getTotalAmount()));
+    verify(vendorPoRepository, times(2)).save(testVendorPo);
   }
 
   @Test
@@ -148,27 +191,63 @@ class VendorPoServiceTest {
   void listVendorPos_returnsPagedResults() {
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
     Page<VendorPo> expectedPage = new PageImpl<>(Arrays.asList(testVendorPo));
-    when(vendorPoRepository.findByCompany_Id(eq(1L), any(PageRequest.class))).thenReturn(expectedPage);
+    when(vendorPoRepository.findByCompany_IdAndCurrentRevisionTrue(eq(1L), any(PageRequest.class)))
+        .thenReturn(expectedPage);
 
     Page<VendorPo> result = service.listVendorPos(null, null, PageRequest.of(0, 50));
 
     assertEquals(expectedPage, result);
-    verify(vendorPoRepository).findByCompany_Id(eq(1L), any(PageRequest.class));
+    verify(vendorPoRepository).findByCompany_IdAndCurrentRevisionTrue(eq(1L), any(PageRequest.class));
   }
 
   @Test
   void updateVendorPo_updatesExistingPo() {
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
     when(vendorPoRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(testVendorPo));
-    when(vendorRepository.findById(1L)).thenReturn(Optional.of(testVendor));
+    when(vendorRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(testVendor));
+    when(companyRepository.findById(1L)).thenReturn(Optional.of(testCompany));
     when(vendorPoRepository.save(any(VendorPo.class))).thenAnswer(i -> i.getArgument(0));
 
+    testVendorPo.getBillToSnapshot().setAddressLine1("Frozen address line");
     testVendorPo.setNote("Updated note");
     VendorPo result = service.updateVendorPo(1L, testVendorPo);
 
     assertEquals("Updated note", result.getNote());
     assertEquals("PO-001", result.getPoNumber()); // PO number should remain unchanged
+    assertEquals("Frozen address line", result.getBillToSnapshot().getAddressLine1());
     verify(vendorPoRepository).save(testVendorPo);
+  }
+
+  // Verifies that issued or otherwise non-DRAFT POs cannot be mutated.
+  @Test
+  void updateVendorPo_rejectsEveryNonDraftStatusWithoutSaving() {
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
+    when(vendorPoRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(testVendorPo));
+
+    for (VendorPoStatus status : VendorPoStatus.values()) {
+      if (status == VendorPoStatus.DRAFT) {
+        continue;
+      }
+      testVendorPo.setStatus(status);
+
+      IllegalStateException exception = assertThrows(IllegalStateException.class,
+          () -> service.updateVendorPo(1L, new VendorPo()));
+
+      assertEquals("Only DRAFT Vendor POs can be updated", exception.getMessage());
+      verify(vendorPoRepository, never()).save(any(VendorPo.class));
+    }
+  }
+
+  // Verifies that a tenant cannot update a PO owned by another company.
+  @Test
+  void updateVendorPo_rejectsPoOutsideAuthenticatedCompany() {
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
+    when(vendorPoRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.empty());
+
+    assertThrows(IllegalStateException.class,
+        () -> service.updateVendorPo(1L, new VendorPo()));
+
+    verify(vendorPoRepository, never()).save(any(VendorPo.class));
   }
 
   @Test
@@ -184,7 +263,7 @@ class VendorPoServiceTest {
   @Test
   void changeStatus_updatesStatus() {
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
-    when(vendorPoRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(testVendorPo));
+    when(vendorPoRepository.findLockedByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(testVendorPo));
     when(vendorPoRepository.save(any(VendorPo.class))).thenAnswer(i -> i.getArgument(0));
 
     VendorPo result = service.changeStatus(1L, VendorPoStatus.SENT);
@@ -217,10 +296,11 @@ class VendorPoServiceTest {
 
   @Test
   void createVendorPo_withVendor_setsVendorDetails() {
+    testVendorPo.setId(null);
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
     when(companyRepository.findById(1L)).thenReturn(Optional.of(testCompany));
-    when(vendorRepository.findById(1L)).thenReturn(Optional.of(testVendor));
-    when(vendorPoRepository.countByCompany_Id(1L)).thenReturn(0L);
+    when(vendorRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(testVendor));
+    when(vendorPoRepository.countByCompany_IdAndRevisionNumber(1L, 0)).thenReturn(0L);
     when(helper.extractInitials("Test Company")).thenReturn("TC");
     when(vendorPoRepository.save(any(VendorPo.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -233,10 +313,11 @@ class VendorPoServiceTest {
 
   @Test
   void createVendorPo_withItems_setsItemDetails() {
+    testVendorPo.setId(null);
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
     when(companyRepository.findById(1L)).thenReturn(Optional.of(testCompany));
-    when(vendorRepository.findById(1L)).thenReturn(Optional.of(testVendor));
-    when(vendorPoRepository.countByCompany_Id(1L)).thenReturn(0L);
+    when(vendorRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(testVendor));
+    when(vendorPoRepository.countByCompany_IdAndRevisionNumber(1L, 0)).thenReturn(0L);
     when(helper.extractInitials("Test Company")).thenReturn("TC");
     when(vendorPoRepository.save(any(VendorPo.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -245,9 +326,11 @@ class VendorPoServiceTest {
     product.setName("Test Product");
     product.setHsnCode("HSN123");
     product.setUnit("PCS");
+    product.setCompany(testCompany);
+    when(productRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(product));
 
     VendorPoItem item = new VendorPoItem();
-    item.setProduct(product);
+    item.setProductId(product.getId());
     item.setQuantity(5.00);
     item.setUnitPrice(100.00);
 
@@ -257,6 +340,72 @@ class VendorPoServiceTest {
     assertEquals("Test Product", result.getItems().get(0).getProductName());
     assertEquals("HSN123", result.getItems().get(0).getHsnCode());
     assertEquals("PCS", result.getItems().get(0).getUnit());
+  }
+
+  /** Confirms an issued PO is retained while an independent editable revision is created. */
+  @Test
+  void createRevision_keepsPriorVersionAndCopiesDraft() {
+    testVendorPo.setStatus(VendorPoStatus.SENT);
+    testVendorPo.setCurrentRevision(true);
+    testVendorPo.setRevisionNumber(0);
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
+    when(securityContextHelper.getCurrentUsername()).thenReturn("admin");
+    when(vendorPoRepository.findLockedByIdAndCompany_Id(1L, 1L))
+        .thenReturn(Optional.of(testVendorPo));
+    when(vendorPoRepository.save(any(VendorPo.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    VendorPo revision = service.createRevision(1L);
+
+    assertFalse(testVendorPo.isCurrentRevision());
+    assertEquals(VendorPoStatus.SENT, testVendorPo.getStatus());
+    assertTrue(revision.isCurrentRevision());
+    assertEquals(VendorPoStatus.DRAFT, revision.getStatus());
+    assertEquals(1, revision.getRevisionNumber());
+    assertEquals(testVendorPo.getPoNumber(), revision.getPoNumber());
+  }
+
+  /** Rejects revision lookup when the requested PO is outside the authenticated tenant. */
+  @Test
+  void createRevision_rejectsOtherTenant() {
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
+    when(vendorPoRepository.findLockedByIdAndCompany_Id(99L, 1L)).thenReturn(Optional.empty());
+
+    assertThrows(IllegalArgumentException.class, () -> service.createRevision(99L));
+  }
+
+  /** Rejects Bill To and Ship To address IDs not found within the authenticated Company. */
+  @Test
+  void createVendorPo_rejectsCrossCompanyAddress() {
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
+    when(companyRepository.findById(1L)).thenReturn(Optional.of(testCompany));
+    when(vendorRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(testVendor));
+    when(vendorPoRepository.countByCompany_IdAndRevisionNumber(1L, 0)).thenReturn(0L);
+    when(helper.extractInitials("Test Company")).thenReturn("TC");
+    CompanyAddress foreignAddress = new CompanyAddress();
+    foreignAddress.setId(99L);
+    testVendorPo.setBillToAddress(foreignAddress);
+
+    assertThrows(IllegalArgumentException.class, () -> service.createVendorPo(testVendorPo));
+    verify(vendorPoRepository, never()).save(any(VendorPo.class));
+  }
+
+  /** Uses legacy Company GSTIN compatibility when the selected Bill To has no GSTIN. */
+  @Test
+  void createVendorPo_fallsBackToCompanyGstin() {
+    testVendorPo.setId(null);
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
+    when(companyRepository.findById(1L)).thenReturn(Optional.of(testCompany));
+    when(vendorRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(testVendor));
+    when(vendorPoRepository.countByCompany_IdAndRevisionNumber(1L, 0)).thenReturn(0L);
+    when(helper.extractInitials("Test Company")).thenReturn("TC");
+    when(vendorPoRepository.save(any(VendorPo.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    defaultAddress.setGstin(null);
+
+    VendorPo result = service.createVendorPo(testVendorPo);
+
+    assertEquals("COMPANY-GST", result.getBuyerGstin());
   }
 }
 

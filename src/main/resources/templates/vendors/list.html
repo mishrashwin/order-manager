@@ -512,7 +512,12 @@
               if (input.value.trim()) formData.append('termsConditions', input.value.trim());
           });
 
-          fetch(form.action, { method: 'POST', body: formData })
+          const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+          const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+          const headers = {'Accept': 'application/json'};
+          if (csrfToken && csrfHeader) headers[csrfHeader] = csrfToken;
+
+          fetch(form.action, { method: 'POST', headers: headers, body: formData })
               .then(response => {
                   if (!response.ok) throw new Error(`Request failed (${response.status})`);
                   return response.json();

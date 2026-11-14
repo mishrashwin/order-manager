@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:with="page='admin-company-addresses'">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Addresses | Admin Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="~{fragments/unified-navbar :: unified-navbar}"></div>
+<div class="main-content">
+    <div class="content-header">
+        <h1><i class="bi bi-geo-alt"></i> Company Addresses</h1>
+        <div class="d-flex gap-2">
+            <a class="btn btn-secondary" th:href="@{/admin/company}"><i class="bi bi-arrow-left"></i> Back to Company</a>
+            <a class="btn btn-primary" th:href="@{/admin/company/addresses/new}"><i class="bi bi-plus-circle"></i> Add Address</a>
+        </div>
+    </div>
+
+    <div th:if="${message}" class="alert alert-success" role="status" th:text="${message}"></div>
+    <div th:if="${error}" class="alert alert-danger" role="alert" th:text="${error}"></div>
+
+    <div class="unified-card">
+        <div class="table-responsive">
+            <table class="table unified-table align-middle">
+                <thead>
+                <tr>
+                    <th>Nickname / Address</th>
+                    <th>GSTIN</th>
+                    <th>Drug License Number</th>
+                    <th>Status</th>
+                    <th>Defaults</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="address : ${addresses}">
+                    <td>
+                        <strong th:text="${address.nickname}">Head Office</strong><br>
+                        <span th:if="${address.addressLine1 != null}" th:text="${address.addressLine1}"></span>
+                        <span th:if="${address.addressLine2 != null}" th:text="${', ' + address.addressLine2}"></span><br>
+                        <span th:text="${(address.city != null ? address.city : '') + (address.state != null ? ', ' + address.state.displayName : '') + (address.postalCode != null ? ' ' + address.postalCode : '')}"></span>
+                        <span th:if="${address.country != null}" th:text="${', ' + address.country}"></span>
+                        <span th:if="${address.stateCode != null}" class="text-muted small" th:text="${' · GST state code ' + address.stateCode}"></span>
+                    </td>
+                    <td th:text="${address.gstin != null and !address.gstin.isBlank() ? address.gstin : 'Not provided'}">Not provided</td>
+                    <td th:text="${address.drugLicenseNumber != null and !address.drugLicenseNumber.isBlank() ? address.drugLicenseNumber : 'Not provided'}">Not provided</td>
+                    <td>
+                        <span th:if="${address.active}" class="badge bg-success">Active</span>
+                        <span th:unless="${address.active}" class="badge bg-secondary">Inactive</span>
+                    </td>
+                    <td>
+                        <span th:if="${address.defaultBillTo}" class="badge bg-primary me-1">Bill To</span>
+                        <span th:if="${address.defaultShipTo}" class="badge bg-info text-dark">Ship To</span>
+                        <span th:unless="${address.defaultBillTo or address.defaultShipTo}" class="text-muted">—</span>
+                    </td>
+                    <td>
+                        <div class="d-flex flex-wrap gap-1">
+                            <a th:if="${address.active}" class="btn btn-sm btn-outline-secondary"
+                               th:href="@{/admin/company/addresses/{id}/edit(id=${address.id})}">Edit</a>
+                            <form th:if="${address.active and !address.defaultBillTo}" method="post"
+                                  th:action="@{/admin/company/addresses/{id}/default-bill-to(id=${address.id})}">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <button class="btn btn-sm btn-outline-primary" type="submit">Set Bill To</button>
+                            </form>
+                            <form th:if="${address.active and !address.defaultShipTo}" method="post"
+                                  th:action="@{/admin/company/addresses/{id}/default-ship-to(id=${address.id})}">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <button class="btn btn-sm btn-outline-info" type="submit">Set Ship To</button>
+                            </form>
+                            <form th:if="${address.active}"
+                                  method="post" th:action="@{/admin/company/addresses/{id}/deactivate(id=${address.id})}"
+                                  onsubmit="return confirm('Deactivate this Company address?');">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <button class="btn btn-sm btn-outline-danger" type="submit">Deactivate</button>
+                            </form>
+                            <form th:unless="${address.active}" method="post"
+                                  th:action="@{/admin/company/addresses/{id}/activate(id=${address.id})}">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <button class="btn btn-sm btn-outline-success" type="submit">Activate</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(addresses)}">
+                    <td colspan="6" class="text-center text-muted py-4">No Company addresses are configured.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<div th:replace="~{fragments/footer :: footer}"></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

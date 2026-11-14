@@ -221,6 +221,8 @@ Example:
 ```
 
 ## 5.3 Dynamic Row Addition
+For repeated product entry rows with several related fields, use a semantic table with visible column headings and a horizontally scrollable wrapper on narrow viewports. Keep each row aligned with the same columns, including client-generated rows. Place secondary per-item fields such as delivery date beneath the product selector when that improves scanning; do not stack unrelated fields in an unlabeled narrow grid cell.
+
 For forms with dynamic rows (e.g., PO line items):
 - Use JavaScript to add/remove rows
 - Maintain proper Thymeleaf field naming for binding
@@ -403,3 +405,12 @@ This document is enforceable.
 
 If any guideline is violated:
 👉 REJECT PR
+
+## Vendor PO address, commercial, and revision forms
+- Tenant-owned choices such as Bill To and Ship To must be selected from server-provided Company-scoped lists; server services remain authoritative for submitted IDs. Company-wide default Vendor PO terms are managed from the list page, not selected or edited per PO. Delivery terms are entered or selected within the PO form.
+- Forms must require explicit Included/Excluded and Taxable/Non-taxable charge choices. Show a GST rate field only as required by the chosen treatment and return clear validation feedback when required data is missing.
+- Provide a Company ADMIN management control for default PO Terms & Conditions on the Vendor Purchase Orders list. Keep delivery terms in the PO form.
+- Show issued revisions as read-only, expose amendment creation as a separate action, and keep DRAFT editing actions limited to the current revision.
+
+## Vendor PO default terms management
+- Company-wide default Vendor PO Terms & Conditions are created and edited from the Terms & Conditions control on the Vendor Purchase Orders list. Do not expose duplicate default-term editors or per-PO template selection/editor controls on PO create/edit forms. Keep delivery-term selection separate because it describes delivery logistics rather than legal terms.

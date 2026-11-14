@@ -14,6 +14,7 @@ import com.example.ordermanager.vendor.entity.VendorPo;
 import com.example.ordermanager.vendor.entity.VendorPoItem;
 import com.example.ordermanager.vendor.entity.VendorPoStatus;
 import com.example.ordermanager.vendor.service.VendorPoService;
+import com.example.ordermanager.vendor.service.VendorPoSettingsService;
 import com.example.ordermanager.vendor.service.VendorService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -42,12 +43,15 @@ public class VendorPoController {
   private final ProductService productService;
   private final SecurityContextHelper securityContextHelper;
   private final PasswordVerificationService passwordVerificationService;
+  private final VendorPoSettingsService settingsService;
 
+  /** Wires PO lifecycle, tenant-owned form choices, and notification collaborators. */
   public VendorPoController(VendorPoService vendorPoService, BrevoEmailService brevoEmailService,
       UserService userService, CompanyService companyService, CompanyRepository companyRepository,
       VendorService vendorService, ProductService productService,
       SecurityContextHelper securityContextHelper,
-      PasswordVerificationService passwordVerificationService) {
+      PasswordVerificationService passwordVerificationService,
+      VendorPoSettingsService settingsService) {
     this.vendorPoService = vendorPoService;
     this.brevoEmailService = brevoEmailService;
     this.userService = userService;
@@ -57,6 +61,7 @@ public class VendorPoController {
     this.productService = productService;
     this.securityContextHelper = securityContextHelper;
     this.passwordVerificationService = passwordVerificationService;
+    this.settingsService = settingsService;
   }
 
   // ── List (AJAX fragment) ────────────────────────────────────────────────────
@@ -77,6 +82,7 @@ public class VendorPoController {
 
   // ── Create ─────────────────────────────────────────────────────────────────
 
+  /** Builds a new draft form with Company-scoped addresses and commercial choices. */
   @GetMapping("/new")
   public String createForm(Model model) {
     Long companyId = securityContextHelper.getCompanyIdFromContext();
@@ -84,21 +90,31 @@ public class VendorPoController {
     model.addAttribute("vendors", vendorService.getVendorsByCompanyId(companyId));
     model.addAttribute("products", productService.getProductsByCompanyId(companyId));
     model.addAttribute("users", userService.getUsersByCompany(companyId));
+    addCommercialChoices(model);
     return "vendor/pos-form-new";
   }
 
+  /** Creates a PO draft after validating tenant-owned commercial selections. */
   @PostMapping
   public String create(@ModelAttribute VendorPo vendorPo,
       @RequestParam(required = false) List<Long> itemProductIds,
-      @RequestParam(required = false) List<Double> itemQuantities,
-      @RequestParam(required = false) List<Double> itemPreGstUnitPrices,
+      @RequestParam(required = false) List<java.math.BigDecimal> itemQuantities,
+      @RequestParam(required = false) List<java.math.BigDecimal> itemPreGstUnitPrices,
       @RequestParam(required = false) List<String> itemHsnCodes,
       @RequestParam(required = false) List<String> itemUnits,
+      @RequestParam(required = false) List<java.math.BigDecimal> itemPricingUnits,
+      @RequestParam(required = false) List<java.time.LocalDate> itemDeliveryDates,
       @RequestParam(required = false) String send, RedirectAttributes ra) {
 
     buildVendorPoItems(vendorPo, itemProductIds, itemQuantities, itemPreGstUnitPrices, itemHsnCodes,
-        itemUnits);
-    VendorPo saved = vendorPoService.createVendorPo(vendorPo);
+        itemUnits, itemPricingUnits, itemDeliveryDates);
+    VendorPo saved;
+    try {
+      saved = vendorPoService.createVendorPo(vendorPo);
+    } catch (IllegalArgumentException | IllegalStateException exception) {
+      ra.addFlashAttribute("poError", exception.getMessage());
+      return "redirect:/vendor/pos/new";
+    }
 
     // Send email if requested
     if ("true".equalsIgnoreCase(send) || "1".equals(send)) {
@@ -111,28 +127,36 @@ public class VendorPoController {
 
   // ── Edit ───────────────────────────────────────────────────────────────────
 
+  /** Loads an editable draft and the current Company-scoped PO form choices. */
   @GetMapping("/{id}/edit")
-  public String editForm(@PathVariable Long id, Model model) {
+  public String editForm(@PathVariable Long id, Model model, RedirectAttributes attributes) {
     Long companyId = securityContextHelper.getCompanyIdFromContext();
     VendorPo po = vendorPoService.getVendorPoById(id);
+    if (po.getStatus() != VendorPoStatus.DRAFT || !po.isCurrentRevision()) {
+      attributes.addFlashAttribute("poError", "Only the current DRAFT revision can be edited.");
+      return "redirect:/vendors#vendor-po";
+    }
     model.addAttribute("vendorPo", po);
     model.addAttribute("vendors", vendorService.getVendorsByCompanyId(companyId));
     model.addAttribute("products", productService.getProductsByCompanyId(companyId));
     model.addAttribute("users", userService.getUsersByCompany(companyId));
+    addCommercialChoices(model);
     return "vendor/pos-form-new";
   }
 
   /**
-   * FIX 1 & 2: Dedicated update endpoint (mirrors POST /orders/update/{id}). No longer shares the
-   * create POST, and no longer force-resets status to DRAFT.
+   * Updates a DRAFT Vendor PO; service validation rejects edits to every non-DRAFT status.
    */
   @PostMapping("/update/{id}")
   public String update(@PathVariable Long id, @ModelAttribute VendorPo vendorPo,
       @RequestParam(required = false) List<Long> itemProductIds,
-      @RequestParam(required = false) List<Double> itemQuantities,
-      @RequestParam(required = false) List<Double> itemPreGstUnitPrices,
+      @RequestParam(required = false) List<java.math.BigDecimal> itemQuantities,
+      @RequestParam(required = false) List<java.math.BigDecimal> itemPreGstUnitPrices,
       @RequestParam(required = false) List<String> itemHsnCodes,
-      @RequestParam(required = false) List<String> itemUnits, Model model, RedirectAttributes ra) {
+      @RequestParam(required = false) List<String> itemUnits,
+      @RequestParam(required = false) List<java.math.BigDecimal> itemPricingUnits,
+      @RequestParam(required = false) List<java.time.LocalDate> itemDeliveryDates, Model model,
+      RedirectAttributes ra) {
 
     Long companyId = securityContextHelper.getCompanyIdFromContext();
     VendorPo existing = vendorPoService.getVendorPoById(id);
@@ -142,21 +166,48 @@ public class VendorPoController {
     }
 
     buildVendorPoItems(vendorPo, itemProductIds, itemQuantities, itemPreGstUnitPrices, itemHsnCodes,
-        itemUnits);
+        itemUnits, itemPricingUnits, itemDeliveryDates);
 
     try {
       vendorPoService.updateVendorPo(id, vendorPo);
-      vendorPoService.changeStatus(id, VendorPoStatus.DRAFT);
       ra.addFlashAttribute("poMessage", "Vendor PO updated successfully");
       return "redirect:/vendors#vendor-po";
-    } catch (IllegalArgumentException e) {
+    } catch (IllegalArgumentException | IllegalStateException e) {
       model.addAttribute("poError", e.getMessage());
       model.addAttribute("vendorPo", vendorPo);
       model.addAttribute("vendors", vendorService.getVendorsByCompanyId(companyId));
       model.addAttribute("products", productService.getProductsByCompanyId(companyId));
       model.addAttribute("users", userService.getUsersByCompany(companyId));
+      addCommercialChoices(model);
       return "vendor/pos-form-new";
     }
+  }
+
+  /** Adds tenant-scoped address and delivery-term choices to create/edit form models. */
+  private void addCommercialChoices(Model model) {
+    model.addAttribute("companyAddresses", settingsService.getActiveAddresses());
+    model.addAttribute("poDeliveryTerms", settingsService.getActiveDeliveryTerms());
+  }
+
+  /** Creates a new editable revision while preserving the prior issued PO version. */
+  @PostMapping("/{id}/revise")
+  public String createRevision(@PathVariable Long id, RedirectAttributes attributes) {
+    try {
+      VendorPo revision = vendorPoService.createRevision(id);
+      attributes.addFlashAttribute("poMessage", "Revision created.");
+      return "redirect:/vendor/pos/" + revision.getId() + "/edit";
+    } catch (IllegalArgumentException | IllegalStateException exception) {
+      attributes.addFlashAttribute("poError", exception.getMessage());
+      return "redirect:/vendors#vendor-po";
+    }
+  }
+
+  /** Displays Company-scoped revision history for one logical Vendor PO. */
+  @GetMapping("/{id}/revisions")
+  public String revisionHistory(@PathVariable Long id, Model model) {
+    model.addAttribute("revisions", vendorPoService.getRevisionHistory(id));
+    model.addAttribute("po", vendorPoService.getVendorPoById(id));
+    return "vendor/po-revisions";
   }
 
   // ── Download ───────────────────────────────────────────────────────────────
@@ -300,8 +351,9 @@ public class VendorPoController {
    * Builds VendorPoItem objects from form arrays and attaches them to the vendor PO.
    */
   private void buildVendorPoItems(VendorPo vendorPo, List<Long> itemProductIds,
-      List<Double> itemQuantities, List<Double> itemPreGstUnitPrices, List<String> itemHsnCodes,
-      List<String> itemUnits) {
+      List<java.math.BigDecimal> itemQuantities, List<java.math.BigDecimal> itemPreGstUnitPrices,
+      List<String> itemHsnCodes, List<String> itemUnits, List<java.math.BigDecimal> pricingUnits,
+      List<java.time.LocalDate> deliveryDates) {
 
     vendorPo.getItems().clear();
 
@@ -314,11 +366,12 @@ public class VendorPoController {
       if (productId == null)
         continue;
 
-      Double qty =
+      java.math.BigDecimal qty =
           (itemQuantities != null && i < itemQuantities.size()) ? itemQuantities.get(i) : null;
-      Double preGstUnitPrice = (itemPreGstUnitPrices != null && i < itemPreGstUnitPrices.size())
-          ? itemPreGstUnitPrices.get(i)
-          : null;
+      java.math.BigDecimal preGstUnitPrice =
+          (itemPreGstUnitPrices != null && i < itemPreGstUnitPrices.size())
+              ? itemPreGstUnitPrices.get(i)
+              : null;
       String hsnCode =
           (itemHsnCodes != null && i < itemHsnCodes.size()) ? itemHsnCodes.get(i) : null;
       String unit = (itemUnits != null && i < itemUnits.size()) ? itemUnits.get(i) : null;
@@ -340,10 +393,23 @@ public class VendorPoController {
       // Allow form-overridden HSN/unit (form fields are editable)
       if (hsnCode != null && !hsnCode.isBlank())
         item.setHsnCode(hsnCode);
-      if (unit != null && !unit.isBlank())
+      if (unit != null && !unit.isBlank()) {
+        // Validate unit against allowed values
+        java.util.Set<String> allowedUnits = java.util.Set.of("Nos.", "Box", "EA", "Crtn");
+        if (!allowedUnits.contains(unit)) {
+          throw new IllegalArgumentException(
+              "Unit must be one of: Nos., Box, EA, Crtn. Invalid value: " + unit);
+        }
         item.setUnit(unit);
+      }
       item.setQuantity(qty);
-      item.setPreGstUnitPrice(java.math.BigDecimal.valueOf(preGstUnitPrice));
+      item.setPreGstUnitPrice(preGstUnitPrice);
+      if (pricingUnits != null && i < pricingUnits.size() && pricingUnits.get(i) != null) {
+        item.setPricingUnit(pricingUnits.get(i));
+      }
+      if (deliveryDates != null && i < deliveryDates.size()) {
+        item.setDeliveryDate(deliveryDates.get(i));
+      }
       vendorPo.addItem(item);
     }
   }
@@ -381,6 +447,20 @@ public class VendorPoController {
         System.err.println("Admin lookup failed: " + e.getMessage());
       }
 
+      // Add Bill To and Ship To contact emails to CC
+      if (saved.getBillToSnapshot() != null && saved.getBillToSnapshot().getContactEmail() != null
+          && !saved.getBillToSnapshot().getContactEmail().isBlank()
+          && !ccEmails.contains(saved.getBillToSnapshot().getContactEmail())
+          && !toEmails.contains(saved.getBillToSnapshot().getContactEmail())) {
+        ccEmails.add(saved.getBillToSnapshot().getContactEmail());
+      }
+      if (saved.getShipToSnapshot() != null && saved.getShipToSnapshot().getContactEmail() != null
+          && !saved.getShipToSnapshot().getContactEmail().isBlank()
+          && !ccEmails.contains(saved.getShipToSnapshot().getContactEmail())
+          && !toEmails.contains(saved.getShipToSnapshot().getContactEmail())) {
+        ccEmails.add(saved.getShipToSnapshot().getContactEmail());
+      }
+
       if (!toEmails.isEmpty()) {
         Company company = companyService.getCompanyById(saved.getCompany().getId())
             .orElseThrow(() -> new RuntimeException("Company not found"));
@@ -388,7 +468,9 @@ public class VendorPoController {
         brevoEmailService.sendVendorPoEmail(saved, company, toEmails.toArray(new String[0]),
             ccEmails.toArray(new String[0]), pdf);
 
-        vendorPoService.changeStatus(saved.getId(), VendorPoStatus.SENT);
+        if (saved.getStatus() == VendorPoStatus.DRAFT) {
+          vendorPoService.changeStatus(saved.getId(), VendorPoStatus.SENT);
+        }
       }
     } catch (Exception e) {
       ra.addFlashAttribute("poError", "PO saved but email failed: " + e.getMessage());

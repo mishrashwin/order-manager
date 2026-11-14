@@ -10,6 +10,8 @@ import static org.mockito.Mockito.when;
 
 import com.example.ordermanager.company.entity.Company;
 import com.example.ordermanager.company.entity.CompanyApprovalStatus;
+import com.example.ordermanager.company.entity.CompanyAddress;
+import com.example.ordermanager.company.repository.CompanyAddressRepository;
 import com.example.ordermanager.company.repository.CompanyRepository;
 import com.example.ordermanager.user.entity.User;
 import com.example.ordermanager.user.service.EmailService;
@@ -30,6 +32,8 @@ class CompanyServiceTest {
   @Mock
   private CompanyRepository companyRepository;
   @Mock
+  private CompanyAddressRepository companyAddressRepository;
+  @Mock
   private UserService userService;
   @Mock
   private EmailService emailService;
@@ -38,8 +42,8 @@ class CompanyServiceTest {
 
   @BeforeEach
   void setUp() {
-    companyService = new CompanyService(companyRepository, userService, emailService,
-        "owner@example.com", "http://localhost:8080");
+    companyService = new CompanyService(companyRepository, companyAddressRepository, userService,
+        emailService, "owner@example.com", "http://localhost:8080");
   }
 
   @Test
@@ -62,6 +66,8 @@ class CompanyServiceTest {
       toSave.setId(1L);
       return toSave;
     });
+    when(companyAddressRepository.save(any(CompanyAddress.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
     when(userService.saveUserWithCompany(any(User.class))).thenAnswer(invocation -> {
       User toSave = invocation.getArgument(0);
       toSave.setId(10L);
@@ -86,6 +92,11 @@ class CompanyServiceTest {
 
     verify(emailService).sendNewCompanyRegistrationNotification(eq("owner@example.com"),
         eq(savedCompany), any(User.class), eq("http://localhost:8080/owner/companies"));
+    org.mockito.ArgumentCaptor<CompanyAddress> addressCaptor =
+        org.mockito.ArgumentCaptor.forClass(CompanyAddress.class);
+    verify(companyAddressRepository).save(addressCaptor.capture());
+    assertThat(addressCaptor.getValue().isDefaultBillTo()).isTrue();
+    assertThat(addressCaptor.getValue().isDefaultShipTo()).isTrue();
   }
 
   @Test
