@@ -48,3 +48,41 @@
 # Vendor bulk upload audit UI regression coverage
 - Admin dashboard exposes its original tile layout, and the Vendor Management tile opens a dedicated page containing only recent upload history and unresolved uploads; those sections are absent from the general vendor list.
 - Persisted result viewing opens the modal before rendering, ensuring the results layout is measured while visible; the modal renders summary counts and row-level validation/registration errors.
+# Vendor PO immediate SENT safety guard
+
+| Case | Behavior | Automated coverage |
+|---|---|---|
+| VPO-16 | DRAFT Vendor PO update remains allowed | `VendorPoServiceTest.updateVendorPo_updatesExistingPo` |
+| VPO-17 | SENT, APPROVED, REJECTED, and RECEIVED updates fail before persistence | `VendorPoServiceTest.updateVendorPo_rejectsEveryNonDraftStatusWithoutSaving` |
+| VPO-18 | Cross-tenant PO update is rejected by company-scoped lookup | `VendorPoServiceTest.updateVendorPo_rejectsPoOutsideAuthenticatedCompany` |
+| VPO-19 | MVC update never resets status and renders a controlled rejection for SENT edits | `VendorPoControllerTest.update_draftPoUpdatesWithoutChangingStatus`, `update_rejectedSentPoReturnsFormError` |
+
+# Company Address management
+
+| Case | Behavior | Automated coverage |
+|---|---|---|
+| CAD-01 | Create under authenticated Company, assign missing defaults, derive GST state code, and allow duplicate GSTIN values | `CompanyAddressServiceTest.createAddress_assignsMissingDefaultsAndCompanyOwnership`, `createAddress_allowsDuplicateGstinValues` |
+| CAD-02 | Edit address details without changing Company ownership | `CompanyAddressServiceTest.updateAddress_preservesCompanyOwnership` |
+| CAD-03 | Set Bill To and Ship To independently; one address can carry both roles | `CompanyAddressServiceTest.setDefaultBillTo_keepsAddressEligibleForBothRoles`, `setDefaultShipTo_updatesOnlyShipToRole` |
+| CAD-04 | Activate/deactivate without losing fields; require explicit reassignment of all default roles | `CompanyAddressServiceTest.activateAddress_preservesFieldsWithoutAssigningDefaults`, `deactivateAddress_marksNonDefaultInactive`, `deactivateAddress_rejectsCurrentDefault`, `deactivateAddress_rejectsDualDefaultUntilBothRolesAreMoved` |
+| CAD-05 | Reject cross-company reads and mutations and required-field validation failures | `CompanyAddressServiceTest.addressOperations_rejectAddressOutsideAuthenticatedCompany`, `createAddress_rejectsInvalidFormAtServiceBoundary`, `CompanyAddressControllerTest.create_missingRequiredFieldsReturnsValidationErrors` |
+| CAD-06 | Render management form, confirm create/default feedback, and restrict routes to ADMIN | `CompanyAddressControllerTest` |
+| CAD-07 | Backfill existing Company fields and active defaults; add optional Drug License column | `CompanyAddressMigrationPostgresTest.v32_backfillsLegacyAddressAndActiveDefaults`; V32/V33 applied to configured PostgreSQL |
+| CAD-08 | Company Details shows current active Bill To and its GSTIN, with legacy GSTIN compatibility fallback | `AdminControllerTest.viewCompany_displaysActiveBillToAddress`, `viewCompany_usesLegacyGstinCompatibilityFallback`, `CompanyAddressServiceTest.getDefaultBillToAddress_usesTenantAndActiveDefaultQuery` |
+
+# Vendor PO consolidated phases 2–8
+- PO addresses: default and explicit active address selection, inactive/cross-company address rejection, Buyer GSTIN precedence, Drug License snapshot, issue-time active check, and preservation after source edits.
+- Financials: explicit charge treatment, missing rate failures, line pricing unit, item delivery date, intra-state CGST/SGST, inter-state IGST, decimal totals, and paisa words.
+- Terms/revisions: Company-scoped settings, PO override snapshots, prior issued PDF stability, new DRAFT revision, deletion restore, and tenant-scoped history.
+- PDF: snapshot-only buyer/vendor/address/terms rendering, persisted tax totals, financial charges, address Drug License fields, and no live entity dependency.
+
+## Vendor PO product table and PDF layout
+- Verify create, edit, and dynamically added product rows align under labeled Product, HSN, Qty, Unit, Price per, Unit price, GST, Amount, and Action columns.
+- Verify form values and calculations remain intact, with exactly one product Unit field/column; Price per remains a separate pricing basis.
+- Verify generated PO PDF renders one Unit column, omits the separate Pricing Unit column, and places an item-specific delivery date on a separate line beneath its product name.
+
+
+## Vendor PO default Terms & Conditions entry point
+- Verify Company ADMIN can create/update the Company-wide default Terms & Conditions from the Vendor Purchase Orders list button and that newly saved PO PDFs use the configured default snapshot.
+- Verify the PO create/edit form has no terms template selector or per-PO terms editor; delivery terms remain available as a separate field.
+- Verify there is no separate Delivery Terms control/page on the PO list; the PO form retains its Delivery terms field.

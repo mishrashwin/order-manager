@@ -1,3 +1,16 @@
+## Vendor PO delivery terms entry point removal (2026-11-14)
+- Removed the separate Delivery Terms list button and settings page/controller. Delivery terms remain in PO create/edit.
+- Automated tests and browser verification: Not run.
+
+## Vendor PO terms editor consolidation (2026-11-14)
+- Kept the Vendor Purchase Orders list Terms & Conditions modal as the single visible editor for Company-wide default terms. Removed the duplicate per-PO template selector/editor and the second template management section from PO settings. Delivery-term settings remain separate.
+- Automated tests and manual browser/PDF checks: Not run in this session.
+
+## Vendor PO product entry and PDF layout (2026-11-14)
+- Replaced unlabeled stacked product inputs with a responsive table containing explicit column headers; create, edit, and JavaScript-added rows use the same structure.
+- Retained the separate Price per input used by line calculations while showing only one Unit column in the PDF. Item delivery date is rendered on a new line below the product name.
+- Automated tests and manual browser/PDF checks: Not run in this session.
+
 # Test Progress Log
 
 ## Vendor Bulk Upload Phase 8 (2026-11-01)
@@ -619,3 +632,41 @@ Notes
 # 2026-11-13 — Re-enable Vendor PO and PDF Tests
 - Removed the three explicit `@Disabled` annotations. Added isolated Brevo/owner/mail properties so the PDF integration context loads, normalized null PO item lists to empty lists for rendering, and completed the email-controller fixture with the persisted PO ID and tenant company.
 - Verification: `mvn "-Dtest=VendorPdfServiceIntegrationTest,VendorPoControllerTest" test` passed (28 tests, 0 failures/errors/skips); `mvn test` passed (313 tests, 0 failures/errors/skips).
+# Vendor PO Phase 0.1 — Immediate SENT Safety Guard (2026-11-13)
+
+- Added a service guard that allows edits only for `DRAFT`; `SENT`, `APPROVED`, `REJECTED`, and `RECEIVED` are rejected before mutation/persistence.
+- Removed the controller's post-update status reset and added a controlled form error path for service rejections.
+- Added service tests for all enum non-DRAFT states and tenant-scoped not-found behavior, plus controller tests for success and rejected SENT editing.
+- `mvn '-Dtest=VendorPoServiceTest,VendorPoControllerTest' test`: BUILD SUCCESS; 30 tests, 0 failures/errors/skips. Full suite not run. Maven logged an HTTP 401 for optional Flyway repository metadata; it did not prevent test execution.
+
+# Vendor PO Phase 1 — Company Multiple Addresses (2026-11-13)
+
+- Added Company Address entity, Company-scoped repository/service, ADMIN MVC management pages, address validation, default reassignment/deactivation rules, and initial dual-default records for new Company registration.
+- Added V32 migration with legacy address/GSTIN/state backfill and PostgreSQL partial unique indexes for active Bill To and Ship To defaults.
+- Added V33 optional Drug License Number storage, address activation that preserves metadata without changing defaults, explicit reassignment safeguards, and Company Details rendering from the authenticated tenant's active Bill To address.
+- `mvn '-DcompanyAddressMigrationTest=true' '-Dtest=CompanyAddressServiceTest,CompanyAddressControllerTest,CompanyAddressMigrationPostgresTest,CompanyServiceTest,CompanyLifecycleWorkflowTest,VendorPoServiceTest,VendorPoControllerTest' test`: BUILD SUCCESS; 69 tests, 0 failures/errors/skips.
+- `mvn '-DcompanyAddressMigrationTest=true' '-Dtest=CompanyAddressMigrationPostgresTest' test`: BUILD SUCCESS; isolated PostgreSQL schema migration/backfill assertions passed.
+- Applied V32 to configured PostgreSQL 18.4 database from V31: 1 Company, 1 legacy address, zero Companies missing active default Bill To/Ship To, zero legacy field mismatches; Flyway current version V32.
+- Dev-profile application startup against V32 passed Hibernate schema validation.
+- At the Phase 1 milestone, `mvn test` passed 344 tests and Phase 2 PO address snapshots were still pending; see the later consolidated phases below for completion.
+
+# Company Address Corrections (2026-11-13)
+
+- Added address activation that preserves stored fields and leaves defaults untouched; default addresses require explicit replacement of every role before deactivation.
+- Company Details now renders the active tenant Bill To address and uses its GSTIN with legacy Company GSTIN fallback. Optional Drug License Number is stored in additive V33 and exposed in address forms/list for future PO work only.
+- `mvn '-Dtest=CompanyAddressServiceTest,CompanyAddressControllerTest,AdminControllerTest' test`: 53 tests, 0 failures/errors/skips.
+- `mvn '-DcompanyAddressMigrationTest=true' '-Dtest=CompanyAddressMigrationPostgresTest' test`: 1 passed in an isolated PostgreSQL schema.
+- Configured PostgreSQL reports Flyway V33, the new nullable column, one Company with two addresses, and no missing active defaults. One existing address-line mismatch with the Company legacy field remains; GSTIN/state match.
+- `mvn test`: 351 tests, 0 failures/errors, 1 opt-in PostgreSQL migration test skipped. Manual browser QA was not run.
+
+## Vendor PO consolidated remaining phases (2026-11-13)
+- Implemented additive V34–V36 snapshot/commercial/revision/decimal migrations and Company-scoped PO settings, address snapshots, calculation service, revision workflow, and snapshot PDF path.
+- `mvn '-Dtest=VendorPoServiceTest,VendorPoControllerTest,VendorPoCalculationServiceTest,VendorPdfServiceIntegrationTest,VendorPdfServiceSnapshotTest,VendorPoSettingsServiceTest,CompanyAddressServiceTest,CompanyAddressControllerTest,AdminControllerTest' test`: 107 passed, 0 failures/errors/skips.
+- `mvn test`: 363 tests, 0 failures/errors, 2 opt-in PostgreSQL migration tests skipped.
+- `mvn '-DvendorPoMigrationTest=true' '-Dtest=VendorPoMigrationPostgresTest' test`: 1 passed; V34–V36 ran against and cleaned up an isolated PostgreSQL schema. The configured public schema remains at V33.
+- PDF tests verify snapshot context and PDF bytes; browser/manual QA remains unrun.
+
+## Vendor PO numeric schema validation correction (2026-11-13)
+- Fixed Hibernate startup validation mismatch where V35 `quantity NUMERIC(12,3)` was mapped as Java `Double`/FLOAT. `VendorPoItem.quantity` and form binding now use `BigDecimal`; a compatibility setter converts legacy Double callers at scale 3.
+- Focused PO/PDF/settings tests: 54 passed, 0 failures/errors/skips. Full suite: 363 tests, 0 failures/errors, 2 opt-in migration tests skipped.
+- Isolated V34–V36 PostgreSQL migration test passed and now asserts `pg_typeof(quantity) = numeric`.

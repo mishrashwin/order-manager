@@ -1755,3 +1755,7 @@ footer strong {
         min-width: 1950px;
     }
 }
+
+/* Keep Vendor PO product entry rows readable at desktop and mobile widths. */
+.vendor-po-product-table { min-width: 1100px; }
+.vendor-po-product-table th { white-space: nowrap; }

@@ -312,3 +312,23 @@ This document is enforceable.
 
 If any guideline is violated:
 👉 REJECT PR
+# Vendor PO lifecycle safety tests
+
+- Test that DRAFT Vendor POs remain editable and every other `VendorPoStatus` is rejected before persistence.
+- Test that update lookup is tenant-scoped and a PO absent from the authenticated company's lookup is not saved.
+- Test that MVC update reports a service rejection and never calls `changeStatus(..., DRAFT)` as part of editing.
+
+# Company Address management tests
+
+- Verify new addresses are assigned to the authenticated Company and cannot change Company ownership through an edit payload.
+- Verify default role changes serialize under a Company lock, active defaults remain unique, and one address may carry both roles.
+- Verify duplicate GSTIN values are accepted, inactive addresses cannot become defaults, and defaults must be reassigned before deactivation.
+- Verify cross-company reads and mutations fail using Company-scoped address lookups; include default and inactive-address failures.
+- Verify migration backfill preserves legacy Company address/GSTIN/state and creates active Bill To and Ship To defaults.
+- Verify activation preserves address/GSTIN/Drug License fields and does not assign a default; dual-default deactivation fails until both explicit replacements are active.
+- Verify Company Details reads the current active Bill To only, displays its GSTIN with legacy Company GSTIN fallback, and does not expose inactive addresses.
+- Verify the additive Drug License migration and form-to-entity persistence; no PO/PDF change is expected in this scope.
+
+## Vendor PO financial and lifecycle coverage
+- Cover explicit Included/Excluded and Taxable/Non-taxable charge choices, taxable-rate validation, intra/inter-state split, decimal rounding, and amount-in-words cents.
+- Verify cross-tenant ID rejection, snapshot stability after source edits, immutable issued PDF/revision history, and DRAFT-only edits.

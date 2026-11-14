@@ -11,7 +11,9 @@ import static org.mockito.Mockito.when;
 
 import com.example.ordermanager.admin.dto.ClientOrderStatDTO;
 import com.example.ordermanager.company.entity.Company;
+import com.example.ordermanager.company.entity.CompanyAddress;
 import com.example.ordermanager.company.service.CompanyService;
+import com.example.ordermanager.company.service.CompanyAddressService;
 import com.example.ordermanager.order.entity.OrderActivity;
 import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.entity.OrderStatus;
@@ -25,6 +27,7 @@ import com.example.ordermanager.utils.SecurityContextHelper;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,6 +52,8 @@ class AdminControllerTest {
   @Mock
   private CompanyService companyService;
   @Mock
+  private CompanyAddressService companyAddressService;
+  @Mock
   private SecurityContextHelper securityContextHelper;
   @Mock
   private OrderService orderService;
@@ -60,11 +65,12 @@ class AdminControllerTest {
 
   private AdminController adminController;
 
+  /** Creates the controller fixture with mocked services before each test. */
   @BeforeEach
   void setUp() {
-    adminController =
-        new AdminController(userService, companyService, securityContextHelper, orderService,
-            orderActivityService, passwordVerificationService, paymentService, "test-upi-id");
+    adminController = new AdminController(userService, companyService, companyAddressService,
+        securityContextHelper, orderService, orderActivityService, passwordVerificationService,
+        paymentService, "test-upi-id");
   }
 
   @Test
@@ -416,6 +422,46 @@ class AdminControllerTest {
     assertThat(view).isEqualTo("admin/dashboard");
     assertThat(model.getAttribute("paymentReminder")).isNull();
     assertThat(model.getAttribute("companyId")).isEqualTo(5L);
+  }
+
+  /** Supplies Company Details with the current Bill To address instead of stale legacy fields. */
+  @Test
+  void viewCompany_displaysActiveBillToAddress() {
+    Company company = new Company();
+    company.setId(5L);
+    company.setAddress("Stale legacy address");
+    company.setGstn("LEGACY-GSTIN");
+    CompanyAddress billTo = new CompanyAddress();
+    billTo.setAddressLine1("12 Current Road");
+    billTo.setGstin("27CURRENTGSTIN");
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    when(companyService.getCompanyById(5L)).thenReturn(Optional.of(company));
+    when(companyAddressService.getDefaultBillToAddress()).thenReturn(Optional.of(billTo));
+
+    Model model = new ConcurrentModel();
+    String view = adminController.viewCompany(model);
+
+    assertThat(view).isEqualTo("admin/company/view");
+    assertThat(model.getAttribute("billToAddress")).isSameAs(billTo);
+    assertThat(model.getAttribute("billToAddressDisplay")).isEqualTo("12 Current Road, India");
+    assertThat(model.getAttribute("companyDisplayGstin")).isEqualTo("27CURRENTGSTIN");
+  }
+
+  /** Falls back to the legacy Company GSTIN when the active Bill To address has none. */
+  @Test
+  void viewCompany_usesLegacyGstinCompatibilityFallback() {
+    Company company = new Company();
+    company.setId(5L);
+    company.setGstn("LEGACY-GSTIN");
+    CompanyAddress billTo = new CompanyAddress();
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(5L);
+    when(companyService.getCompanyById(5L)).thenReturn(Optional.of(company));
+    when(companyAddressService.getDefaultBillToAddress()).thenReturn(Optional.of(billTo));
+
+    Model model = new ConcurrentModel();
+    adminController.viewCompany(model);
+
+    assertThat(model.getAttribute("companyDisplayGstin")).isEqualTo("LEGACY-GSTIN");
   }
 
   @Test

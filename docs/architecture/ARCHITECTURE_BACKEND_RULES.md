@@ -274,3 +274,23 @@ This document is enforceable.
 
 If any guideline is violated:
 👉 REJECT PR
+# Vendor PO lifecycle safety
+
+- Vendor PO updates must load the record with `findByIdAndCompany_Id` using the authenticated company context and may mutate it only while its status is `DRAFT`.
+- Every non-DRAFT status is temporarily immutable until the dedicated revision workflow exists. MVC handlers must not reset status after update; the service guard is authoritative.
+
+# Company Address rules
+
+- Company Address records are tenant-owned through a required `company_id`; tenant-facing reads and mutations must derive Company ID from `SecurityContextHelper` and use Company-scoped repository queries.
+- Serialize address create/default/deactivate operations by locking the owning Company row. Database partial unique indexes enforce at most one active Bill To and Ship To default per Company; application workflows must preserve exactly one of each.
+- Keep legacy Company address/GSTIN/state columns intact and do not synchronize later Company profile edits into existing Company Address records.
+- Validate address forms both at MVC binding and service boundaries. Require moving default roles before deactivation; never hard-delete address history.
+- Activation preserves address fields and never assigns a default. Default deactivation requires explicit active replacements for every role held by that address; Company Details reads only the active default Bill To address and uses its GSTIN with legacy Company GSTIN fallback.
+- Drug License Number is optional address metadata; persist and display it for future workflows without consuming it in Vendor PO output until the snapshot phase.
+- Bean Validation annotations require a validation provider on the runtime classpath; use `spring-boot-starter-validation` when MVC and service validation are part of a feature.
+
+## Vendor PO snapshot and revision rules
+- New and revised POs must resolve Company, Vendor, Product, address, and delivery-term identifiers through Company-scoped repository methods using the authenticated tenant. Resolve default Terms & Conditions from the authenticated Company configuration and persist the resolved text on the PO revision.
+- Store issue-time buyer/vendor/address/terms/financial values on the PO revision. Issued PDF generation reads those snapshots and persisted totals; it does not load live Company or Vendor data or calculate tax.
+- DRAFT is the only editable PO status. Amendments create a new revision row and retain the old issued PDF. A Company+PO number+revision unique constraint protects numbering.
+- Money uses BigDecimal and explicit two-decimal HALF_UP rounding. GST place-of-supply uses Bill To and Vendor GST state codes; missing codes follow the documented inter-state fallback. Charge tax treatment must be explicit.

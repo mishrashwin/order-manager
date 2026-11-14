@@ -144,22 +144,24 @@
 
       <!-- COMPANY -->
       <td style="width:55%; vertical-align:top;">
-        <div style="font-size:16px; font-weight:bold;" th:text="${company.name}"></div>
+        <div style="font-size:16px; font-weight:bold;" th:text="${buyerName}"></div>
 
         <div>
-          GST: <span th:text="${company.gstn}"></span>
+          GST: <span th:text="${buyerGstin ?: '-'}"></span>
         </div>
 
         <div class="address-section" style="margin-top:4px; line-height:1.4;"
-             th:text="${company.address}">
+             th:text="${(buyerAddress.addressLine1 ?: '-') + ', ' + (buyerAddress.city ?: '-') + ', ' + (buyerAddress.state ?: '-') + ' ' + (buyerAddress.postalCode ?: '-')}">
         </div>
       </td>
 
       <!-- PO INFO -->
       <td style="width:30%; text-align:right; vertical-align:top;">
         PO #: <span th:text="${vendorPo.poNumber}"></span><br/>
+        Revision: <span th:text="${vendorPo.revisionNumber + 1}"></span><br/>
         Date:
-        <span th:text="${#temporals.format(vendorPo.createdAt,'dd-MM-yyyy')}"></span>
+        <span th:if="${vendorPo.poDate != null}" th:text="${#temporals.format(vendorPo.poDate,'dd-MM-yyyy')}"></span>
+        <span th:if="${vendorPo.poDate == null and vendorPo.createdAt != null}" th:text="${#temporals.format(vendorPo.createdAt,'dd-MM-yyyy')}"></span>
       </td>
 
     </tr>
@@ -175,15 +177,42 @@
     <tr>
       <td>
         <strong>Vendor</strong><br/>
-        <span th:text="${#strings.escapeXml(vendorPo.vendorName)}"></span><br/>
-        <span th:if="${vendorPo.vendor != null}" th:text="${#strings.escapeXml(vendorPo.vendor.address)}"></span><br/>
-        GST: <span th:text="${vendorPo.vendorGstn}"></span>
+        <span th:text="${#strings.escapeXml(vendorPo.vendorName ?: '-')}" th:if="${vendorPo.vendorName != null}"></span><span th:if="${vendorPo.vendorName == null}">-</span><br/>
+        <span th:text="${vendorAddress ?: '-'}"></span><br/>
+        GST: <span th:text="${vendorGstin ?: '-'}"></span>
+        <span th:if="${vendorPo.vendorContactPerson != null}"><br/>Contact: <span th:text="${vendorPo.vendorContactPerson}"></span></span>
+        <span th:if="${vendorPo.vendorEmail != null}"><br/>Email: <span th:text="${vendorPo.vendorEmail}"></span></span>
+        <span th:if="${vendorPo.vendorPhone != null}"><br/>Phone: <span th:text="${vendorPo.vendorPhone}"></span></span>
       </td>
 
       <td class="right">
         <strong>Delivery Date</strong><br/>
-        <span th:text="${vendorPo.deliveryDate}"></span>
+        <span th:if="${vendorPo.deliveryDate != null}" th:text="${#temporals.format(vendorPo.deliveryDate,'dd-MM-yyyy')}"></span>
+        <span th:if="${vendorPo.deliveryDate == null}">-</span>
       </td>
+    </tr>
+  </table>
+
+  <table class="no-border section">
+    <tr>
+      <td><strong>Bill To</strong><br/>
+        <span th:text="${buyerAddress.addressLine1 ?: '-'}"></span><br/>
+        <span th:text="${buyerAddress.addressLine2 ?: '-'}"></span><br/>
+        <span th:text="${(buyerAddress.city ?: '-') + ', ' + (buyerAddress.state ?: '-') + ' ' + (buyerAddress.postalCode ?: '-')}"></span><br/>
+        GSTIN: <span th:text="${buyerGstin ?: '-'}"></span><br/>
+        Drug License: <span th:text="${buyerAddress.drugLicenseNumber ?: '-'}"></span>
+        <span th:if="${buyerAddress.contactPersonName != null}"><br/>Contact: <span th:text="${buyerAddress.contactPersonName}"></span></span>
+        <span th:if="${buyerAddress.contactNumber != null}"><br/>Phone: <span th:text="${buyerAddress.contactNumber}"></span></span>
+        <span th:if="${buyerAddress.contactEmail != null}"><br/>Email: <span th:text="${buyerAddress.contactEmail}"></span></span></td>
+      <td><strong>Ship To</strong><br/>
+        <span th:text="${shipToAddress.addressLine1 ?: '-'}"></span><br/>
+        <span th:text="${shipToAddress.addressLine2 ?: '-'}"></span><br/>
+        <span th:text="${(shipToAddress.city ?: '-') + ', ' + (shipToAddress.state ?: '-') + ' ' + (shipToAddress.postalCode ?: '-')}"></span><br/>
+        GSTIN: <span th:text="${shipToAddress.gstin ?: '-'}"></span><br/>
+        Drug License: <span th:text="${shipToAddress.drugLicenseNumber ?: '-'}"></span>
+        <span th:if="${shipToAddress.contactPersonName != null}"><br/>Contact: <span th:text="${shipToAddress.contactPersonName}"></span></span>
+        <span th:if="${shipToAddress.contactNumber != null}"><br/>Phone: <span th:text="${shipToAddress.contactNumber}"></span></span>
+        <span th:if="${shipToAddress.contactEmail != null}"><br/>Email: <span th:text="${shipToAddress.contactEmail}"></span></span></td>
     </tr>
   </table>
 
@@ -206,11 +235,13 @@
     <tbody>
     <tr th:each="item, iter : ${vendorPo.items}">
       <td th:text="${iter.index + 1}"></td>
-      <td th:text="${#strings.escapeXml(item.productName)}"></td>
-      <td th:text="${item.hsnCode}"></td>
-      <td th:text="${item.unit}"></td>
+      <td><span th:text="${#strings.escapeXml(item.productName)}"></span>
+        <br th:if="${item.deliveryDate != null}"/><small th:if="${item.deliveryDate != null}">Delivery: <span th:text="${#temporals.format(item.deliveryDate,'dd-MM-yyyy')}"></span></small></td>
+      <td th:text="${item.hsnCode ?: '-'}"></td>
+      <td th:text="${item.unit ?: '-'}"></td>
       <td class="right" th:text="${item.quantity}"></td>
-      <td class="right" th:text="${item.formattedTaxableRate != null ? item.formattedTaxableRate : item.unitPrice}"></td>
+      <td class="right" th:text="${item.formattedTaxableRate != null ? item.formattedTaxableRate : (item.unitPrice ?: '-')}" th:if="${item.unitPrice != null}"></td>
+      <td class="right" th:text="'-'" th:if="${item.unitPrice == null}"></td>
 
       <!-- GST % (NO DECIMAL) -->
       <td class="right"
@@ -236,29 +267,34 @@
 
           <tr>
             <td>Subtotal</td>
-            <td class="right" th:text="${subtotal}"></td>
+            <td class="right" th:text="${subtotal ?: '-'}"></td>
           </tr>
+
+          <tr><td>Freight <span th:text="${freightIncluded ? '(Included)' : '(Excluded)'}"></span></td>
+            <td class="right" th:text="${freightAmount ?: '-'}"></td></tr>
+          <tr><td>Packing <span th:text="${packingIncluded ? '(Included)' : '(Excluded)'}"></span></td>
+            <td class="right" th:text="${packingAmount ?: '-'}"></td></tr>
 
           <!-- INTRA STATE: CGST + SGST -->
           <tr th:if="${isIntraState}">
             <td>CGST</td>
-            <td class="right" th:text="${cgst}"></td>
+            <td class="right" th:text="${cgst ?: '-'}"></td>
           </tr>
 
           <tr th:if="${isIntraState}">
             <td>SGST</td>
-            <td class="right" th:text="${sgst}"></td>
+            <td class="right" th:text="${sgst ?: '-'}"></td>
           </tr>
 
           <!-- INTER STATE: IGST -->
           <tr th:if="${!isIntraState}">
             <td>IGST</td>
-            <td class="right" th:text="${igst}"></td>
+            <td class="right" th:text="${igst ?: '-'}"></td>
           </tr>
 
           <tr class="bold top-border">
             <td>Total</td>
-            <td class="right" th:text="${finalTotal}"></td>
+            <td class="right" th:text="${finalTotal ?: '-'}"></td>
           </tr>
 
         </table>
@@ -269,14 +305,17 @@
   <!-- AMOUNT IN WORDS -->
   <div class="section">
     <strong>Amount in Words:</strong>
-    <span th:text="${amountInWords}"></span>
+    <span th:text="${amountInWords ?: '-'}"></span>
   </div>
 
   <!-- NOTES -->
   <div class="section">
     <strong>Notes</strong>
-    <p class="notes-section" th:text="${#strings.escapeXml(vendorPo.note)}"></p>
+    <p class="notes-section" th:text="${vendorPo.note != null and !vendorPo.note.isBlank() ? #strings.escapeXml(vendorPo.note) : '-'}"></p>
   </div>
+  <div class="section" th:if="${vendorPo.paymentTerms != null and !vendorPo.paymentTerms.isBlank()}"><strong>Payment Terms:</strong> <span th:text="${vendorPo.paymentTerms}"></span></div>
+  <div class="section" th:if="${vendorPo.deliveryTerms != null and !vendorPo.deliveryTerms.isBlank()}"><strong>Delivery Terms:</strong> <span th:text="${vendorPo.deliveryTerms}"></span></div>
+  <div class="section" th:if="${vendorPo.penaltyClause != null and !vendorPo.penaltyClause.isBlank()}"><strong>Penalty Clause:</strong> <span th:text="${vendorPo.penaltyClause}"></span></div>
 
   <!-- SIGN -->
   <table class="no-border section">
@@ -306,6 +345,40 @@
 
 <!-- TERMS & CONDITIONS PAGE (separate page when enabled) -->
 <div th:if="${termsConditionsEnabled and !#lists.isEmpty(termsConditions)}" class="container tnc-page">
+  <!-- COMPANY HEADER -->
+  <table class="no-border">
+    <tr>
+      <!-- LOGO -->
+      <td style="width:15%; vertical-align:top;">
+        <img th:if="${logoBase64 != null}"
+             th:src="${logoBase64}"
+             style="height:60px;"/>
+      </td>
+
+      <!-- COMPANY -->
+      <td style="width:55%; vertical-align:top;">
+        <div style="font-size:16px; font-weight:bold;" th:text="${buyerName}"></div>
+        <div>
+          GST: <span th:text="${buyerGstin ?: '-'}"></span>
+        </div>
+        <div class="address-section" style="margin-top:4px; line-height:1.4;"
+             th:text="${(buyerAddress.addressLine1 ?: '-') + ', ' + (buyerAddress.city ?: '-') + ', ' + (buyerAddress.state ?: '-') + ' ' + (buyerAddress.postalCode ?: '-')}">
+        </div>
+      </td>
+
+      <!-- PAGE INFO -->
+      <td style="width:30%; text-align:right; vertical-align:top;">
+        PO #: <span th:text="${vendorPo.poNumber}"></span><br/>
+        Revision: <span th:text="${vendorPo.revisionNumber + 1}"></span><br/>
+        Date:
+        <span th:if="${vendorPo.poDate != null}" th:text="${#temporals.format(vendorPo.poDate,'dd-MM-yyyy')}"></span>
+        <span th:if="${vendorPo.poDate == null and vendorPo.createdAt != null}" th:text="${#temporals.format(vendorPo.createdAt,'dd-MM-yyyy')}"></span>
+      </td>
+    </tr>
+  </table>
+
+  <div class="divider"></div>
+
   <div class="tnc-title">TERMS &amp; CONDITIONS</div>
   <ol class="tnc-list">
     <li th:each="term : ${termsConditions}" th:text="${#strings.escapeXml(term)}"></li>

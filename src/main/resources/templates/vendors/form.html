@@ -82,6 +82,13 @@
             <div class="mb-4">
                 <label class="form-label"><i class="bi bi-geo-alt"></i> Address <span class="text-danger">*</span></label>
                 <textarea class="form-control form-control-custom" th:field="*{address}" rows="3" required></textarea>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Default Vendor PO Payment Terms</label>
+                <textarea class="form-control form-control-custom" th:field="*{defaultPaymentTerms}" rows="2" maxlength="2000"
+                          placeholder="Optional default copied into new purchase orders"></textarea>
+            </div>
 
             <!-- Actions -->
             <div class="d-flex justify-content-end gap-3 pt-3 border-top">
