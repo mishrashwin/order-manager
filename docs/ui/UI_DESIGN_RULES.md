@@ -378,7 +378,7 @@ Load scripts at the end of body or defer:
 - Handle intra-state (CGST+SGST) vs inter-state (IGST) display
 
 ## 9.3 Number Formatting
-Use `DecimalFormat("#,##0.00")` for all numeric values in PDFs.
+Use the shared `IndianMoneyFormatter` for Vendor PO monetary values; do not format amounts inside Thymeleaf expressions. Use explicit fixed table column widths and right-aligned numeric cells for PDF financial tables. Reserve enough width for large grouped values and allow product descriptions to wrap within their own column.
 
 ---
 

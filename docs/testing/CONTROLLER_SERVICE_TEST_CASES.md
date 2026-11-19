@@ -80,6 +80,8 @@
 - Verify create, edit, and dynamically added product rows align under labeled Product, HSN, Qty, Unit, Price per, Unit price, GST, Amount, and Action columns.
 - Verify form values and calculations remain intact, with exactly one product Unit field/column; Price per remains a separate pricing basis.
 - Verify generated PO PDF renders one Unit column, omits the separate Pricing Unit column, and places an item-specific delivery date on a separate line beneath its product name.
+- Verify item and summary values use Indian grouping, fixed two decimals, right-aligned columns, and fit values through ₹100 crore without clipping or merging GST Amt / Amount cells.
+- Verify long product descriptions wrap inside the Product column; test intra-state CGST/SGST and inter-state IGST summaries, with amount-in-words matching Grand Total including paise.
 
 
 ## Vendor PO default Terms & Conditions entry point

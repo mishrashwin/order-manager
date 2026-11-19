@@ -63,4 +63,32 @@ class VendorPdfServiceSnapshotTest {
     assertTrue(context.getValue().getVariable("amountInWords")
         .equals("Rupees Twelve and Thirty Four Paisa Only"));
   }
+
+  /** Confirms PDF financial display strings use Indian grouping without changing snapshots. */
+  @Test
+  void formatsLargeSnapshotAmountsForPdf() throws Exception {
+    when(objectMapper.readValue(eq("[]"), any(com.fasterxml.jackson.core.type.TypeReference.class)))
+        .thenReturn(java.util.List.of());
+    when(templateEngine.process(eq("vendor/pdf/vendor_po"), any(Context.class)))
+        .thenReturn("<html xmlns=\"http://www.w3.org/1999/xhtml\"><body>snapshot</body></html>");
+    VendorPo po = new VendorPo();
+    po.setTotalAmount(new BigDecimal("1000000000.00"));
+    po.setSubtotalBeforeTax(new BigDecimal("999999999.99"));
+    po.setCgstAmount(new BigDecimal("100000000.00"));
+    po.setSgstAmount(new BigDecimal("100000000.00"));
+    po.setIgstAmount(BigDecimal.ZERO);
+    po.setTermsConditionsSnapshot("[]");
+    VendorPdfServiceImpl service = new VendorPdfServiceImpl(templateEngine, objectMapper);
+
+    service.generatePdf(po);
+
+    ArgumentCaptor<Context> context = ArgumentCaptor.forClass(Context.class);
+    verify(templateEngine).process(eq("vendor/pdf/vendor_po"), context.capture());
+    assertTrue(context.getValue().getVariable("finalTotal").equals("1,00,00,00,000.00"));
+    assertTrue(context.getValue().getVariable("subtotal").equals("99,99,99,999.99"));
+    assertTrue(context.getValue().getVariable("cgst").equals("10,00,00,000.00"));
+    assertTrue(context.getValue().getVariable("amountInWords")
+        .equals("Rupees One Hundred Crore Only"));
+    assertTrue(po.getTotalAmount().compareTo(new BigDecimal("1000000000.00")) == 0);
+  }
 }

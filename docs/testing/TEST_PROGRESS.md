@@ -670,3 +670,11 @@ Notes
 - Fixed Hibernate startup validation mismatch where V35 `quantity NUMERIC(12,3)` was mapped as Java `Double`/FLOAT. `VendorPoItem.quantity` and form binding now use `BigDecimal`; a compatibility setter converts legacy Double callers at scale 3.
 - Focused PO/PDF/settings tests: 54 passed, 0 failures/errors/skips. Full suite: 363 tests, 0 failures/errors, 2 opt-in migration tests skipped.
 - Isolated V34–V36 PostgreSQL migration test passed and now asserts `pg_typeof(quantity) = numeric`.
+
+# 2026-11-19 — Vendor PO PDF Indian Financial Formatting
+- Centralized PDF display formatting in `IndianMoneyFormatter` using `BigDecimal`, half-up two-decimal rounding, and Indian digit grouping; applied it to item rate/GST/amount and saved PO summary snapshots.
+- Updated the Vendor PO PDF item table widths, numeric alignment and separators; product descriptions wrap in their cell and summary amounts use a fixed right-aligned column.
+- Kept GST calculations in `VendorPoCalculationService`; extended amount-in-words handling to safely preserve negative sign and route the legacy double API through BigDecimal.
+- Added formatter/words tests and rendered-PDF text extraction coverage. The PDF integration test writes a review sample and first-page PNG to `output/pdf/`.
+- Validation: `mvn "-Dtest=VendorPdfServiceIntegrationTest,VendorPdfServiceSnapshotTest,IndianMoneyFormatterTest,NumberToWordsUtilTest" test` passed: 20 tests, 0 failures/errors/skips. Generated PDF and PNG visually inspected; quantity/rate separation adjusted after initial review. Full repository suite and browser QA were not run.
+- Follow-up fixture correction: added 18% GST to the large sample item and asserted that the extracted row pairs GST% `18` with GST Amt `18,00,00,000.00`. `VendorPdfServiceIntegrationTest#generatedPdf_keepsLargeFinancialValuesAndLongNamesReadable` passed; regenerated sample inspected.
