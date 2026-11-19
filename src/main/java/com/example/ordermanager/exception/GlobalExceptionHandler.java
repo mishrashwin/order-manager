@@ -60,7 +60,13 @@ public class GlobalExceptionHandler {
     body.put("timestamp", LocalDateTime.now());
     body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
     body.put("error", "Internal Server Error");
-    body.put("message", ex.getMessage());
+    // Hide database details from users for security
+    String message = ex.getMessage();
+    if (message != null && (message.contains("constraint") || message.contains("SQL") 
+        || message.contains("null value") || message.contains("violates"))) {
+      message = "An error occurred while processing your request. Please contact support if the issue persists.";
+    }
+    body.put("message", message);
     body.put("path", request.getDescription(false).replace("uri=", ""));
     return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
   }

@@ -98,6 +98,13 @@ public class VendorPoServiceImpl implements VendorPoService {
     }
 
     po.setPoDate(po.getPoDate() == null ? LocalDate.now() : po.getPoDate());
+    // Ensure freight and packing amounts are never null to prevent DB constraint violations
+    if (po.getFreightAmount() == null) {
+      po.setFreightAmount(java.math.BigDecimal.ZERO.setScale(2));
+    }
+    if (po.getPackingAmount() == null) {
+      po.setPackingAmount(java.math.BigDecimal.ZERO.setScale(2));
+    }
     populateBuyerSnapshot(po, company, companyId);
     populateVendorSnapshot(po);
     normalizeTermsSnapshot(po, companyId, company);
@@ -177,11 +184,13 @@ public class VendorPoServiceImpl implements VendorPoService {
     existing.setDeliveryTerms(po.getDeliveryTerms());
     existing.setDeliveryTermId(po.getDeliveryTermId());
     existing.setFreightIncluded(po.getFreightIncluded());
-    existing.setFreightAmount(po.getFreightAmount());
+    // Ensure freight amount is never null to prevent DB constraint violations
+    existing.setFreightAmount(po.getFreightAmount() != null ? po.getFreightAmount() : java.math.BigDecimal.ZERO.setScale(2));
     existing.setFreightTaxable(po.getFreightTaxable());
     existing.setFreightGstPercentage(po.getFreightGstPercentage());
     existing.setPackingIncluded(po.getPackingIncluded());
-    existing.setPackingAmount(po.getPackingAmount());
+    // Ensure packing amount is never null to prevent DB constraint violations
+    existing.setPackingAmount(po.getPackingAmount() != null ? po.getPackingAmount() : java.math.BigDecimal.ZERO.setScale(2));
     existing.setPackingTaxable(po.getPackingTaxable());
     existing.setPackingGstPercentage(po.getPackingGstPercentage());
     existing.setPenaltyClause(po.getPenaltyClause());
