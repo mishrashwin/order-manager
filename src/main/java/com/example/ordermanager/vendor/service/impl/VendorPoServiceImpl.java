@@ -185,12 +185,14 @@ public class VendorPoServiceImpl implements VendorPoService {
     existing.setDeliveryTermId(po.getDeliveryTermId());
     existing.setFreightIncluded(po.getFreightIncluded());
     // Ensure freight amount is never null to prevent DB constraint violations
-    existing.setFreightAmount(po.getFreightAmount() != null ? po.getFreightAmount() : java.math.BigDecimal.ZERO.setScale(2));
+    existing.setFreightAmount(po.getFreightAmount() != null ? po.getFreightAmount()
+        : java.math.BigDecimal.ZERO.setScale(2));
     existing.setFreightTaxable(po.getFreightTaxable());
     existing.setFreightGstPercentage(po.getFreightGstPercentage());
     existing.setPackingIncluded(po.getPackingIncluded());
     // Ensure packing amount is never null to prevent DB constraint violations
-    existing.setPackingAmount(po.getPackingAmount() != null ? po.getPackingAmount() : java.math.BigDecimal.ZERO.setScale(2));
+    existing.setPackingAmount(po.getPackingAmount() != null ? po.getPackingAmount()
+        : java.math.BigDecimal.ZERO.setScale(2));
     existing.setPackingTaxable(po.getPackingTaxable());
     existing.setPackingGstPercentage(po.getPackingGstPercentage());
     existing.setPenaltyClause(po.getPenaltyClause());

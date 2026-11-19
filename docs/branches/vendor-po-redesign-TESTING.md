@@ -3,6 +3,8 @@
 ## Feature overview and testing objective
 Verify Phase 0.1 Vendor PO immutability and Phase 1 Company Address management, legacy backfill, role defaults, validation, authorization, and tenant isolation.
 
+The 2026-11-19 PDF financial-formatting enhancement also verifies Indian grouping and fixed decimal display, wide-value PDF rendering, item-column alignment, financial summary readability, and amount-in-words consistency.
+
 Address correction coverage also verifies activation/deactivation preservation, explicit reassignment of each default role (including dual-default addresses), live Company Details Bill To/GSTIN rendering, Drug License persistence, and tenant isolation.
 
 ## Preconditions and test environment
@@ -27,6 +29,23 @@ Address correction coverage also verifies activation/deactivation preservation, 
 | Authenticated tenant user | Vendor PO access | Verify Phase 0.1 update behavior |
 
 ## Manual test scenarios
+
+### Vendor PO PDF financial formatting
+
+#### VPO-PDF-21 — Indian money formatting boundaries
+Run `IndianMoneyFormatterTest` and `NumberToWordsUtilTest`.
+
+**Expected result:** Indian digit groups, two decimals, zero/null, negative, rounding, lakh/crore denominations, and paise match the expected values.
+
+#### VPO-PDF-22 — Large and long-content PDF rendering
+Run `VendorPdfServiceIntegrationTest#generatedPdf_keepsLargeFinancialValuesAndLongNamesReadable` and inspect `output/pdf/vendor-po-financial-format-sample.pdf` plus its PNG render.
+
+**Expected result:** Extracted PDF text contains the ₹100 crore scale amounts and wrapped product name; item financial columns and summary remain readable without clipping or merged values.
+
+#### VPO-PDF-23 — Tax presentation regression
+Run `VendorPdfServiceSnapshotTest` and the existing PDF integration suite for intra-state and inter-state PO data.
+
+**Expected result:** CGST/SGST and IGST presentation remains conditional on existing persisted values; words match the saved Grand Total.
 
 ### Positive test cases
 
@@ -196,6 +215,14 @@ Manual browser QA remains unrun unless a dated execution is recorded below. V34�
 **Expected result:** The PDF contains a single Unit column and the item delivery date appears on the next line below the product name.
 
 **Execution status:** Not run (2026-11-14); automated tests and manual browser/PDF inspection were not performed.
+
+## 2026-11-19 — PDF financial formatting verification
+- Automated formatter, words, snapshot, and PDF integration tests: 20 passed, 0 failures/errors/skips.
+- Generated large-value PDF and PNG were inspected. Financial columns and summary values fit; product text wrapped within its cell.
+- The sample item uses an 18% GST rate, ₹1,000,000,000 taxable amount, ₹180,000,000 GST amount, and ₹1,180,000,000 line total; rendered text asserts the rate and GST amount together.
+- The same suite exercised existing intra-state CGST/SGST and inter-state IGST PDF cases.
+- Full repository suite and browser QA were not run.
+- Follow-up fixture check: `VendorPdfServiceIntegrationTest#generatedPdf_keepsLargeFinancialValuesAndLongNamesReadable` passed after adding the 18% rate and rendered-row assertion; corrected sample was re-rendered and visually inspected.
 
 
 ## VPO-TERMS-01 — Single default terms editor

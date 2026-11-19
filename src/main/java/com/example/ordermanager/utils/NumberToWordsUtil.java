@@ -12,27 +12,22 @@ public class NumberToWordsUtil {
   private static final String[] tens =
       {"", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"};
 
+  /** Preserves the legacy double API while routing conversion through decimal arithmetic. */
   public static String convertToWords(double amount) {
-    long number = (long) amount;
-
-    if (number == 0) {
-      return "Rupees Zero Only";
-    }
-
-    return "Rupees " + convert(number) + " Only";
+    return convertToWords(BigDecimal.valueOf(amount));
   }
 
   /** Converts a two-decimal monetary amount into Rupees and Paisa without losing cents. */
   public static String convertToWords(BigDecimal amount) {
     BigDecimal rounded =
         amount == null ? BigDecimal.ZERO : amount.setScale(2, RoundingMode.HALF_UP);
-    long rupees = rounded.longValue();
+    long rupees = rounded.abs().longValue();
     long paisa = rounded.remainder(BigDecimal.ONE).movePointRight(2).abs().longValue();
     String result = "Rupees " + (rupees == 0 ? "Zero" : convert(rupees));
     if (paisa > 0) {
       result += " and " + convert(paisa) + " Paisa";
     }
-    return result + " Only";
+    return (rounded.signum() < 0 ? "Minus " : "") + result + " Only";
   }
 
   private static String convert(long number) {

@@ -20,6 +20,12 @@ import org.thymeleaf.TemplateEngine;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.PDFRenderer;
+import org.apache.pdfbox.text.PDFTextStripper;
+import javax.imageio.ImageIO;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
@@ -202,15 +208,15 @@ class VendorPdfServiceIntegrationTest {
 
   @Test
   void generatePdf_withLargeAmounts_shouldHandleCorrectly() {
-    testVendorPo.setTotalAmount(999999.99);
+    testVendorPo.setTotalAmount(1000000000.00);
 
     VendorPoItem largeItem = new VendorPoItem();
     largeItem.setProductName("Expensive Product");
     largeItem.setHsnCode("HSN999");
     largeItem.setUnit("UNIT");
     largeItem.setQuantity(1.00);
-    largeItem.setUnitPrice(99999.99);
-    largeItem.setLineTotal(999999.99);
+    largeItem.setUnitPrice(1000000000.00);
+    largeItem.setLineTotal(1000000000.00);
 
     testVendorPo.setItems(Arrays.asList(largeItem));
 
@@ -224,6 +230,48 @@ class VendorPdfServiceIntegrationTest {
     assertEquals('P', pdfBytes[1]);
     assertEquals('D', pdfBytes[2]);
     assertEquals('F', pdfBytes[3]);
+  }
+
+  /** Extracts large displayed values from a rendered PDF and retains a reviewable sample file. */
+  @Test
+  void generatedPdf_keepsLargeFinancialValuesAndLongNamesReadable() throws Exception {
+    VendorPoItem item = new VendorPoItem();
+    item.setProductName(
+        "Industrial component with an intentionally long descriptive product name for line wrapping");
+    item.setHsnCode("12345678");
+    item.setUnit("PCS");
+    item.setQuantity(new BigDecimal("10.000"));
+    item.setTaxableRate(new BigDecimal("100000000.00"));
+    item.setGstPercentage(new BigDecimal("18.00"));
+    item.setGstAmount(new BigDecimal("180000000.00"));
+    item.setLineTotal(new BigDecimal("1180000000.00"));
+    testVendorPo.setItems(Arrays.asList(item));
+    testVendorPo.setTotalAmount(new BigDecimal("1180000000.00"));
+    testVendorPo.setSubtotalBeforeTax(new BigDecimal("1000000000.00"));
+    testVendorPo.setCgstAmount(new BigDecimal("90000000.00"));
+    testVendorPo.setSgstAmount(new BigDecimal("90000000.00"));
+    testVendorPo.setIgstAmount(BigDecimal.ZERO);
+
+    byte[] pdfBytes = vendorPdfService.generatePdf(testVendorPo);
+    String text;
+    try (PDDocument document = PDDocument.load(pdfBytes)) {
+      text = new PDFTextStripper().getText(document);
+    }
+    Path sample = Path.of("output", "pdf", "vendor-po-financial-format-sample.pdf");
+    Files.createDirectories(sample.getParent());
+    Files.write(sample, pdfBytes);
+    try (PDDocument document = PDDocument.load(pdfBytes)) {
+      ImageIO.write(new PDFRenderer(document).renderImageWithDPI(0, 120), "png",
+          sample.resolveSibling("vendor-po-financial-format-sample.png").toFile());
+    }
+
+    assertTrue(text.contains("1,00,00,00,000.00"));
+    assertTrue(text.contains("18,00,00,000.00"));
+    assertTrue(text.contains("1,18,00,00,000.00"));
+    String normalizedText = text.replaceAll("\\s+", " ");
+    assertTrue(normalizedText.contains("18 18,00,00,000.00"), text);
+    assertTrue(normalizedText.contains(
+        "Industrial component with an intentionally long descriptive product name"), text);
   }
 
   @Test

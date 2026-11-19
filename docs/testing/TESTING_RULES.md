@@ -262,6 +262,8 @@ For PDF services:
 - Test concurrent PDF generation
 - Test GST calculation accuracy
 - Test state-based IGST vs CGST/SGST logic
+- For financial PDFs, extract text from rendered output to verify grouped monetary values, summary amounts, amount-in-words consistency, and long descriptions; use rendered-page inspection when available to assess alignment and clipping.
+- Vendor PO monetary display uses Indian digit grouping and fixed two-decimal precision via the shared formatter; test zero, null, negative, rounding, and at least ₹100 crore without changing stored snapshots.
 
 ---
 

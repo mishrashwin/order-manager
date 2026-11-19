@@ -4,12 +4,12 @@ import com.example.ordermanager.utils.NumberToWordsUtil;
 import com.example.ordermanager.vendor.entity.VendorPo;
 import com.example.ordermanager.vendor.entity.VendorPoItem;
 import com.example.ordermanager.vendor.service.VendorPdfService;
+import com.example.ordermanager.utils.IndianMoneyFormatter;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
 import java.util.Base64;
 import java.util.List;
 import java.util.HashMap;
@@ -33,12 +33,13 @@ public class VendorPdfServiceImpl implements VendorPdfService {
   @Override
   public byte[] generatePdf(VendorPo po) {
     try {
-      DecimalFormat format = new DecimalFormat("#,##0.00");
       if (po.getItems() != null) {
         for (VendorPoItem item : po.getItems()) {
-          item.setFormattedTaxableRate(format.format(orZero(item.getTaxableRate())));
-          item.setFormattedGstAmount(format.format(orZero(item.getGstAmount())));
-          item.setFormattedLineTotal(format.format(orZero(item.getLineTotal())));
+          BigDecimal rate =
+              item.getTaxableRate() == null ? item.getUnitPrice() : item.getTaxableRate();
+          item.setFormattedTaxableRate(IndianMoneyFormatter.format(rate));
+          item.setFormattedGstAmount(IndianMoneyFormatter.format(item.getGstAmount()));
+          item.setFormattedLineTotal(IndianMoneyFormatter.format(item.getLineTotal()));
         }
       }
       List<String> terms = po.getTermsConditionsSnapshot() == null ? List.of()
@@ -53,15 +54,15 @@ public class VendorPdfServiceImpl implements VendorPdfService {
       variables.put("vendorAddress", safe(po.getVendorAddress()));
       variables.put("vendorGstin", safe(po.getVendorGstn()));
       variables.put("amountInWords", NumberToWordsUtil.convertToWords(po.getTotalAmount()));
-      variables.put("subtotal", format.format(orZero(po.getSubtotalBeforeTax())));
-      variables.put("cgst", format.format(orZero(po.getCgstAmount())));
-      variables.put("sgst", format.format(orZero(po.getSgstAmount())));
-      variables.put("igst", format.format(orZero(po.getIgstAmount())));
-      variables.put("finalTotal", format.format(orZero(po.getTotalAmount())));
+      variables.put("subtotal", IndianMoneyFormatter.format(po.getSubtotalBeforeTax()));
+      variables.put("cgst", IndianMoneyFormatter.format(po.getCgstAmount()));
+      variables.put("sgst", IndianMoneyFormatter.format(po.getSgstAmount()));
+      variables.put("igst", IndianMoneyFormatter.format(po.getIgstAmount()));
+      variables.put("finalTotal", IndianMoneyFormatter.format(po.getTotalAmount()));
       variables.put("freightIncluded", Boolean.TRUE.equals(po.getFreightIncluded()));
-      variables.put("freightAmount", format.format(orZero(po.getFreightAmount())));
+      variables.put("freightAmount", IndianMoneyFormatter.format(po.getFreightAmount()));
       variables.put("packingIncluded", Boolean.TRUE.equals(po.getPackingIncluded()));
-      variables.put("packingAmount", format.format(orZero(po.getPackingAmount())));
+      variables.put("packingAmount", IndianMoneyFormatter.format(po.getPackingAmount()));
       variables.put("termsConditions", terms);
       variables.put("termsConditionsEnabled", po.isTermsConditionsEnabled());
       variables.put("isIntraState",
