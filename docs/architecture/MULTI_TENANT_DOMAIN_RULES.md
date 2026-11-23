@@ -333,3 +333,4 @@ If any guideline is violated:
 ## Vendor PO tenant boundaries
 - A PO form may submit IDs but never a Company ID. Resolve every Vendor, Product, Bill To/Ship To address, delivery option, and revision from the authenticated Company. Company-wide default terms are loaded from the authenticated Company configuration and snapshotted on the PO; do not submit a Company ID or per-PO template selection.
 - Recheck active address status before issue; do not refresh already captured address snapshots. Revision history queries must verify the requested PO belongs to the current Company.
+- A Vendor PO item's selected Unit is part of the PO line and must be persisted as submitted. Use the selected Product's Unit only as a default when the PO line Unit is blank; product resolution must not overwrite an explicit PO line choice.

@@ -11,6 +11,11 @@ import org.springframework.stereotype.Service;
 public class VendorPoCalculationService {
 
   private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
+  private static final BigDecimal MAX_NUMERIC_5_2 = new BigDecimal("999.99");
+  private static final BigDecimal MAX_NUMERIC_12_2 = new BigDecimal("9999999999.99");
+  private static final BigDecimal MAX_NUMERIC_12_3 = new BigDecimal("999999999.999");
+  private static final BigDecimal MAX_NUMERIC_14_2 = new BigDecimal("999999999999.99");
+  private static final BigDecimal MAX_NUMERIC_14_4 = new BigDecimal("9999999999.9999");
   private static final RoundingMode ROUNDING = RoundingMode.HALF_UP;
 
   /** Recalculates every item and charge using the PO's selected Bill To and Vendor state codes. */
@@ -25,13 +30,17 @@ public class VendorPoCalculationService {
             && po.getBillToSnapshot().getStateCode().equals(po.getVendorStateCode());
 
     if (po.getItems() != null) {
+      int itemNumber = 0;
       for (VendorPoItem item : po.getItems()) {
+        itemNumber++;
         BigDecimal quantity = item.getQuantity() == null ? BigDecimal.ZERO : item.getQuantity();
+        requireFitsNumeric12Scale3(quantity, "Item " + itemNumber + " quantity");
         if (quantity.signum() <= 0) {
           throw new IllegalArgumentException("Item quantity must be greater than zero");
         }
         BigDecimal pricingUnit =
             item.getPricingUnit() == null ? BigDecimal.ONE : item.getPricingUnit();
+        requireFitsNumeric12Scale3(pricingUnit, "Item " + itemNumber + " pricing unit");
         if (pricingUnit.signum() <= 0) {
           throw new IllegalArgumentException("Pricing Unit must be greater than zero");
         }
@@ -42,21 +51,31 @@ public class VendorPoCalculationService {
         if (rate.signum() < 0) {
           throw new IllegalArgumentException("Item price cannot be negative");
         }
+        requireFitsNumeric12Scale2(rate, "Item " + itemNumber + " price");
         BigDecimal lineTaxable = rate.multiply(quantity).divide(pricingUnit, 2, ROUNDING);
-        item.setTaxableRate(rate.divide(pricingUnit, 4, ROUNDING));
+        BigDecimal taxableRate = rate.divide(pricingUnit, 4, ROUNDING);
+        requireFitsNumeric14Scale4(taxableRate, "Item " + itemNumber + " taxable unit rate");
+        item.setTaxableRate(taxableRate);
         BigDecimal gstRate =
             item.getGstPercentage() == null ? BigDecimal.ZERO : item.getGstPercentage();
         if (gstRate.signum() < 0) {
           throw new IllegalArgumentException("GST rate cannot be negative");
         }
+        requireFitsNumeric5Scale2(gstRate, "Item " + itemNumber + " GST rate");
         BigDecimal lineTax = lineTaxable.multiply(gstRate).divide(ONE_HUNDRED, 2, ROUNDING);
         BigDecimal lineTotal = lineTaxable.add(lineTax).setScale(2, ROUNDING);
+        requireFitsNumeric12Scale2(lineTax, "Item " + itemNumber + " calculated GST amount");
+        requireFitsNumeric14Scale2(lineTaxable, "Item " + itemNumber + " taxable amount");
+        requireFitsNumeric14Scale2(lineTotal, "Item " + itemNumber + " line total");
         item.setTaxableAmount(lineTaxable);
         item.setGstAmount(lineTax);
         item.setLineTotal(lineTotal);
-        item.setGstInclusiveUnitPrice(
+        BigDecimal gstInclusiveUnitPrice =
             rate.multiply(BigDecimal.ONE.add(gstRate.divide(ONE_HUNDRED, 6, ROUNDING))).setScale(4,
-                ROUNDING));
+                ROUNDING);
+        requireFitsNumeric12Scale2(gstInclusiveUnitPrice,
+            "Item " + itemNumber + " GST-inclusive unit price");
+        item.setGstInclusiveUnitPrice(gstInclusiveUnitPrice);
         item.setUnitPrice(item.getGstInclusiveUnitPrice());
 
         if (intraState) {
@@ -104,6 +123,48 @@ public class VendorPoCalculationService {
     po.setSgstAmount(sgst.setScale(2, ROUNDING));
     po.setIgstAmount(igst.setScale(2, ROUNDING));
     po.setTotalAmount(subtotal.add(tax).setScale(2, ROUNDING));
+    requireFitsNumeric14Scale2(po.getSubtotalBeforeTax(), "PO subtotal");
+    requireFitsNumeric14Scale2(po.getTotalTax(), "PO tax total");
+    requireFitsNumeric14Scale2(po.getTotalAmount(), "PO total");
+  }
+
+  /** Rejects values that would exceed the database NUMERIC(12,2) capacity before persistence. */
+  private void requireFitsNumeric12Scale2(BigDecimal value, String label) {
+    if (value.setScale(2, ROUNDING).abs().compareTo(MAX_NUMERIC_12_2) > 0) {
+      throw new IllegalArgumentException(label
+          + " exceeds the supported limit of 9,999,999,999.99. Reduce the value and try again.");
+    }
+  }
+
+  /** Rejects rates that would exceed the database NUMERIC(5,2) capacity before persistence. */
+  private void requireFitsNumeric5Scale2(BigDecimal value, String label) {
+    if (value.setScale(2, ROUNDING).abs().compareTo(MAX_NUMERIC_5_2) > 0) {
+      throw new IllegalArgumentException(label + " exceeds the supported limit of 999.99.");
+    }
+  }
+
+  /** Rejects quantity values that would exceed the database NUMERIC(12,3) capacity. */
+  private void requireFitsNumeric12Scale3(BigDecimal value, String label) {
+    if (value.setScale(3, ROUNDING).abs().compareTo(MAX_NUMERIC_12_3) > 0) {
+      throw new IllegalArgumentException(
+          label + " exceeds the supported limit of 999,999,999.999.");
+    }
+  }
+
+  /** Rejects totals that would exceed the database NUMERIC(14,2) capacity before persistence. */
+  private void requireFitsNumeric14Scale2(BigDecimal value, String label) {
+    if (value.setScale(2, ROUNDING).abs().compareTo(MAX_NUMERIC_14_2) > 0) {
+      throw new IllegalArgumentException(label
+          + " exceeds the supported limit of 999,999,999,999.99. Reduce the value and try again.");
+    }
+  }
+
+  /** Rejects rates that would exceed the database NUMERIC(14,4) capacity. */
+  private void requireFitsNumeric14Scale4(BigDecimal value, String label) {
+    if (value.setScale(4, ROUNDING).abs().compareTo(MAX_NUMERIC_14_4) > 0) {
+      throw new IllegalArgumentException(
+          label + " exceeds the supported limit of 9,999,999,999.9999.");
+    }
   }
 
   /** Returns excluded charge value after requiring its explicit taxable treatment. */
@@ -118,13 +179,18 @@ public class VendorPoCalculationService {
     if (taxable && (gstRate == null || gstRate.signum() < 0)) {
       throw new IllegalArgumentException(label + " GST rate is required when taxable");
     }
+    if (gstRate != null) {
+      requireFitsNumeric5Scale2(gstRate, label + " GST rate");
+    }
     if (amount != null && amount.signum() < 0) {
       throw new IllegalArgumentException(label + " amount cannot be negative");
     }
+    BigDecimal base = amount == null ? BigDecimal.ZERO.setScale(2) : amount.setScale(2, ROUNDING);
+    requireFitsNumeric14Scale2(base, label + " amount");
     if (included) {
       return BigDecimal.ZERO.setScale(2);
     }
-    return amount == null ? BigDecimal.ZERO.setScale(2) : amount.setScale(2, ROUNDING);
+    return base;
   }
 
   /** Calculates tax only for excluded charges explicitly marked taxable. */

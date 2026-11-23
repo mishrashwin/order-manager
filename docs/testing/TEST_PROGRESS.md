@@ -13,6 +13,39 @@
 
 # Test Progress Log
 
+## Vendor PO PDF quantity display (2026-11-23)
+- PDF-only display now strips insignificant quantity zeros, so a database-scale value such as `10.000` displays as `10`; any meaningful legacy fractional digits remain visible.
+- Reordered the PDF item columns so Qty is immediately followed by Unit. PDF integration coverage checks Indian-grouped whole quantity output without database-scale zeros.
+- Test execution: Not run in this session.
+
+## Vendor PO numeric overflow feedback (2026-11-23)
+- Vendor PO calculation checks item quantity/pricing unit, monetary item values, GST rates, line values, charges, and PO totals against their database numeric precision before persistence.
+- Create/edit MVC handlers convert residual `DataIntegrityViolationException` instances to a safe actionable message instead of exposing PostgreSQL details.
+- Added calculation boundary tests and an MVC test for update constraint failure. Test execution: Not run in this session.
+- Hardened `GlobalExceptionHandler`: the generic response no longer reflects exception messages or request paths. Residual database errors on PO create/update redirect back to the corresponding form with safe feedback. Handler regression tests added; not run.
+
+## Vendor PO selected Unit persistence (2026-11-23)
+- Fixed product resolution overwriting the submitted PO line Unit with Product metadata. Product Unit now fills only a blank PO Unit; the product-change script targets the Unit select control.
+- Added service regression coverage for preserving a selected Unit across create and update when Product Unit differs. Test execution: Not run in this session.
+
+## Vendor PO PDF dynamic columns (2026-11-23)
+- Added content-based width allocation across HSN, Qty, Unit, Rate, GST, GST Amt, and Amount. Widths total 100%, preserve a minimum Product column, and add separators between each item column.
+- Added calculator tests for a long HSN/short Rate and a long Rate/short HSN. Test execution and rendered-PDF visual inspection: Not run in this session.
+
+## Vendor PO PDF headings and value formatting (2026-11-23)
+- Changed the row-number heading to `Sr No.` and center-aligned every item header.
+- Added Indian digit grouping for quantity values while preserving meaningful fractional digits, and included `%` in each rendered GST percentage.
+- Added quantity formatter tests and updated PDF text assertions. Tests and rendered-PDF visual inspection: Not run in this session.
+
+## Vendor PO PDF summary currency symbol (2026-11-23)
+- Added `₹` before subtotal, freight, packing, applicable GST summary values, and total.
+- Added a PDF text assertion that all six intra-state summary rows carry the symbol. Test execution and rendered-PDF visual inspection: Not run in this session.
+
+## Vendor PO PDF rupee glyph and amount wording (2026-11-23)
+- Kept each summary `₹` glyph and formatted amount in one non-wrapping text value and selected a rupee-capable font fallback to avoid the unsupported-glyph `#` rendering.
+- Changed amount-in-words prefix to `Indian Rupees`; updated utility and rendered-PDF regression assertions.
+- Test execution and rendered-PDF visual inspection: Not run in this session.
+
 ## Vendor Bulk Upload Phase 8 (2026-11-01)
 - Focused suite `VendorBulkUploadServiceTest`, `VendorControllerTest`, `VendorBulkUploadPreviewTemplateTest`, and `VendorServiceTest`: 41 tests passed, 0 failures/errors.
 - `mvn -DskipTests compile`: BUILD SUCCESS.

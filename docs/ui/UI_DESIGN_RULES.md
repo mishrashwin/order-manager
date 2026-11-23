@@ -378,7 +378,15 @@ Load scripts at the end of body or defer:
 - Handle intra-state (CGST+SGST) vs inter-state (IGST) display
 
 ## 9.3 Number Formatting
-Use the shared `IndianMoneyFormatter` for Vendor PO monetary values; do not format amounts inside Thymeleaf expressions. Use explicit fixed table column widths and right-aligned numeric cells for PDF financial tables. Reserve enough width for large grouped values and allow product descriptions to wrap within their own column.
+Use the shared `IndianMoneyFormatter` for Vendor PO monetary values; do not format amounts inside Thymeleaf expressions. Use explicit PDF table column widths and right-aligned numeric cells for financial tables. For Vendor PO item tables, calculate widths from the longest rendered value per column, preserve minimum widths for every field and the Product column, and let short financial values such as Rate give space to longer HSN or quantity values. Keep visible vertical separators between adjacent metadata and financial columns. Allow product descriptions to wrap within their own column.
+
+For Vendor PO PDF item tables, display quantities without insignificant trailing zeros while preserving any meaningful fractional digits from legacy data. Place the Unit column immediately after Qty so the quantity and its unit read together.
+
+Center-align every Vendor PO PDF item-table heading. Label the row-number column `Sr No.`; format Qty values with Indian digit grouping while retaining meaningful fractional digits, and include `%` in rendered GST percentage values.
+
+Show the `₹` symbol beside every Vendor PO PDF summary amount, including subtotal, freight, packing, each applicable GST row, and total.
+
+For Vendor PO product rows, preselect the Product Unit only when it matches an available Unit option. Keep the PO row's selected Unit when submitting and reopening a draft; it overrides Product metadata for that line.
 
 ---
 

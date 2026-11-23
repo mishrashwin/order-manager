@@ -660,7 +660,7 @@
           // FIX 6: Auto-fill pre-GST price, HSN, unit, and GST% on product select
           const preGstPriceInput = row?.querySelector('input[name="itemPreGstUnitPrices"]');
           const hsnInput = row?.querySelector('input[name="itemHsnCodes"]');
-          const unitInput = row?.querySelector('input[name="itemUnits"]');
+          const unitInput = row?.querySelector('select[name="itemUnits"]');
           const gstInput = row?.querySelector('input[name="itemGstPercentages"]');
 
           // Clear all auto-populated fields if no product is selected

@@ -2,6 +2,7 @@ package com.example.ordermanager.vendor.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.example.ordermanager.vendor.entity.VendorPo;
 import com.example.ordermanager.vendor.entity.VendorPoAddressSnapshot;
@@ -56,6 +57,60 @@ class VendorPoCalculationServiceTest {
     po.setFreightAmount(new BigDecimal("-1.00"));
 
     assertThrows(IllegalArgumentException.class, () -> service.calculate(po));
+  }
+
+  /**
+   * Reports an actionable validation error before an item GST amount can overflow NUMERIC(12,2).
+   */
+  @Test
+  void rejectsItemGstAmountAboveDatabaseCapacity() {
+    VendorPo po = basePo();
+    VendorPoItem item = new VendorPoItem();
+    item.setQuantity(new BigDecimal("2.000"));
+    item.setPricingUnit(BigDecimal.ONE);
+    item.setPreGstUnitPrice(new BigDecimal("6000000000.00"));
+    item.setGstPercentage(new BigDecimal("100.00"));
+    po.addItem(item);
+
+    IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> service.calculate(po));
+
+    assertTrue(exception.getMessage().contains("Item 1 calculated GST amount"));
+    assertTrue(exception.getMessage().contains("9,999,999,999.99"));
+  }
+
+  /** Reports a clear message when the entered item price exceeds NUMERIC(12,2). */
+  @Test
+  void rejectsItemPriceAboveDatabaseCapacity() {
+    VendorPo po = basePo();
+    VendorPoItem item = new VendorPoItem();
+    item.setQuantity(BigDecimal.ONE);
+    item.setPricingUnit(BigDecimal.ONE);
+    item.setPreGstUnitPrice(new BigDecimal("10000000000.00"));
+    item.setGstPercentage(BigDecimal.ZERO);
+    po.addItem(item);
+
+    IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> service.calculate(po));
+
+    assertTrue(exception.getMessage().contains("Item 1 price"));
+  }
+
+  /** Rejects a derived taxable unit rate that cannot be stored at its persisted precision. */
+  @Test
+  void rejectsTaxableRateAboveDatabaseCapacity() {
+    VendorPo po = basePo();
+    VendorPoItem item = new VendorPoItem();
+    item.setQuantity(new BigDecimal("0.001"));
+    item.setPricingUnit(new BigDecimal("0.001"));
+    item.setPreGstUnitPrice(new BigDecimal("9000000000.00"));
+    item.setGstPercentage(BigDecimal.ZERO);
+    po.addItem(item);
+
+    IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> service.calculate(po));
+
+    assertTrue(exception.getMessage().contains("Item 1 taxable unit rate"));
   }
 
   /** Creates a base PO with explicit Included defaults and matching GST state codes. */

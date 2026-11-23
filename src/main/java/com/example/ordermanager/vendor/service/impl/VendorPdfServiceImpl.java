@@ -1,6 +1,7 @@
 package com.example.ordermanager.vendor.service.impl;
 
 import com.example.ordermanager.utils.NumberToWordsUtil;
+import com.example.ordermanager.utils.IndianQuantityFormatter;
 import com.example.ordermanager.vendor.entity.VendorPo;
 import com.example.ordermanager.vendor.entity.VendorPoItem;
 import com.example.ordermanager.vendor.service.VendorPdfService;
@@ -35,6 +36,7 @@ public class VendorPdfServiceImpl implements VendorPdfService {
     try {
       if (po.getItems() != null) {
         for (VendorPoItem item : po.getItems()) {
+          item.setFormattedQuantity(IndianQuantityFormatter.format(item.getQuantity()));
           BigDecimal rate =
               item.getTaxableRate() == null ? item.getUnitPrice() : item.getTaxableRate();
           item.setFormattedTaxableRate(IndianMoneyFormatter.format(rate));
@@ -47,6 +49,7 @@ public class VendorPdfServiceImpl implements VendorPdfService {
       Context context = new Context();
       HashMap<String, Object> variables = new HashMap<>();
       variables.put("vendorPo", po);
+      variables.put("itemColumnWidths", VendorPoPdfColumnWidths.calculate(po.getItems()));
       variables.put("buyerName", safe(po.getBuyerCompanyName()));
       variables.put("buyerGstin", safe(po.getBuyerGstin()));
       variables.put("buyerAddress", po.getBillToSnapshot());
@@ -77,6 +80,11 @@ public class VendorPdfServiceImpl implements VendorPdfService {
       PdfRendererBuilder builder = new PdfRendererBuilder();
       builder.withHtmlContent(html, null);
       builder.toStream(output);
+      try {
+        builder.useFont(() -> getClass().getResourceAsStream("/fonts/segoeui.ttf"), "Segoe UI");
+      } catch (Exception e) {
+        // Fallback to default font if font not available
+      }
       builder.run();
       return output.toByteArray();
     } catch (Exception exception) {

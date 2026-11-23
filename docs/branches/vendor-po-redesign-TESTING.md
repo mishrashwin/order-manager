@@ -5,6 +5,18 @@ Verify Phase 0.1 Vendor PO immutability and Phase 1 Company Address management, 
 
 The 2026-11-19 PDF financial-formatting enhancement also verifies Indian grouping and fixed decimal display, wide-value PDF rendering, item-column alignment, financial summary readability, and amount-in-words consistency.
 
+The follow-up PDF quantity correction verifies whole quantities display without storage-scale zeros and that Unit follows Qty.
+
+The 2026-11-23 overflow-handling follow-up verifies oversized item values fail before persistence with actionable feedback and unexpected database constraint failures do not expose SQL details.
+
+The 2026-11-23 selected Unit correction verifies the chosen PO line Unit takes precedence over Product metadata, persists through draft edit/reopen, and appears in the generated PDF.
+
+The PDF column-layout follow-up verifies HSN/Qty separation and content-based width allocation, including a long HSN with short Rate and a long grouped Rate with short HSN.
+
+The PDF label/formatting follow-up verifies `Sr No.`, centered item headings, Indian-grouped Qty values, and GST percentage values that include `%`.
+
+The summary currency follow-up verifies that subtotal, freight, packing, each applicable GST amount, and total show an inline `₹ amount` value without wrapping, and that amount-in-words begins `Indian Rupees`.
+
 Address correction coverage also verifies activation/deactivation preservation, explicit reassignment of each default role (including dual-default addresses), live Company Details Bill To/GSTIN rendering, Drug License persistence, and tenant isolation.
 
 ## Preconditions and test environment
@@ -41,6 +53,40 @@ Run `IndianMoneyFormatterTest` and `NumberToWordsUtilTest`.
 Run `VendorPdfServiceIntegrationTest#generatedPdf_keepsLargeFinancialValuesAndLongNamesReadable` and inspect `output/pdf/vendor-po-financial-format-sample.pdf` plus its PNG render.
 
 **Expected result:** Extracted PDF text contains the ₹100 crore scale amounts and wrapped product name; item financial columns and summary remain readable without clipping or merged values.
+
+#### VPO-PDF-24 — Quantity display and column order
+Run `VendorPdfServiceIntegrationTest#generatedPdf_keepsLargeFinancialValuesAndLongNamesReadable` with a quantity stored as `1000000.000`.
+
+**Expected result:** The PDF displays `10,00,000` followed by `PCS`, has Qty immediately before Unit, and contains no `1000000.000` quantity rendering. `IndianQuantityFormatterTest` also confirms `10.000` displays as `10`; fractional legacy quantities retain meaningful digits without trailing zeros.
+
+#### VPO-PDF-25 — HSN separation and content-based column sizing
+Run `VendorPoPdfColumnWidthsTest` and render the large/long-value PDF fixture.
+
+**Expected result:** Vertical separators keep HSN, Qty, and Unit visibly distinct. Each column receives width based on its longest displayed value; long HSN values expand while short Rates contract, and a long Rate expands when needed. Column widths total 100% and Product retains its minimum width.
+
+#### VPO-PDF-26 — Item headings and value formatting
+Run `IndianQuantityFormatterTest` and `VendorPdfServiceIntegrationTest#generatedPdf_keepsLargeFinancialValuesAndLongNamesReadable`; inspect the rendered PDF.
+
+**Expected result:** The first column header is `Sr No.`, every item heading is centered, quantity `1000000.000` displays as `10,00,000`, and an 18% GST value displays as `18%`.
+
+#### VPO-PDF-27 — INR symbols on summary values
+Generate intra-state and inter-state PDFs with freight/packing amounts, and inspect summary rows.
+
+**Expected result:** Subtotal, freight, packing, CGST/SGST or IGST, and total values each display the `₹` symbol before the formatted amount.
+
+#### VPO-VAL-01 — Oversized item financial value
+Run `VendorPoCalculationServiceTest#rejectsItemGstAmountAboveDatabaseCapacity`, `#rejectsItemPriceAboveDatabaseCapacity`, and `#rejectsTaxableRateAboveDatabaseCapacity`.
+
+**Expected result:** Oversized item price or calculated GST is rejected before repository save with an item-specific message containing the supported maximum. No database exception or partial PO update occurs.
+
+#### VPO-VAL-02 — Unexpected persistence constraint failure
+Run `VendorPoControllerTest#update_databaseValueOverflowReturnsFormError`, `#create_databaseValueOverflowReturnsSafeFormError`, and `GlobalExceptionHandlerTest`.
+
+**Expected result:** The form displays a safe actionable message explaining that one or more values are invalid or exceed supported limits. SQL and database constraint details are absent from the UI.
+
+**Execution status:** Not run (2026-11-23); regression tests were added but not executed in this session.
+
+The generic exception response must use a fixed message and omit exception text and request paths. A residual database error on a Vendor PO create/update must redirect to the matching form and show a safe flash message.
 
 #### VPO-PDF-23 — Tax presentation regression
 Run `VendorPdfServiceSnapshotTest` and the existing PDF integration suite for intra-state and inter-state PO data.
@@ -213,6 +259,14 @@ Manual browser QA remains unrun unless a dated execution is recorded below. V34�
 2. Inspect the item table headings and product cell.
 
 **Expected result:** The PDF contains a single Unit column and the item delivery date appears on the next line below the product name.
+
+### VPO-UNIT-02 — Persist selected Unit
+1. Select a Product whose stored Unit differs from the PO Unit, such as Product Unit `1` and PO Unit `EA` or `Box`.
+2. Save the PO, reopen its draft, and render its PDF.
+
+**Expected result:** The selected PO Unit remains selected after reopening and is shown in the PDF. Product Unit supplies a default only when the PO line Unit is blank.
+
+For rows already saved with the wrong Unit, reselect the intended Unit and save the DRAFT. For an issued PO, create an amendment revision and correct its Unit; the old issued snapshot remains immutable.
 
 **Execution status:** Not run (2026-11-14); automated tests and manual browser/PDF inspection were not performed.
 
