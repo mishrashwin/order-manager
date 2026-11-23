@@ -240,8 +240,8 @@ class VendorPdfServiceIntegrationTest {
         "Industrial component with an intentionally long descriptive product name for line wrapping");
     item.setHsnCode("12345678");
     item.setUnit("PCS");
-    item.setQuantity(new BigDecimal("10.000"));
-    item.setTaxableRate(new BigDecimal("100000000.00"));
+    item.setQuantity(new BigDecimal("1000000.000"));
+    item.setTaxableRate(new BigDecimal("1000.00"));
     item.setGstPercentage(new BigDecimal("18.00"));
     item.setGstAmount(new BigDecimal("180000000.00"));
     item.setLineTotal(new BigDecimal("1180000000.00"));
@@ -268,8 +268,14 @@ class VendorPdfServiceIntegrationTest {
     assertTrue(text.contains("1,00,00,00,000.00"));
     assertTrue(text.contains("18,00,00,000.00"));
     assertTrue(text.contains("1,18,00,00,000.00"));
+    assertEquals(6L, text.chars().filter(character -> character == '₹').count(), text);
     String normalizedText = text.replaceAll("\\s+", " ");
-    assertTrue(normalizedText.contains("18 18,00,00,000.00"), text);
+    assertTrue(normalizedText.contains("₹ 1,00,00,00,000.00"), text);
+    assertTrue(normalizedText.contains("Indian Rupees One Hundred Crore Only"), text);
+    assertTrue(normalizedText.contains("Sr No."), text);
+    assertTrue(normalizedText.contains("18% 18,00,00,000.00"), text);
+    assertTrue(normalizedText.contains("10,00,000 PCS"), text);
+    assertFalse(normalizedText.contains("10.000"), text);
     assertTrue(normalizedText.contains(
         "Industrial component with an intentionally long descriptive product name"), text);
   }

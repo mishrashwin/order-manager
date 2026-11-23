@@ -278,6 +278,7 @@ If any guideline is violated:
 
 - Vendor PO updates must load the record with `findByIdAndCompany_Id` using the authenticated company context and may mutate it only while its status is `DRAFT`.
 - Every non-DRAFT status is temporarily immutable until the dedicated revision workflow exists. MVC handlers must not reset status after update; the service guard is authoritative.
+- Vendor PO calculation must validate input and calculated values against persisted numeric precision before repository writes. If a database integrity exception still occurs, handlers must show generic actionable form feedback and must not expose SQL details. The global exception fallback must never return raw exception messages or request paths to users; keep diagnostic details in server logs only.
 
 # Company Address rules
 

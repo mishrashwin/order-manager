@@ -333,13 +333,49 @@ class VendorPoServiceTest {
     item.setProductId(product.getId());
     item.setQuantity(5.00);
     item.setUnitPrice(100.00);
+    item.setUnit("EA");
 
     testVendorPo.setItems(Arrays.asList(item));
     VendorPo result = service.createVendorPo(testVendorPo);
 
     assertEquals("Test Product", result.getItems().get(0).getProductName());
     assertEquals("HSN123", result.getItems().get(0).getHsnCode());
-    assertEquals("PCS", result.getItems().get(0).getUnit());
+    assertEquals("EA", result.getItems().get(0).getUnit());
+  }
+
+  /** Preserves a unit selected during a draft edit instead of replacing it with Product metadata. */
+  @Test
+  void updateVendorPo_preservesSelectedItemUnit() {
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
+    when(vendorPoRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(testVendorPo));
+    when(companyRepository.findById(1L)).thenReturn(Optional.of(testCompany));
+    when(productRepository.findByIdAndCompany_Id(1L, 1L)).thenAnswer(invocation -> {
+      Product product = new Product();
+      product.setId(1L);
+      product.setName("Test Product");
+      product.setUnit("1");
+      product.setCompany(testCompany);
+      product.setGstPercentage(BigDecimal.ZERO);
+      return Optional.of(product);
+    });
+    when(vendorPoRepository.save(any(VendorPo.class))).thenAnswer(i -> i.getArgument(0));
+
+    VendorPo request = new VendorPo();
+    VendorPoItem item = new VendorPoItem();
+    item.setProductId(1L);
+    item.setUnit("Box");
+    item.setQuantity(BigDecimal.ONE);
+    item.setPricingUnit(BigDecimal.ONE);
+    item.setPreGstUnitPrice(new BigDecimal("100.00"));
+    request.setItems(Arrays.asList(item));
+    request.setFreightIncluded(true);
+    request.setFreightTaxable(false);
+    request.setPackingIncluded(true);
+    request.setPackingTaxable(false);
+
+    VendorPo result = service.updateVendorPo(1L, request);
+
+    assertEquals("Box", result.getItems().get(0).getUnit());
   }
 
   /** Confirms an issued PO is retained while an independent editable revision is created. */

@@ -83,6 +83,9 @@ public class VendorPoItem {
   private String formattedTaxableRate;
 
   @Transient
+  private String formattedQuantity;
+
+  @Transient
   private String formattedGstAmount;
 
   @Transient

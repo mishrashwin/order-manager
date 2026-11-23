@@ -61,7 +61,7 @@ class VendorPdfServiceSnapshotTest {
     assertTrue(context.getValue().getVariable("buyerAddress") == address);
     assertTrue(context.getValue().getVariable("finalTotal").equals("12.34"));
     assertTrue(context.getValue().getVariable("amountInWords")
-        .equals("Rupees Twelve and Thirty Four Paisa Only"));
+        .equals("Indian Rupees Twelve and Thirty Four Paisa Only"));
   }
 
   /** Confirms PDF financial display strings use Indian grouping without changing snapshots. */
@@ -88,7 +88,7 @@ class VendorPdfServiceSnapshotTest {
     assertTrue(context.getValue().getVariable("subtotal").equals("99,99,99,999.99"));
     assertTrue(context.getValue().getVariable("cgst").equals("10,00,00,000.00"));
     assertTrue(context.getValue().getVariable("amountInWords")
-        .equals("Rupees One Hundred Crore Only"));
+        .equals("Indian Rupees One Hundred Crore Only"));
     assertTrue(po.getTotalAmount().compareTo(new BigDecimal("1000000000.00")) == 0);
   }
 }

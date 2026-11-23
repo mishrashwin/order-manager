@@ -17,13 +17,13 @@ public class NumberToWordsUtil {
     return convertToWords(BigDecimal.valueOf(amount));
   }
 
-  /** Converts a two-decimal monetary amount into Rupees and Paisa without losing cents. */
+  /** Converts a two-decimal monetary amount into Indian Rupees and Paisa without losing cents. */
   public static String convertToWords(BigDecimal amount) {
     BigDecimal rounded =
         amount == null ? BigDecimal.ZERO : amount.setScale(2, RoundingMode.HALF_UP);
     long rupees = rounded.abs().longValue();
     long paisa = rounded.remainder(BigDecimal.ONE).movePointRight(2).abs().longValue();
-    String result = "Rupees " + (rupees == 0 ? "Zero" : convert(rupees));
+    String result = "Indian Rupees " + (rupees == 0 ? "Zero" : convert(rupees));
     if (paisa > 0) {
       result += " and " + convert(paisa) + " Paisa";
     }

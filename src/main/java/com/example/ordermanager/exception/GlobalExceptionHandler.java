@@ -3,6 +3,7 @@ package com.example.ordermanager.exception;
 import com.example.ordermanager.order.exception.OrderNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
@@ -10,6 +11,7 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.unit.DataSize;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -17,6 +19,10 @@ import java.util.Map;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+  private static final String SAFE_PO_SAVE_ERROR =
+      "The PO could not be saved because one or more values are invalid or exceed supported limits. "
+          + "Review quantities, rates, taxes, and charges.";
 
   @Value("${app.vendor.bulk-upload.max-file-size:5MB}")
   private DataSize maxBulkUploadFileSize = DataSize.ofMegabytes(5);
@@ -54,21 +60,36 @@ public class GlobalExceptionHandler {
     return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
   }
 
+  /** Returns PO form feedback for persistence failures without exposing database details. */
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  public Object handleDataIntegrityViolation(DataIntegrityViolationException exception,
+      HttpServletRequest request, RedirectAttributes redirectAttributes) {
+    String path = request.getServletPath();
+    if ("/vendor/pos".equals(path)) {
+      redirectAttributes.addFlashAttribute("poError", SAFE_PO_SAVE_ERROR);
+      return "redirect:/vendor/pos/new";
+    }
+    if (path.matches("/vendor/pos/update/\\d+")) {
+      String id = path.substring(path.lastIndexOf('/') + 1);
+      redirectAttributes.addFlashAttribute("poError", SAFE_PO_SAVE_ERROR);
+      return "redirect:/vendor/pos/" + id + "/edit";
+    }
+    Map<String, Object> body = new LinkedHashMap<>();
+    body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+    body.put("error", "Internal Server Error");
+    body.put("message",
+        "The request could not be completed. Please review your input and try again.");
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+  }
+
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<Object> handleGeneric(Exception ex, WebRequest request) {
+  public ResponseEntity<Object> handleGeneric(Exception exception, WebRequest request) {
     Map<String, Object> body = new LinkedHashMap<>();
     body.put("timestamp", LocalDateTime.now());
     body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
     body.put("error", "Internal Server Error");
-    // Hide database details from users for security
-    String message = ex.getMessage();
-    if (message != null && (message.contains("constraint") || message.contains("SQL")
-        || message.contains("null value") || message.contains("violates"))) {
-      message =
-          "An error occurred while processing your request. Please contact support if the issue persists.";
-    }
-    body.put("message", message);
-    body.put("path", request.getDescription(false).replace("uri=", ""));
+    body.put("message",
+        "An error occurred while processing your request. Please contact support if the issue persists.");
     return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
   }
 }

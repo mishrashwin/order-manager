@@ -18,6 +18,7 @@ import com.example.ordermanager.vendor.service.VendorPoSettingsService;
 import com.example.ordermanager.vendor.service.VendorService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -114,6 +115,10 @@ public class VendorPoController {
     } catch (IllegalArgumentException | IllegalStateException exception) {
       ra.addFlashAttribute("poError", exception.getMessage());
       return "redirect:/vendor/pos/new";
+    } catch (DataIntegrityViolationException exception) {
+      ra.addFlashAttribute("poError", "The PO could not be saved because one or more values are "
+          + "invalid or exceed supported limits. Review quantities, rates, taxes, and charges.");
+      return "redirect:/vendor/pos/new";
     }
 
     // Send email if requested
@@ -174,6 +179,15 @@ public class VendorPoController {
       return "redirect:/vendors#vendor-po";
     } catch (IllegalArgumentException | IllegalStateException e) {
       model.addAttribute("poError", e.getMessage());
+      model.addAttribute("vendorPo", vendorPo);
+      model.addAttribute("vendors", vendorService.getVendorsByCompanyId(companyId));
+      model.addAttribute("products", productService.getProductsByCompanyId(companyId));
+      model.addAttribute("users", userService.getUsersByCompany(companyId));
+      addCommercialChoices(model);
+      return "vendor/pos-form-new";
+    } catch (DataIntegrityViolationException exception) {
+      model.addAttribute("poError", "The PO could not be saved because one or more values are "
+          + "invalid or exceed supported limits. Review quantities, rates, taxes, and charges.");
       model.addAttribute("vendorPo", vendorPo);
       model.addAttribute("vendors", vendorService.getVendorsByCompanyId(companyId));
       model.addAttribute("products", productService.getProductsByCompanyId(companyId));

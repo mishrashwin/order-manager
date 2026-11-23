@@ -49,16 +49,22 @@
 
     .items-table { font-size: 9px; }
     .items-table th, .items-table td { padding-left: 5px; padding-right: 5px; }
-    .items-table th { white-space: nowrap; }
+    .items-table th { white-space: nowrap; text-align: center; }
     .items-table td.product-cell { word-wrap: break-word; }
+    .items-table td:nth-child(3), .items-table td:nth-child(4),
+    .items-table td:nth-child(5) { white-space: nowrap; }
     .items-table .financial-cell { white-space: nowrap; }
     .items-table td.financial-cell { padding-left: 8px; padding-right: 8px; }
-    .items-table th.financial-cell { border-left: 1px solid #e4e7ea; }
-    .items-table td.financial-cell { border-left: 1px solid #f0f1f2; }
+    .items-table th + th { border-left: 1px solid #e4e7ea; }
+    .items-table td + td { border-left: 1px solid #f0f1f2; }
     .financial-summary { width: 100%; table-layout: fixed; }
     .financial-summary td { padding: 5px 8px; }
     .financial-summary .summary-label { width: 52%; }
-    .financial-summary .summary-amount { width: 48%; white-space: nowrap; }
+    .financial-summary .summary-amount {
+      width: 48%;
+      white-space: nowrap;
+      font-family: "Segoe UI", "Arial Unicode MS", Arial, sans-serif;
+    }
     .financial-summary .grand-total td { border-top: 1px solid #777; padding-top: 8px; font-size: 13px; }
 
     /* UTIL */
@@ -232,17 +238,28 @@
 
   <!-- ITEMS -->
   <table class="section items-table">
+    <colgroup>
+      <col th:style="'width:' + ${itemColumnWidths.index} + '%'"/>
+      <col th:style="'width:' + ${itemColumnWidths.product} + '%'"/>
+      <col th:style="'width:' + ${itemColumnWidths.hsn} + '%'"/>
+      <col th:style="'width:' + ${itemColumnWidths.quantity} + '%'"/>
+      <col th:style="'width:' + ${itemColumnWidths.unit} + '%'"/>
+      <col th:style="'width:' + ${itemColumnWidths.rate} + '%'"/>
+      <col th:style="'width:' + ${itemColumnWidths.gst} + '%'"/>
+      <col th:style="'width:' + ${itemColumnWidths.gstAmount} + '%'"/>
+      <col th:style="'width:' + ${itemColumnWidths.amount} + '%'"/>
+    </colgroup>
     <thead>
     <tr>
-      <th style="width:4%;" class="center">#</th>
-      <th style="width:22%;">Product</th>
-      <th style="width:8%;" class="center">HSN</th>
-      <th style="width:7%;" class="center">Unit</th>
-      <th style="width:7%;" class="right">Qty</th>
-      <th style="width:13%;" class="right financial-cell">Rate</th>
-      <th style="width:6%;" class="right financial-cell">GST%</th>
-      <th style="width:16%;" class="right financial-cell">GST Amt</th>
-      <th style="width:17%;" class="right financial-cell">Amount</th>
+      <th>Sr No.</th>
+      <th>Product</th>
+      <th>HSN</th>
+      <th>Qty</th>
+      <th>Unit</th>
+      <th class="financial-cell">Rate</th>
+      <th class="financial-cell">GST%</th>
+      <th class="financial-cell">GST Amt</th>
+      <th class="financial-cell">Amount</th>
     </tr>
     </thead>
 
@@ -252,13 +269,13 @@
       <td class="product-cell"><span th:text="${#strings.escapeXml(item.productName)}"></span>
         <br th:if="${item.deliveryDate != null}"/><small th:if="${item.deliveryDate != null}">Delivery: <span th:text="${#temporals.format(item.deliveryDate,'dd-MM-yyyy')}"></span></small></td>
       <td class="center" th:text="${item.hsnCode ?: '-'}"></td>
+      <td class="right" th:text="${item.formattedQuantity}"></td>
       <td class="center" th:text="${item.unit ?: '-'}"></td>
-      <td class="right financial-cell" th:text="${item.quantity}"></td>
       <td class="right financial-cell" th:text="${item.formattedTaxableRate != null ? item.formattedTaxableRate : '-'}"></td>
 
       <!-- GST % (NO DECIMAL) -->
       <td class="right financial-cell"
-          th:text="${item.gstPercentage != null ? item.gstPercentage.intValue() : 0}">
+          th:text="${item.gstPercentage != null ? item.gstPercentage.intValue() + '%' : '0%'}">
       </td>
 
       <td class="right financial-cell"
@@ -280,34 +297,34 @@
 
           <tr>
             <td>Subtotal</td>
-            <td class="right summary-amount" th:text="${subtotal ?: '-'}"></td>
+            <td class="right summary-amount">₹ <span th:text="${subtotal == null || subtotal == '-' ? '-' : subtotal}"></span></td>
           </tr>
 
           <tr><td>Freight <span th:text="${freightIncluded ? '(Included)' : '(Excluded)'}"></span></td>
-            <td class="right summary-amount" th:text="${freightAmount ?: '-'}"></td></tr>
+            <td class="right summary-amount">₹ <span th:text="${freightAmount == null || freightAmount == '-' ? '-' : freightAmount}"></span></td></tr>
           <tr><td>Packing <span th:text="${packingIncluded ? '(Included)' : '(Excluded)'}"></span></td>
-            <td class="right summary-amount" th:text="${packingAmount ?: '-'}"></td></tr>
+            <td class="right summary-amount">₹ <span th:text="${packingAmount == null || packingAmount == '-' ? '-' : packingAmount}"></span></td></tr>
 
           <!-- INTRA STATE: CGST + SGST -->
           <tr th:if="${isIntraState}">
             <td>CGST</td>
-            <td class="right summary-amount" th:text="${cgst ?: '-'}"></td>
+            <td class="right summary-amount">₹ <span th:text="${cgst == null || cgst == '-' ? '-' : cgst}"></span></td>
           </tr>
 
           <tr th:if="${isIntraState}">
             <td>SGST</td>
-            <td class="right summary-amount" th:text="${sgst ?: '-'}"></td>
+            <td class="right summary-amount">₹ <span th:text="${sgst == null || sgst == '-' ? '-' : sgst}"></span></td>
           </tr>
 
           <!-- INTER STATE: IGST -->
           <tr th:if="${!isIntraState}">
             <td>IGST</td>
-            <td class="right summary-amount" th:text="${igst ?: '-'}"></td>
+            <td class="right summary-amount">₹ <span th:text="${igst == null || igst == '-' ? '-' : igst}"></span></td>
           </tr>
 
           <tr class="bold grand-total">
             <td>Total</td>
-            <td class="right summary-amount" th:text="${finalTotal ?: '-'}"></td>
+            <td class="right summary-amount"><span th:text="${finalTotal == null || finalTotal == '-' ? '-' : '₹ ' + finalTotal}"></span></td>
           </tr>
 
         </table>

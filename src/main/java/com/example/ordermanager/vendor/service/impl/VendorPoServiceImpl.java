@@ -618,8 +618,7 @@ public class VendorPoServiceImpl implements VendorPoService {
   // ── Private helpers ────────────────────────────────────────────────────────
 
   /**
-   * Resolves product references for all items on a VendorPo, populating productName, hsnCode, and
-   * unit from the Product entity.
+   * Resolves product references for all items on a VendorPo, using Product metadata as defaults.
    */
   private void resolveItemProducts(VendorPo po, Long companyId) {
     if (po.getItems() == null)
@@ -642,7 +641,9 @@ public class VendorPoServiceImpl implements VendorPoService {
       }
       it.setProductName(it.getProduct().getName());
       it.setHsnCode(it.getProduct().getHsnCode());
-      it.setUnit(it.getProduct().getUnit());
+      if (it.getUnit() == null || it.getUnit().isBlank()) {
+        it.setUnit(it.getProduct().getUnit());
+      }
       it.setGstPercentage(it.getProduct().getGstPercentage());
 
       // Handle pre-GST price calculation
@@ -660,7 +661,9 @@ public class VendorPoServiceImpl implements VendorPoService {
           .orElseThrow(() -> new IllegalArgumentException("Product not found for this company"));
       it.setProductName(product.getName());
       it.setHsnCode(product.getHsnCode());
-      it.setUnit(product.getUnit());
+      if (it.getUnit() == null || it.getUnit().isBlank()) {
+        it.setUnit(product.getUnit());
+      }
       it.setGstPercentage(product.getGstPercentage());
       it.setProduct(product);
 

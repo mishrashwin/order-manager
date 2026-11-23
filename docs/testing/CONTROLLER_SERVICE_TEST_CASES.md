@@ -81,6 +81,13 @@
 - Verify form values and calculations remain intact, with exactly one product Unit field/column; Price per remains a separate pricing basis.
 - Verify generated PO PDF renders one Unit column, omits the separate Pricing Unit column, and places an item-specific delivery date on a separate line beneath its product name.
 - Verify item and summary values use Indian grouping, fixed two decimals, right-aligned columns, and fit values through ₹100 crore without clipping or merging GST Amt / Amount cells.
+- Verify PDF item-column widths are calculated from the longest rendered values, sum to 100%, retain a readable minimum Product width, and show visible separators between HSN, Qty, Unit, and financial cells.
+- Verify Vendor PO PDF item headings are centered and the row-number heading is `Sr No.`; quantities use Indian grouping without insignificant zeros, and GST percentage values include `%`.
+- Verify the summary displays `₹` before subtotal, freight, packing, applicable CGST/SGST or IGST rows, and total.
+- Verify a persisted quantity such as `10.000` renders as `10`, with Unit immediately following Qty; meaningful fractional legacy digits remain visible without trailing zeros.
+- Verify item values exceeding their database numeric precision are rejected before persistence with an actionable item-specific message; verify residual persistence constraint failures render a safe generic PO form message without SQL details.
+- Verify the global DataIntegrityViolationException fallback redirects PO create/update requests to their forms with a safe flash message, and the generic error response never reflects exception text or request paths.
+- Verify a selected PO line Unit overrides Product metadata and remains unchanged after create/update, draft reopen, and PDF rendering; verify Product Unit is used only when the PO line Unit is blank.
 - Verify long product descriptions wrap inside the Product column; test intra-state CGST/SGST and inter-state IGST summaries, with amount-in-words matching Grand Total including paise.
 
 
