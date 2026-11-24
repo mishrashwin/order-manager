@@ -1,5 +1,26 @@
 # Branch Testing Guide: `vendor-po-redesign`
 
+## Vendor PO list pagination presentation regression (2026-11-24)
+
+### Positive scenario
+1. Sign in as a Company user with at least 11 current Vendor POs and open Vendor Management → Vendor PO.
+2. Confirm page 1 displays the standard navbar, Vendor Management layout, styled PO table, and pagination controls.
+3. Click page 2 (or Next).
+
+**Expected result:** The page stays within Vendor Management with its CSS and navbar intact; the fragment updates in place and displays PO 11. Page navigation remains functional after each fragment replacement.
+
+### Search and navigation regression
+1. Search for a PO number that has results across multiple pages, then navigate between available pages.
+
+**Expected result:** Pagination continues to update the PO fragment without a full-page fragment response, and the search term remains in the request and input.
+
+### Negative / error scenario
+1. With browser developer tools open, make the fragment request fail, then click a pagination control.
+
+**Expected result:** The surrounding Vendor Management page remains styled and usable; no raw unstyled fragment replaces the page.
+
+**Execution status:** Not run; documentation and source inspection only, 2026-11-24.
+
 ## Feature overview and testing objective
 Verify Phase 0.1 Vendor PO immutability and Phase 1 Company Address management, legacy backfill, role defaults, validation, authorization, and tenant isolation.
 

@@ -711,3 +711,6 @@ Notes
 - Added formatter/words tests and rendered-PDF text extraction coverage. The PDF integration test writes a review sample and first-page PNG to `output/pdf/`.
 - Validation: `mvn "-Dtest=VendorPdfServiceIntegrationTest,VendorPdfServiceSnapshotTest,IndianMoneyFormatterTest,NumberToWordsUtilTest" test` passed: 20 tests, 0 failures/errors/skips. Generated PDF and PNG visually inspected; quantity/rate separation adjusted after initial review. Full repository suite and browser QA were not run.
 - Follow-up fixture correction: added 18% GST to the large sample item and asserted that the extracted row pairs GST% `18` with GST Amt `18,00,00,000.00`. `VendorPdfServiceIntegrationTest#generatedPdf_keepsLargeFinancialValuesAndLongNamesReadable` passed; regenerated sample inspected.
+# 2026-11-24 — Vendor PO list pagination presentation
+- Corrected parent-page delegated pagination handling for the AJAX PO list; documented regression coverage in `vendor-po-redesign-TESTING.md`.
+- Automated tests: Not run (template JavaScript-only change; user did not request test execution). Manual browser regression: Not run.

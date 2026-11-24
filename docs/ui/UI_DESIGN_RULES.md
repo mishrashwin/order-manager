@@ -422,3 +422,6 @@ If any guideline is violated:
 
 ## Vendor PO default terms management
 - Company-wide default Vendor PO Terms & Conditions are created and edited from the Terms & Conditions control on the Vendor Purchase Orders list. Do not expose duplicate default-term editors or per-PO template selection/editor controls on PO create/edit forms. Keep delivery-term selection separate because it describes delivery logistics rather than legal terms.
+
+## AJAX list pagination
+- When a server-rendered fragment is inserted with `innerHTML`, do not rely on scripts inside that fragment for pagination or other event handling; those scripts do not execute. Bind delegated handlers from the persistent parent page and fetch the next fragment into the existing styled container.

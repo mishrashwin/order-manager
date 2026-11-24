@@ -387,7 +387,7 @@
           }
       }
 
-      function loadVendorPoList(page = 0) {
+      function loadVendorPoList(page = 0, search = null) {
           const container = document.getElementById('vendor-po-list-container');
 
           container.innerHTML = `
@@ -397,7 +397,11 @@
               </div>
           `;
 
-          fetch(`/vendor/pos/list-ajax?page=${page}`)
+          const url = new URL('/vendor/pos/list-ajax', window.location.origin);
+          url.searchParams.set('page', page);
+          if (search) url.searchParams.set('search', search);
+
+          fetch(url.toString())
               .then(res => res.text())
               .then(html => {
                   container.innerHTML = html;
@@ -415,6 +419,18 @@
                   `;
               });
       }
+
+      // Keep pagination inside the styled Vendor Management page after AJAX fragment loads.
+      document.addEventListener('click', function (event) {
+          const link = event.target.closest('#vendor-po-list-container nav[aria-label="Vendor PO pagination"] a.page-link');
+          if (!link) return;
+
+          event.preventDefault();
+          const url = new URL(link.href, window.location.origin);
+          const page = Number.parseInt(url.searchParams.get('page') || '0', 10);
+          const search = url.searchParams.get('search');
+          loadVendorPoList(Number.isNaN(page) ? 0 : page, search);
+      });
 
       // This page loads pos-list-ajax.html with innerHTML, so its inline scripts
       // are not executed. Delegate modal events here, where they remain active
