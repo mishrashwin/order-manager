@@ -27,6 +27,15 @@
 ## Problem statement
 Vendor POs could be mutated after issuance and reset to DRAFT. Company profiles supported only a single free-text address, with no tenant-managed multiple locations or default Bill To/Ship To roles.
 
+## Vendor PO pagination presentation fix (2026-11-24)
+- **Scope:** Preserve the Vendor Management page layout and styles when navigating the paginated Vendor PO list; no backend, database, tenant, or security behavior changes.
+- **Cause and decision:** Pagination links target the server-rendered AJAX fragment. Their click handler was embedded in that fragment, whose script is not run when inserted with `innerHTML`. Handle pagination from the parent Vendor page instead and reload the fragment in its existing container.
+- **Documentation plan:** Update this branch record, its paired testing guide, the branch index, UI design rules, testing rules/case matrix/progress. README capability/setup content is unaffected.
+- **Implementation:** `vendors/list.html` now delegates PO pagination clicks from the persistent page, fetches the selected fragment into the existing container, and carries the current search query through pagination.
+- **Impacts:** No database/entities, migrations, Java controller/service methods, API contract, authorization, tenant isolation, configuration, or dependencies changed. README setup/capability content does not apply to this UI bug fix.
+- **Validation:** Source inspection and diff review only. Automated tests and manual browser QA were not run.
+- **Documentation:** Paired testing guide, UI and testing rules, controller/service case matrix, test progress, and branch index updated.
+
 ## Phase 0 audit reconciliation
 - The supplied audit ZIP lacked build files, while the current checkout contains `pom.xml`; Maven confirms Java 17 and Spring Boot 3.3.0.
 - Audit migration baseline V29 differs from the checkout’s V31.

@@ -95,3 +95,6 @@
 - Verify Company ADMIN can create/update the Company-wide default Terms & Conditions from the Vendor Purchase Orders list button and that newly saved PO PDFs use the configured default snapshot.
 - Verify the PO create/edit form has no terms template selector or per-PO terms editor; delivery terms remain available as a separate field.
 - Verify there is no separate Delivery Terms control/page on the PO list; the PO form retains its Delivery terms field.
+# Vendor PO list pagination UI regression
+- Verify page 2/Next is handled by the persistent parent Vendor page after fragment replacement; the app shell and CSS remain intact and the next page's records render in the PO list container.
+- Verify previous/page-number navigation and pagination with a search query preserve the expected page and search state; a failed fragment request must not navigate to an unstyled raw fragment.
