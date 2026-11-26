@@ -46,7 +46,7 @@ A comprehensive web-based **Order Management System** with multi-tenant architec
 - **Client Management** - Manage customer/client information with company isolation
 - **Vendor Management** - Track vendor details and relationships
 - **Company Address Management** - Company admins can maintain, activate, and deactivate multiple addresses with GSTINs, optional Drug License Numbers, and explicit active default Bill To/Ship To locations; Company Details reflects the current active Bill To address.
-- **Vendor Purchase Orders** - tenant-scoped Bill To/Ship To snapshots, explicit GST/charge calculations, reusable PO terms, immutable issued PDFs, and DRAFT-only revision amendments
+- **Vendor Purchase Orders** - tenant-scoped Bill To/Ship To snapshots, explicit GST/charge calculations, reusable PO terms, immutable issued PDFs, DRAFT-only revision amendments, and PostgreSQL-backed gap-safe number allocation
 - **Dashboard** - Real-time overview of orders, clients, and vendors
 
 ### 🛠️ **Technical Features**

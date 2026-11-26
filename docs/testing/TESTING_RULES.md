@@ -19,6 +19,7 @@ Violation of any rule → **DO NOT MERGE**
 - At least one happy-path test case
 - At least one edge/failure-path test case
 - Retry-sensitive writes must include database-backed tests for atomic claims, concurrent requests, tenant scoping, and replayed terminal responses.
+- PostgreSQL-dependent Vendor PO number allocation must be covered with PostgreSQL tests for gap backfill, independent Company/prefix counters, retained allocations after deletion, and concurrent unique allocations; unit mocks alone do not establish database atomicity.
 
 ---
 

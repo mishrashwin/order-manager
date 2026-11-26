@@ -14,6 +14,7 @@ import com.example.ordermanager.vendor.entity.VendorPoStatus;
 import com.example.ordermanager.vendor.repository.VendorPoRepository;
 import com.example.ordermanager.vendor.repository.VendorRepository;
 import com.example.ordermanager.vendor.service.impl.VendorPoServiceImpl;
+import com.example.ordermanager.vendor.service.impl.VendorPoNumberSequence;
 import com.example.ordermanager.vendor.service.VendorPoCalculationService;
 import com.example.ordermanager.vendor.repository.VendorPoTermsTemplateRepository;
 import com.example.ordermanager.vendor.repository.VendorPoDeliveryTermRepository;
@@ -62,6 +63,8 @@ class VendorPoServiceTest {
   VendorPoTermsTemplateRepository termsTemplateRepository;
   @Mock
   VendorPoDeliveryTermRepository deliveryTermRepository;
+  @Mock
+  VendorPoNumberSequence poNumberSequence;
 
   VendorPoServiceImpl service;
   private Company testCompany;
@@ -74,13 +77,15 @@ class VendorPoServiceTest {
     service = new VendorPoServiceImpl(vendorPoRepository, companyAddressRepository,
         vendorRepository, companyRepository, productRepository, userRepository,
         securityContextHelper, vendorPdfService, helper, new VendorPoCalculationService(),
-        termsTemplateRepository, deliveryTermRepository, new ObjectMapper());
+        termsTemplateRepository, deliveryTermRepository, new ObjectMapper(), poNumberSequence);
 
     // Setup test data
     testCompany = new Company();
     testCompany.setId(1L);
     testCompany.setName("Test Company");
     testCompany.setGstn("COMPANY-GST");
+    lenient().when(helper.extractInitials("Test Company")).thenReturn("TC");
+    lenient().when(poNumberSequence.nextNumber(1L, "TC")).thenReturn(1L);
 
     testVendor = new Vendor();
     testVendor.setId(1L);
@@ -126,7 +131,6 @@ class VendorPoServiceTest {
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
     when(companyRepository.findById(1L)).thenReturn(Optional.of(testCompany));
     when(vendorRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(testVendor));
-    when(vendorPoRepository.countByCompany_IdAndRevisionNumber(1L, 0)).thenReturn(0L);
     when(helper.extractInitials("Test Company")).thenReturn("TC");
     when(vendorPoRepository.save(any(VendorPo.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -147,7 +151,6 @@ class VendorPoServiceTest {
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
     when(companyRepository.findById(1L)).thenReturn(Optional.of(testCompany));
     when(vendorRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(testVendor));
-    when(vendorPoRepository.countByCompany_IdAndRevisionNumber(1L, 0)).thenReturn(0L);
     when(helper.extractInitials("Test Company")).thenReturn("TC");
     when(vendorPoRepository.save(any(VendorPo.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -333,7 +336,6 @@ class VendorPoServiceTest {
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
     when(companyRepository.findById(1L)).thenReturn(Optional.of(testCompany));
     when(vendorRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(testVendor));
-    when(vendorPoRepository.countByCompany_IdAndRevisionNumber(1L, 0)).thenReturn(0L);
     when(helper.extractInitials("Test Company")).thenReturn("TC");
     when(vendorPoRepository.save(any(VendorPo.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -350,7 +352,6 @@ class VendorPoServiceTest {
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
     when(companyRepository.findById(1L)).thenReturn(Optional.of(testCompany));
     when(vendorRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(testVendor));
-    when(vendorPoRepository.countByCompany_IdAndRevisionNumber(1L, 0)).thenReturn(0L);
     when(helper.extractInitials("Test Company")).thenReturn("TC");
     when(vendorPoRepository.save(any(VendorPo.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -432,6 +433,7 @@ class VendorPoServiceTest {
     assertEquals(VendorPoStatus.DRAFT, revision.getStatus());
     assertEquals(1, revision.getRevisionNumber());
     assertEquals(testVendorPo.getPoNumber(), revision.getPoNumber());
+    verifyNoInteractions(poNumberSequence);
   }
 
   /** Rejects revision lookup when the requested PO is outside the authenticated tenant. */
@@ -449,7 +451,6 @@ class VendorPoServiceTest {
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
     when(companyRepository.findById(1L)).thenReturn(Optional.of(testCompany));
     when(vendorRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(testVendor));
-    when(vendorPoRepository.countByCompany_IdAndRevisionNumber(1L, 0)).thenReturn(0L);
     when(helper.extractInitials("Test Company")).thenReturn("TC");
     CompanyAddress foreignAddress = new CompanyAddress();
     foreignAddress.setId(99L);
@@ -466,7 +467,6 @@ class VendorPoServiceTest {
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
     when(companyRepository.findById(1L)).thenReturn(Optional.of(testCompany));
     when(vendorRepository.findByIdAndCompany_Id(1L, 1L)).thenReturn(Optional.of(testVendor));
-    when(vendorPoRepository.countByCompany_IdAndRevisionNumber(1L, 0)).thenReturn(0L);
     when(helper.extractInitials("Test Company")).thenReturn("TC");
     when(vendorPoRepository.save(any(VendorPo.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));

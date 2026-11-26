@@ -62,8 +62,5 @@ public interface VendorPoRepository extends JpaRepository<VendorPo, Long> {
 
   long countByCompany_Id(Long companyId);
 
-  /** Counts only original PO numbers, excluding amendment rows. */
-  long countByCompany_IdAndRevisionNumber(Long companyId, int revisionNumber);
-
 }
 

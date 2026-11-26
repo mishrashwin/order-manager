@@ -15,6 +15,7 @@ Use the repository's actual branch name, as returned by `git branch --show-curre
 
 | Branch / work | Development document | Testing guide |
 |---|---|---|
+| Vendor PO number sequence | [vendor_po_number.md](vendor_po_number.md) | [vendor_po_number-TESTING.md](vendor_po_number-TESTING.md) |
 | Company GSTN fix summary | [COMPANY_GSTN_FIX_SUMMARY.md](COMPANY_GSTN_FIX_SUMMARY.md) | Not present |
 | Vendor upload via Excel | [Vendor_Upload_via_Excel.md](Vendor_Upload_via_Excel.md) | Not present |
 | Vendor PO | [Vendor-PO.md](Vendor-PO.md) | Not present |

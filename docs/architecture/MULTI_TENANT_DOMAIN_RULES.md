@@ -9,6 +9,8 @@ Violation of any rule → **DO NOT MERGE**
 
 # 1. TENANT MODEL FUNDAMENTALS
 
+Vendor PO sequence rows are tenant-owned and keyed by `company_id` plus prefix. The authenticated tenant context supplies the Company ID; never accept a Company ID from PO form data for sequence allocation.
+
 ## 1.1 Core Principle
 - **Every business row MUST carry `company_id`**
 - Tenant context is derived from authentication (`SecurityContextHelper`), **NOT** from request parameters

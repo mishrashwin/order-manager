@@ -18,6 +18,12 @@ Violation of any rule → **DO NOT MERGE**
 
 # 1. SYSTEM DESIGN PRINCIPLES
 
+## Vendor PO number allocation
+- Allocate original Vendor PO numbers through PostgreSQL `INSERT ... ON CONFLICT ... DO UPDATE ... RETURNING` counters scoped by Company and current prefix; never derive the next number from row counts or uncoordinated `MAX + 1` reads.
+- Seed counters from the greatest existing numeric suffix per Company/prefix. Preserve counters after PO deletion. Prefixes derive from current Company names, so retain counters by prefix to prevent reuse after a name change.
+- Perform allocation inside the PO creation transaction. Revisions retain their source PO number and do not allocate a counter value.
+- The counter update rolls back with a failed PO creation transaction. An uncommitted suffix can be allocated again after rollback; committed suffixes remain retained after deletion.
+
 ## 1.1 Clean Architecture Alignment
 System follows:
 - Presentation Layer (Controller)
