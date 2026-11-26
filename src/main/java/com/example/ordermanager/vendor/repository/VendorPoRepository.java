@@ -45,7 +45,9 @@ public interface VendorPoRepository extends JpaRepository<VendorPo, Long> {
 
   /** Returns the current revision for each Company PO list row. */
   @EntityGraph(attributePaths = {"company", "vendor", "items", "orderOwner"})
-  Page<VendorPo> findByCompany_IdAndCurrentRevisionTrue(Long companyId, Pageable pageable);
+  @Query("select po from VendorPo po where po.company.id = :companyId and po.currentRevision = true order by po.poNumber desc")
+  Page<VendorPo> findByCompany_IdAndCurrentRevisionTrue(@Param("companyId") Long companyId,
+      Pageable pageable);
 
   /** Searches only current revisions in the authenticated Company. */
   /** Searches current tenant-owned POs by PO number, vendor snapshot, or item product name. */
@@ -56,7 +58,8 @@ public interface VendorPoRepository extends JpaRepository<VendorPo, Long> {
       + "lower(coalesce(po.vendorName, '')) like concat('%', :search, '%') or "
       + "lower(coalesce(vendor.companyName, '')) like concat('%', :search, '%') or "
       + "exists (select item.id from VendorPoItem item where item.vendorPo = po "
-      + "and lower(coalesce(item.productName, '')) like concat('%', :search, '%')))")
+      + "and lower(coalesce(item.productName, '')) like concat('%', :search, '%'))) "
+      + "order by po.poNumber desc")
   Page<VendorPo> searchCurrentRevisionsByCompanyAndText(@Param("companyId") Long companyId,
       @Param("search") String search, Pageable pageable);
 

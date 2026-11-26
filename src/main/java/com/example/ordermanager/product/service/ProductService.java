@@ -91,8 +91,8 @@ public class ProductService {
   /** Validates that text does not contain XML-breaking characters. */
   private void validateNoXmlBreakingCharacters(String text, String fieldName) {
     if (text.contains("<") || text.contains(">") || text.contains("&")) {
-      throw new IllegalArgumentException(
-          fieldName + " cannot contain XML-breaking characters (<, >, &). Please use HTML entities instead (e.g., &amp; for &).");
+      throw new IllegalArgumentException(fieldName
+          + " cannot contain XML-breaking characters (<, >, &). Please use HTML entities instead (e.g., &amp; for &).");
     }
   }
 
