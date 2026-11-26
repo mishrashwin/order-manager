@@ -47,6 +47,7 @@ public class VendorPoServiceImpl implements VendorPoService {
   private final VendorPoTermsTemplateRepository termsTemplateRepository;
   private final VendorPoDeliveryTermRepository deliveryTermRepository;
   private final ObjectMapper objectMapper;
+  private final VendorPoNumberSequence poNumberSequence;
 
   /** Wires tenant-scoped repositories and PO snapshot/calculation collaborators. */
   public VendorPoServiceImpl(VendorPoRepository vendorPoRepository,
@@ -56,7 +57,8 @@ public class VendorPoServiceImpl implements VendorPoService {
       com.example.ordermanager.vendor.service.VendorPdfService vendorPdfService,
       com.example.ordermanager.utils.Helper helper, VendorPoCalculationService calculationService,
       VendorPoTermsTemplateRepository termsTemplateRepository,
-      VendorPoDeliveryTermRepository deliveryTermRepository, ObjectMapper objectMapper) {
+      VendorPoDeliveryTermRepository deliveryTermRepository, ObjectMapper objectMapper,
+      VendorPoNumberSequence poNumberSequence) {
     this.vendorPoRepository = vendorPoRepository;
     this.companyAddressRepository = companyAddressRepository;
     this.vendorRepository = vendorRepository;
@@ -70,6 +72,7 @@ public class VendorPoServiceImpl implements VendorPoService {
     this.termsTemplateRepository = termsTemplateRepository;
     this.deliveryTermRepository = deliveryTermRepository;
     this.objectMapper = objectMapper;
+    this.poNumberSequence = poNumberSequence;
   }
 
   // ── Create ─────────────────────────────────────────────────────────────────
@@ -85,7 +88,7 @@ public class VendorPoServiceImpl implements VendorPoService {
 
     // Auto-generate PO number: company initials + sequence number (e.g., "ABC001")
     String companyInitials = helper.extractInitials(company.getName());
-    long sequenceNumber = vendorPoRepository.countByCompany_IdAndRevisionNumber(companyId, 0) + 1;
+    long sequenceNumber = poNumberSequence.nextNumber(companyId, companyInitials);
     String poNumber = String.format("%s%03d", companyInitials, sequenceNumber);
     po.setPoNumber(poNumber);
 
@@ -693,8 +696,8 @@ public class VendorPoServiceImpl implements VendorPoService {
   /** Validates that text does not contain XML-breaking characters. */
   private void validateNoXmlBreakingCharacters(String text, String fieldName) {
     if (text != null && (text.contains("<") || text.contains(">") || text.contains("&"))) {
-      throw new IllegalArgumentException(
-          fieldName + " cannot contain XML-breaking characters (<, >, &). Please use HTML entities instead (e.g., &amp; for &).");
+      throw new IllegalArgumentException(fieldName
+          + " cannot contain XML-breaking characters (<, >, &). Please use HTML entities instead (e.g., &amp; for &).");
     }
   }
 }

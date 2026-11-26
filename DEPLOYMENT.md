@@ -190,6 +190,15 @@ Current sequence is versioned and must remain unique (`V1` ... `V9`).
 - Never edit old applied migration scripts in-place.
 - Add new scripts only (forward-only).
 
+### Vendor PO sequence migration (V39)
+Production currently runs Flyway automatically during application startup. That does not, by itself, prevent an older application instance from creating POs while a new instance migrates the database. For V39, use a write-quiesced deployment:
+
+1. Put PO creation into maintenance mode and stop/drain every old application instance that can create Vendor POs.
+2. Apply V39 to PostgreSQL and verify `vendor_po_number_sequence` has Company 2 / APL = 1, Company 4 / LE = 13, and Company 6 / LIPL = 5 (adjust only if production data has legitimately advanced beyond these snapshots).
+3. Deploy the new application version and wait until all old instances are terminated. Confirm the new version is healthy before restoring PO creation.
+
+Do not use a rolling deployment that leaves old PO writers active during this migration. The current Render Blueprint does not define a pre-deploy migration job or a writer-drain hook, so operators must enforce this pause/drain sequence explicitly.
+
 ### Commands
 
 ```powershell

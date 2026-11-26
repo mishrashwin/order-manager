@@ -13,6 +13,11 @@
 
 # Test Progress Log
 
+## Vendor PO number sequence (2026-11-26)
+- Replaced count-based numbering with a transaction-bound PostgreSQL atomic counter keyed by Company and current prefix. V39 seeds the highest suffix, including revisions; allocator uses literal prefix matching and validates a numeric suffix.
+- Added PostgreSQL coverage for seed values (Company 2/APL=1, 4/LE=13, 6/LIPL=5), existing counters, missing counters, literal prefixes, revision rows, transaction rollback, and 48 concurrent allocations checked against the complete 15–62 range. The test makes 55 allocator calls: 54 committed and 1 rolled back.
+- Focused outcomes: PostgreSQL sequence test 1 passed; VendorPoServiceTest 21 passed. Full test compilation is blocked by the duplicate `formatsLargeSnapshotAmountsForPdf()` method at `VendorPdfServiceSnapshotTest.java:97`.
+
 ## Vendor PO PDF quantity display (2026-11-23)
 - PDF-only display now strips insignificant quantity zeros, so a database-scale value such as `10.000` displays as `10`; any meaningful legacy fractional digits remain visible.
 - Reordered the PDF item columns so Qty is immediately followed by Unit. PDF integration coverage checks Indian-grouped whole quantity output without database-scale zeros.

@@ -1,4 +1,6 @@
-
+- Vendor PO numbering (VPO-NUM-01): first number and established prefix/three-digit format — `VendorPoServiceTest.createVendorPo_callsSave`.
+- Vendor PO numbering (VPO-NUM-02): highest suffix across gaps including LE001–LE011 and LE013 -> LE014, Company/prefix isolation, deleted allocations, and concurrent distinct allocation — opt-in `VendorPoNumberSequencePostgresTest`.
+- Vendor PO numbering (VPO-NUM-03): revision retains its PO number without sequence allocation — `VendorPoServiceTest.createRevision_keepsPriorVersionAndCopiesDraft`.
 - VPO-19 Company and Vendor entities include state field (VARCHAR(100)) for GST state comparison; Flyway migration V26 adds these columns to existing tables
 - VPO-18 IndianState enum provides all 37 Indian states/union territories with GST codes (e.g., Maharashtra="27", Gujarat="24") and display names, with lookup methods romCode() and romDisplayName() (case-insensitive)
 - VPO-17 PDF template conditionally displays CGST+SGST rows when isIntraState=true, displays IGST row when isIntraState=false, and shows subtotal/finalTotal in all cases
