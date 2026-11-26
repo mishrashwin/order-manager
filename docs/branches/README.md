@@ -15,10 +15,13 @@ Use the repository's actual branch name, as returned by `git branch --show-curre
 
 | Branch / work | Development document | Testing guide |
 |---|---|---|
+| Vendor PO number sequence | [vendor_po_number.md](vendor_po_number.md) | [vendor_po_number-TESTING.md](vendor_po_number-TESTING.md) |
 | Company GSTN fix summary | [COMPANY_GSTN_FIX_SUMMARY.md](COMPANY_GSTN_FIX_SUMMARY.md) | Not present |
 | Vendor upload via Excel | [Vendor_Upload_via_Excel.md](Vendor_Upload_via_Excel.md) | Not present |
 | Vendor PO | [Vendor-PO.md](Vendor-PO.md) | Not present |
 | Vendor PO terms and conditions | [Vendor-PO-TnC.md](Vendor-PO-TnC.md) | Not present |
+| Vendor PO redesign — Phases 0.1–8, address corrections, and paginated list presentation fix | [vendor-po-redesign.md](vendor-po-redesign.md) | [vendor-po-redesign-TESTING.md](vendor-po-redesign-TESTING.md) |
+| Vendor PO PDF formatting, dynamic columns, overflow, and unit persistence | [vendor-po-pdf-financial-formatting.md](vendor-po-pdf-financial-formatting.md) | [vendor-po-redesign-TESTING.md](vendor-po-redesign-TESTING.md) |
 | Development documentation standard (`documentation`) | [documentation.md](documentation.md) | [documentation-TESTING.md](documentation-TESTING.md) |
 
 “Not present” identifies an absent historical testing guide; no historical records are fabricated. Add rows when branch documents are created, and keep links paired for new work.

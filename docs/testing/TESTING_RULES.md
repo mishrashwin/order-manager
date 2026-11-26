@@ -19,6 +19,7 @@ Violation of any rule → **DO NOT MERGE**
 - At least one happy-path test case
 - At least one edge/failure-path test case
 - Retry-sensitive writes must include database-backed tests for atomic claims, concurrent requests, tenant scoping, and replayed terminal responses.
+- PostgreSQL-dependent Vendor PO number allocation must be covered with PostgreSQL tests for gap backfill, independent Company/prefix counters, retained allocations after deletion, and concurrent unique allocations; unit mocks alone do not establish database atomicity.
 
 ---
 
@@ -262,6 +263,8 @@ For PDF services:
 - Test concurrent PDF generation
 - Test GST calculation accuracy
 - Test state-based IGST vs CGST/SGST logic
+- For financial PDFs, extract text from rendered output to verify grouped monetary values, summary amounts, amount-in-words consistency, and long descriptions; use rendered-page inspection when available to assess alignment and clipping.
+- Vendor PO monetary display uses Indian digit grouping and fixed two-decimal precision via the shared formatter; test zero, null, negative, rounding, and at least ₹100 crore without changing stored snapshots.
 
 ---
 
@@ -312,3 +315,28 @@ This document is enforceable.
 
 If any guideline is violated:
 👉 REJECT PR
+# Vendor PO lifecycle safety tests
+
+- Test that DRAFT Vendor POs remain editable and every other `VendorPoStatus` is rejected before persistence.
+- Test that update lookup is tenant-scoped and a PO absent from the authenticated company's lookup is not saved.
+- Test that MVC update reports a service rejection and never calls `changeStatus(..., DRAFT)` as part of editing.
+
+# Company Address management tests
+
+- Verify new addresses are assigned to the authenticated Company and cannot change Company ownership through an edit payload.
+- Verify default role changes serialize under a Company lock, active defaults remain unique, and one address may carry both roles.
+- Verify duplicate GSTIN values are accepted, inactive addresses cannot become defaults, and defaults must be reassigned before deactivation.
+- Verify cross-company reads and mutations fail using Company-scoped address lookups; include default and inactive-address failures.
+- Verify migration backfill preserves legacy Company address/GSTIN/state and creates active Bill To and Ship To defaults.
+- Verify activation preserves address/GSTIN/Drug License fields and does not assign a default; dual-default deactivation fails until both explicit replacements are active.
+- Verify Company Details reads the current active Bill To only, displays its GSTIN with legacy Company GSTIN fallback, and does not expose inactive addresses.
+- Verify the additive Drug License migration and form-to-entity persistence; no PO/PDF change is expected in this scope.
+
+## Vendor PO financial and lifecycle coverage
+- Cover explicit Included/Excluded and Taxable/Non-taxable charge choices, taxable-rate validation, intra/inter-state split, decimal rounding, and amount-in-words cents.
+- Verify cross-tenant ID rejection, snapshot stability after source edits, immutable issued PDF/revision history, and DRAFT-only edits.
+
+# AJAX list pagination regression
+- For lists rendered as AJAX fragments inside a styled parent page, verify next/previous/page-number clicks are intercepted by the persistent parent and replace only the list container. Confirm the page shell and styles remain present and the requested records/search state is retained.
+- For tables with serial numbers, verify the first row on page two continues after all rows on page one (for example, 11 after a 10-row page), including when the final page is partial.
+- For server-paginated search, verify a matching record beyond page one is returned after submitting a term, results are filtered before pagination, and no other tenant's records can match or appear. Verify blank search restores the full tenant list.

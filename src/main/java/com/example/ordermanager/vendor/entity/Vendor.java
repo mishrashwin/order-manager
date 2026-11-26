@@ -26,6 +26,9 @@ public class Vendor {
   private String address;
   private String gstn;
 
+  @Column(name = "default_payment_terms", columnDefinition = "TEXT")
+  private String defaultPaymentTerms;
+
   @Enumerated(EnumType.STRING)
   @Column(length = 100)
   private IndianState state;

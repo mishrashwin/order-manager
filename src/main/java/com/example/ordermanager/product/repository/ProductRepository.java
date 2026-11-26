@@ -7,10 +7,14 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
   @EntityGraph(attributePaths = {"company", "vendor"})
   List<Product> findByCompanyId(Long companyId);
+
+  /** Finds a product only inside the authenticated Company's catalog. */
+  Optional<Product> findByIdAndCompany_Id(Long id, Long companyId);
 
   Page<Product> findByCompanyId(Long companyId, Pageable pageable);
 

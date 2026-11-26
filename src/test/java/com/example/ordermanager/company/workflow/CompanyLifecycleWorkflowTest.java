@@ -16,6 +16,7 @@ import com.example.ordermanager.vendor.entity.Vendor;
 import com.example.ordermanager.utils.IndianState;
 import com.example.ordermanager.client.repository.ClientRepository;
 import com.example.ordermanager.company.repository.CompanyRepository;
+import com.example.ordermanager.company.repository.CompanyAddressRepository;
 import com.example.ordermanager.order.repository.OrderRepository;
 import com.example.ordermanager.vendor.repository.VendorRepository;
 import com.example.ordermanager.client.service.ClientService;
@@ -46,6 +47,8 @@ class CompanyLifecycleWorkflowTest {
   @Mock
   private CompanyRepository companyRepository;
   @Mock
+  private CompanyAddressRepository companyAddressRepository;
+  @Mock
   private UserRepository userRepository;
   @Mock
   private VerificationTokenRepository verificationTokenRepository;
@@ -72,8 +75,8 @@ class CompanyLifecycleWorkflowTest {
     ReflectionTestUtils.setField(registrationService, "baseUrl", "http://localhost:8080");
 
     userService = new UserService(userRepository, registrationService, companyRepository);
-    companyService = new CompanyService(companyRepository, userService, emailService,
-        "owner@example.com", "http://localhost:8080");
+    companyService = new CompanyService(companyRepository, companyAddressRepository, userService,
+        emailService, "owner@example.com", "http://localhost:8080");
 
     Helper helper = new Helper();
     clientService = new ClientService(clientRepository, orderRepository, companyService, helper);

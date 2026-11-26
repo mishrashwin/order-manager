@@ -1,4 +1,55 @@
+## Vendor PO delivery terms entry point removal (2026-11-14)
+- Removed the separate Delivery Terms list button and settings page/controller. Delivery terms remain in PO create/edit.
+- Automated tests and browser verification: Not run.
+
+## Vendor PO terms editor consolidation (2026-11-14)
+- Kept the Vendor Purchase Orders list Terms & Conditions modal as the single visible editor for Company-wide default terms. Removed the duplicate per-PO template selector/editor and the second template management section from PO settings. Delivery-term settings remain separate.
+- Automated tests and manual browser/PDF checks: Not run in this session.
+
+## Vendor PO product entry and PDF layout (2026-11-14)
+- Replaced unlabeled stacked product inputs with a responsive table containing explicit column headers; create, edit, and JavaScript-added rows use the same structure.
+- Retained the separate Price per input used by line calculations while showing only one Unit column in the PDF. Item delivery date is rendered on a new line below the product name.
+- Automated tests and manual browser/PDF checks: Not run in this session.
+
 # Test Progress Log
+
+## Vendor PO number sequence (2026-11-26)
+- Replaced count-based numbering with a transaction-bound PostgreSQL atomic counter keyed by Company and current prefix. V39 seeds the highest suffix, including revisions; allocator uses literal prefix matching and validates a numeric suffix.
+- Added PostgreSQL coverage for seed values (Company 2/APL=1, 4/LE=13, 6/LIPL=5), existing counters, missing counters, literal prefixes, revision rows, transaction rollback, and 48 concurrent allocations checked against the complete 15–62 range. The test makes 55 allocator calls: 54 committed and 1 rolled back.
+- Focused outcomes: PostgreSQL sequence test 1 passed; VendorPoServiceTest 21 passed. Full test compilation is blocked by the duplicate `formatsLargeSnapshotAmountsForPdf()` method at `VendorPdfServiceSnapshotTest.java:97`.
+
+## Vendor PO PDF quantity display (2026-11-23)
+- PDF-only display now strips insignificant quantity zeros, so a database-scale value such as `10.000` displays as `10`; any meaningful legacy fractional digits remain visible.
+- Reordered the PDF item columns so Qty is immediately followed by Unit. PDF integration coverage checks Indian-grouped whole quantity output without database-scale zeros.
+- Test execution: Not run in this session.
+
+## Vendor PO numeric overflow feedback (2026-11-23)
+- Vendor PO calculation checks item quantity/pricing unit, monetary item values, GST rates, line values, charges, and PO totals against their database numeric precision before persistence.
+- Create/edit MVC handlers convert residual `DataIntegrityViolationException` instances to a safe actionable message instead of exposing PostgreSQL details.
+- Added calculation boundary tests and an MVC test for update constraint failure. Test execution: Not run in this session.
+- Hardened `GlobalExceptionHandler`: the generic response no longer reflects exception messages or request paths. Residual database errors on PO create/update redirect back to the corresponding form with safe feedback. Handler regression tests added; not run.
+
+## Vendor PO selected Unit persistence (2026-11-23)
+- Fixed product resolution overwriting the submitted PO line Unit with Product metadata. Product Unit now fills only a blank PO Unit; the product-change script targets the Unit select control.
+- Added service regression coverage for preserving a selected Unit across create and update when Product Unit differs. Test execution: Not run in this session.
+
+## Vendor PO PDF dynamic columns (2026-11-23)
+- Added content-based width allocation across HSN, Qty, Unit, Rate, GST, GST Amt, and Amount. Widths total 100%, preserve a minimum Product column, and add separators between each item column.
+- Added calculator tests for a long HSN/short Rate and a long Rate/short HSN. Test execution and rendered-PDF visual inspection: Not run in this session.
+
+## Vendor PO PDF headings and value formatting (2026-11-23)
+- Changed the row-number heading to `Sr No.` and center-aligned every item header.
+- Added Indian digit grouping for quantity values while preserving meaningful fractional digits, and included `%` in each rendered GST percentage.
+- Added quantity formatter tests and updated PDF text assertions. Tests and rendered-PDF visual inspection: Not run in this session.
+
+## Vendor PO PDF summary currency symbol (2026-11-23)
+- Added `₹` before subtotal, freight, packing, applicable GST summary values, and total.
+- Added a PDF text assertion that all six intra-state summary rows carry the symbol. Test execution and rendered-PDF visual inspection: Not run in this session.
+
+## Vendor PO PDF rupee glyph and amount wording (2026-11-23)
+- Kept each summary `₹` glyph and formatted amount in one non-wrapping text value and selected a rupee-capable font fallback to avoid the unsupported-glyph `#` rendering.
+- Changed amount-in-words prefix to `Indian Rupees`; updated utility and rendered-PDF regression assertions.
+- Test execution and rendered-PDF visual inspection: Not run in this session.
 
 ## Vendor Bulk Upload Phase 8 (2026-11-01)
 - Focused suite `VendorBulkUploadServiceTest`, `VendorControllerTest`, `VendorBulkUploadPreviewTemplateTest`, and `VendorServiceTest`: 41 tests passed, 0 failures/errors.
@@ -619,3 +670,64 @@ Notes
 # 2026-11-13 — Re-enable Vendor PO and PDF Tests
 - Removed the three explicit `@Disabled` annotations. Added isolated Brevo/owner/mail properties so the PDF integration context loads, normalized null PO item lists to empty lists for rendering, and completed the email-controller fixture with the persisted PO ID and tenant company.
 - Verification: `mvn "-Dtest=VendorPdfServiceIntegrationTest,VendorPoControllerTest" test` passed (28 tests, 0 failures/errors/skips); `mvn test` passed (313 tests, 0 failures/errors/skips).
+# Vendor PO Phase 0.1 — Immediate SENT Safety Guard (2026-11-13)
+
+- Added a service guard that allows edits only for `DRAFT`; `SENT`, `APPROVED`, `REJECTED`, and `RECEIVED` are rejected before mutation/persistence.
+- Removed the controller's post-update status reset and added a controlled form error path for service rejections.
+- Added service tests for all enum non-DRAFT states and tenant-scoped not-found behavior, plus controller tests for success and rejected SENT editing.
+- `mvn '-Dtest=VendorPoServiceTest,VendorPoControllerTest' test`: BUILD SUCCESS; 30 tests, 0 failures/errors/skips. Full suite not run. Maven logged an HTTP 401 for optional Flyway repository metadata; it did not prevent test execution.
+
+# Vendor PO Phase 1 — Company Multiple Addresses (2026-11-13)
+
+- Added Company Address entity, Company-scoped repository/service, ADMIN MVC management pages, address validation, default reassignment/deactivation rules, and initial dual-default records for new Company registration.
+- Added V32 migration with legacy address/GSTIN/state backfill and PostgreSQL partial unique indexes for active Bill To and Ship To defaults.
+- Added V33 optional Drug License Number storage, address activation that preserves metadata without changing defaults, explicit reassignment safeguards, and Company Details rendering from the authenticated tenant's active Bill To address.
+- `mvn '-DcompanyAddressMigrationTest=true' '-Dtest=CompanyAddressServiceTest,CompanyAddressControllerTest,CompanyAddressMigrationPostgresTest,CompanyServiceTest,CompanyLifecycleWorkflowTest,VendorPoServiceTest,VendorPoControllerTest' test`: BUILD SUCCESS; 69 tests, 0 failures/errors/skips.
+- `mvn '-DcompanyAddressMigrationTest=true' '-Dtest=CompanyAddressMigrationPostgresTest' test`: BUILD SUCCESS; isolated PostgreSQL schema migration/backfill assertions passed.
+- Applied V32 to configured PostgreSQL 18.4 database from V31: 1 Company, 1 legacy address, zero Companies missing active default Bill To/Ship To, zero legacy field mismatches; Flyway current version V32.
+- Dev-profile application startup against V32 passed Hibernate schema validation.
+- At the Phase 1 milestone, `mvn test` passed 344 tests and Phase 2 PO address snapshots were still pending; see the later consolidated phases below for completion.
+
+# Company Address Corrections (2026-11-13)
+
+- Added address activation that preserves stored fields and leaves defaults untouched; default addresses require explicit replacement of every role before deactivation.
+- Company Details now renders the active tenant Bill To address and uses its GSTIN with legacy Company GSTIN fallback. Optional Drug License Number is stored in additive V33 and exposed in address forms/list for future PO work only.
+- `mvn '-Dtest=CompanyAddressServiceTest,CompanyAddressControllerTest,AdminControllerTest' test`: 53 tests, 0 failures/errors/skips.
+- `mvn '-DcompanyAddressMigrationTest=true' '-Dtest=CompanyAddressMigrationPostgresTest' test`: 1 passed in an isolated PostgreSQL schema.
+- Configured PostgreSQL reports Flyway V33, the new nullable column, one Company with two addresses, and no missing active defaults. One existing address-line mismatch with the Company legacy field remains; GSTIN/state match.
+- `mvn test`: 351 tests, 0 failures/errors, 1 opt-in PostgreSQL migration test skipped. Manual browser QA was not run.
+
+## Vendor PO consolidated remaining phases (2026-11-13)
+- Implemented additive V34–V36 snapshot/commercial/revision/decimal migrations and Company-scoped PO settings, address snapshots, calculation service, revision workflow, and snapshot PDF path.
+- `mvn '-Dtest=VendorPoServiceTest,VendorPoControllerTest,VendorPoCalculationServiceTest,VendorPdfServiceIntegrationTest,VendorPdfServiceSnapshotTest,VendorPoSettingsServiceTest,CompanyAddressServiceTest,CompanyAddressControllerTest,AdminControllerTest' test`: 107 passed, 0 failures/errors/skips.
+- `mvn test`: 363 tests, 0 failures/errors, 2 opt-in PostgreSQL migration tests skipped.
+- `mvn '-DvendorPoMigrationTest=true' '-Dtest=VendorPoMigrationPostgresTest' test`: 1 passed; V34–V36 ran against and cleaned up an isolated PostgreSQL schema. The configured public schema remains at V33.
+- PDF tests verify snapshot context and PDF bytes; browser/manual QA remains unrun.
+
+## Vendor PO numeric schema validation correction (2026-11-13)
+- Fixed Hibernate startup validation mismatch where V35 `quantity NUMERIC(12,3)` was mapped as Java `Double`/FLOAT. `VendorPoItem.quantity` and form binding now use `BigDecimal`; a compatibility setter converts legacy Double callers at scale 3.
+- Focused PO/PDF/settings tests: 54 passed, 0 failures/errors/skips. Full suite: 363 tests, 0 failures/errors, 2 opt-in migration tests skipped.
+- Isolated V34–V36 PostgreSQL migration test passed and now asserts `pg_typeof(quantity) = numeric`.
+
+# 2026-11-19 — Vendor PO PDF Indian Financial Formatting
+- Centralized PDF display formatting in `IndianMoneyFormatter` using `BigDecimal`, half-up two-decimal rounding, and Indian digit grouping; applied it to item rate/GST/amount and saved PO summary snapshots.
+- Updated the Vendor PO PDF item table widths, numeric alignment and separators; product descriptions wrap in their cell and summary amounts use a fixed right-aligned column.
+- Kept GST calculations in `VendorPoCalculationService`; extended amount-in-words handling to safely preserve negative sign and route the legacy double API through BigDecimal.
+- Added formatter/words tests and rendered-PDF text extraction coverage. The PDF integration test writes a review sample and first-page PNG to `output/pdf/`.
+- Validation: `mvn "-Dtest=VendorPdfServiceIntegrationTest,VendorPdfServiceSnapshotTest,IndianMoneyFormatterTest,NumberToWordsUtilTest" test` passed: 20 tests, 0 failures/errors/skips. Generated PDF and PNG visually inspected; quantity/rate separation adjusted after initial review. Full repository suite and browser QA were not run.
+- Follow-up fixture correction: added 18% GST to the large sample item and asserted that the extracted row pairs GST% `18` with GST Amt `18,00,00,000.00`. `VendorPdfServiceIntegrationTest#generatedPdf_keepsLargeFinancialValuesAndLongNamesReadable` passed; regenerated sample inspected.
+# 2026-11-24 — Vendor PO list pagination presentation
+- Corrected parent-page delegated pagination handling for the AJAX PO list; documented regression coverage in `vendor-po-redesign-TESTING.md`.
+- Automated tests: Not run (template JavaScript-only change; user did not request test execution). Manual browser regression: Not run.
+
+# 2026-11-24 — Vendor PO serial-number continuation
+- PO row serials now use the Spring Data page offset, page size, and within-page row index; page 2 continues from page 1.
+- Automated tests and manual browser QA: Not run; implementation is a Thymeleaf expression-only change.
+
+# 2026-11-24 — Vendor, Order, and Client list serial-number continuation
+- Updated each list template to add its page offset to the row index, so serial numbers continue on pages after the first.
+- Automated tests and manual browser QA: Not run; implementation is template-only.
+
+# 2026-11-24 — Tenant-wide Vendor PO search
+- Search now runs server-side across all current POs in the authenticated Company before pagination and matches PO number, vendor, or product.
+- Added service tests for normalized search delegation and blank-search fallback. Automated tests and manual browser QA were not run.

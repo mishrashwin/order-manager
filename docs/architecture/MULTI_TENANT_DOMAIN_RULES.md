@@ -9,6 +9,8 @@ Violation of any rule → **DO NOT MERGE**
 
 # 1. TENANT MODEL FUNDAMENTALS
 
+Vendor PO sequence rows are tenant-owned and keyed by `company_id` plus prefix. The authenticated tenant context supplies the Company ID; never accept a Company ID from PO form data for sequence allocation.
+
 ## 1.1 Core Principle
 - **Every business row MUST carry `company_id`**
 - Tenant context is derived from authentication (`SecurityContextHelper`), **NOT** from request parameters
@@ -26,6 +28,11 @@ Examples:
 - Order
 - VendorPo
 - Product
+- CompanyAddress
+
+Company Address mutations must derive the Company from the authenticated context, query with both address ID and Company ID, and lock the Company row when changing defaults or active state. Never accept Company ownership or default-role flags from a form.
+
+Address activation must preserve all stored fields and must not assign defaults. Reassign every current default role explicitly before deactivation; Company Details must select the active Bill To row with a tenant-scoped query.
 
 ---
 
@@ -118,6 +125,7 @@ Implemented via: `CompanyService.canUsersLogin`
 - `findByCompanyId(Long companyId)`
 - `findByIdAndCompanyId(Long id, Long companyId)`
 - `findByCompanyIdAndDateRange(...)`
+- Apply tenant-scoped search predicates in the database query before pagination, so matches later in a tenant's result set remain discoverable without exposing other tenants' rows.
 
 ## 5.2 Forbidden Patterns
 **NEVER** use unfiltered methods in tenant-facing paths:
@@ -324,3 +332,8 @@ This document is enforceable.
 
 If any guideline is violated:
 👉 REJECT PR
+
+## Vendor PO tenant boundaries
+- A PO form may submit IDs but never a Company ID. Resolve every Vendor, Product, Bill To/Ship To address, delivery option, and revision from the authenticated Company. Company-wide default terms are loaded from the authenticated Company configuration and snapshotted on the PO; do not submit a Company ID or per-PO template selection.
+- Recheck active address status before issue; do not refresh already captured address snapshots. Revision history queries must verify the requested PO belongs to the current Company.
+- A Vendor PO item's selected Unit is part of the PO line and must be persisted as submitted. Use the selected Product's Unit only as a default when the PO line Unit is blank; product resolution must not overwrite an explicit PO line choice.

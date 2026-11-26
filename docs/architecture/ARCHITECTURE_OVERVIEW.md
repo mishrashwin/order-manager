@@ -780,3 +780,8 @@ Admin can manage other admins
 **Last Updated**: 2026-04-12  
 **Document Version**: 2.2  
 **Status**: ✅ **COMPLETED** - Full end-to-end Vendor PO feature with PDF generation, email workflow, and comprehensive test coverage
+# Vendor PO edit lifecycle
+
+Vendor PO updates are tenant-scoped and permitted only while the PO is `DRAFT`. The service rejects all other statuses before modifying fields or items. The controller must not change status as a side effect of editing. Revision/amendment editing is deferred to the dedicated lifecycle phase.
+
+Company admins manage and activate/deactivate Company Addresses under `/admin/company/addresses`. Address ownership is derived from authenticated tenant context, and Company-row locking plus partial unique indexes protect default Bill To/Ship To changes. Company Details displays the active default Bill To address and its GSTIN (falling back to legacy Company GSTIN when absent). Legacy Company address/GSTIN/state fields remain intact for compatibility. Optional Drug License Number is stored for future Vendor PO work; PO address snapshots and PDFs remain out of scope.

@@ -2,6 +2,7 @@ package com.example.ordermanager.vendor.service;
 
 import com.example.ordermanager.vendor.entity.VendorPo;
 import com.example.ordermanager.vendor.entity.VendorPoStatus;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -25,6 +26,12 @@ public interface VendorPoService {
   void deleteVendorPo(Long id);
 
   byte[] generatePdf(Long id);
+
+  /** Creates the next editable revision from an immutable tenant-owned PO row. */
+  VendorPo createRevision(Long id);
+
+  /** Lists revision history for a PO after confirming Company ownership. */
+  List<VendorPo> getRevisionHistory(Long id);
 
 }
 

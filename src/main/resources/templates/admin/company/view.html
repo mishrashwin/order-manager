@@ -22,6 +22,9 @@
             <a class="btn btn-secondary" th:href="@{/admin/dashboard}">
                 <i class="bi bi-arrow-left"></i> Back to Admin Panel
             </a>
+            <a class="btn btn-outline-primary" th:href="@{/admin/company/addresses}">
+                <i class="bi bi-geo-alt"></i> Manage Addresses
+            </a>
             <a class="btn btn-primary" th:href="@{/admin/company/edit}">
                 <i class="bi bi-pencil"></i> Edit Company
             </a>
@@ -74,23 +77,22 @@
             </div>
 
             <div class="col-md-6 mb-4">
-                <label class="form-label text-muted"><i class="bi bi-receipt"></i> Company GSTN</label>
-                <p class="h5" th:text="${company.gstn ?: 'Not provided'}"></p>
+                <label class="form-label text-muted"><i class="bi bi-receipt"></i> Company GSTIN</label>
+                <p class="h5" th:text="${companyDisplayGstin ?: 'Not provided'}"></p>
             </div>
 
             <div class="col-md-6 mb-4">
                 <label class="form-label text-muted"><i class="bi bi-geo-alt-fill"></i> State</label>
-                <p class="h5" th:text="${company.state?.displayName ?: 'Not provided'}"></p>
+                <p class="h5" th:text="${billToAddress != null and billToAddress.state != null ? billToAddress.state.displayName : 'Not provided'}"></p>
             </div>
 
-            <div class="col-12 mb-4" th:if="${company.address != null and !company.address.isEmpty()}">
-                <label class="form-label text-muted"><i class="bi bi-geo-alt"></i> Company Address</label>
-                <p class="lead" th:text="${company.address}" style="white-space: pre-wrap;"></p>
-            </div>
-
-            <div class="col-12 mb-4" th:if="${company.address == null or company.address.isEmpty()}">
-                <label class="form-label text-muted"><i class="bi bi-geo-alt"></i> Company Address</label>
-                <p class="text-muted fst-italic">No address added yet. Click "Edit Company" to add one.</p>
+            <div class="col-12 mb-4">
+                <label class="form-label text-muted"><i class="bi bi-geo-alt"></i> Default Bill To Address</label>
+                <p class="lead" th:if="${billToAddress != null and !billToAddressDisplay.isEmpty()}"
+                   th:text="${billToAddressDisplay}"
+                   style="white-space: pre-wrap;"></p>
+                <p class="text-muted fst-italic" th:if="${billToAddress == null}">No active default Bill To address.</p>
+                <p class="text-muted fst-italic" th:if="${billToAddress != null and billToAddressDisplay.isEmpty()}">The active default Bill To address has no address details.</p>
             </div>
 
             <div class="col-md-6 mb-4">

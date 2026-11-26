@@ -2,7 +2,9 @@ package com.example.ordermanager.admin.controller;
 
 import com.example.ordermanager.admin.dto.ClientOrderStatDTO;
 import com.example.ordermanager.company.entity.Company;
+import com.example.ordermanager.company.entity.CompanyAddress;
 import com.example.ordermanager.company.service.CompanyService;
+import com.example.ordermanager.company.service.CompanyAddressService;
 import com.example.ordermanager.order.entity.Order;
 import com.example.ordermanager.order.entity.OrderActivity;
 import com.example.ordermanager.order.service.OrderActivityService;
@@ -17,6 +19,8 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Base64;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
@@ -40,6 +44,7 @@ public class AdminController {
 
   private final UserService userService;
   private final CompanyService companyService;
+  private final CompanyAddressService companyAddressService;
   private final SecurityContextHelper securityContextHelper;
   private final OrderService orderService;
   private final OrderActivityService orderActivityService;
@@ -47,13 +52,15 @@ public class AdminController {
   private final PaymentService paymentService;
   private final String paymentUpiId;
 
+  /** Wires tenant-scoped services used by the ADMIN routes. */
   public AdminController(UserService userService, CompanyService companyService,
-      SecurityContextHelper securityContextHelper, OrderService orderService,
-      OrderActivityService orderActivityService,
+      CompanyAddressService companyAddressService, SecurityContextHelper securityContextHelper,
+      OrderService orderService, OrderActivityService orderActivityService,
       PasswordVerificationService passwordVerificationService, PaymentService paymentService,
       @Value("${app.payment.upi-id:}") String paymentUpiId) {
     this.userService = userService;
     this.companyService = companyService;
+    this.companyAddressService = companyAddressService;
     this.securityContextHelper = securityContextHelper;
     this.orderService = orderService;
     this.orderActivityService = orderActivityService;
@@ -289,16 +296,40 @@ public class AdminController {
     return "admin/order-statistics";
   }
 
+  /** Loads Company Details and the current active default Bill To address for display. */
   @GetMapping("/company")
   public String viewCompany(Model model) {
     Long companyId = securityContextHelper.getCompanyIdFromContext();
     Company company = companyService.getCompanyById(companyId)
         .orElseThrow(() -> new IllegalArgumentException("Company not found"));
     model.addAttribute("company", company);
+    CompanyAddress billToAddress = companyAddressService.getDefaultBillToAddress().orElse(null);
+    model.addAttribute("billToAddress", billToAddress);
+    model.addAttribute("billToAddressDisplay", formatAddress(billToAddress));
+    model
+        .addAttribute("companyDisplayGstin",
+            billToAddress != null && billToAddress.getGstin() != null
+                && !billToAddress.getGstin().isBlank() ? billToAddress.getGstin()
+                    : company.getGstn());
     model.addAttribute("logoBase64", toBase64(company.getLogoData(), company.getLogoContentType()));
     model.addAttribute("signatureBase64",
         toBase64(company.getSignatureData(), company.getSignatureContentType()));
     return "admin/company/view";
+  }
+
+  /** Formats available active Bill To fields without rendering null or blank placeholders. */
+  private String formatAddress(CompanyAddress address) {
+    if (address == null) {
+      return "";
+    }
+    String stateAndPostal = (address.getState() == null ? "" : address.getState().getDisplayName())
+        + (address.getPostalCode() == null || address.getPostalCode().isBlank() ? ""
+            : " " + address.getPostalCode().trim());
+    return Stream
+        .of(address.getAddressLine1(), address.getAddressLine2(), address.getCity(), stateAndPostal,
+            address.getCountry())
+        .filter(value -> value != null && !value.isBlank()).map(String::trim)
+        .collect(Collectors.joining(", "));
   }
 
   @GetMapping("/company/edit")

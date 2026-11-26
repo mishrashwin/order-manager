@@ -8,10 +8,14 @@ import com.example.ordermanager.vendor.entity.Vendor;
 
 import java.util.List;
 import java.util.Collection;
+import java.util.Optional;
 
 public interface VendorRepository extends JpaRepository<Vendor, Long> {
   @EntityGraph(attributePaths = {"company"})
   List<Vendor> findByCompanyId(Long companyId);
+
+  /** Fetches one Vendor only within the authenticated Company's boundary. */
+  Optional<Vendor> findByIdAndCompany_Id(Long id, Long companyId);
 
   Page<Vendor> findByCompanyId(Long companyId, Pageable pageable);
 

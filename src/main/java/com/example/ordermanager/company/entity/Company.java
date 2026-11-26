@@ -12,6 +12,8 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Company Entity - Represents a tenant in the multi-tenant system. All business data must be
@@ -23,7 +25,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = {"logoData", "signatureData"})
+@ToString(exclude = {"logoData", "signatureData", "addresses"})
 public class Company {
 
   @Id
@@ -68,6 +70,9 @@ public class Company {
 
   @Column(columnDefinition = "TEXT")
   private String address;
+
+  @OneToMany(mappedBy = "company", fetch = FetchType.LAZY)
+  private List<CompanyAddress> addresses = new ArrayList<>();
 
   // LOGO
   @Column(name = "logo_data", columnDefinition = "BYTEA")

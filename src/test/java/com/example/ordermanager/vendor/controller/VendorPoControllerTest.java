@@ -24,6 +24,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -48,6 +49,8 @@ class VendorPoControllerTest {
 
   @MockBean
   private VendorPoService vendorPoService;
+  @MockBean
+  private com.example.ordermanager.vendor.service.VendorPoSettingsService settingsService;
 
   @MockBean
   private BrevoEmailService brevoEmailService;
@@ -274,6 +277,21 @@ class VendorPoControllerTest {
     verify(brevoEmailService, never()).sendVendorPoEmail(any(), any(), any(), any(), any());
   }
 
+  /** Redirects to the PO form with a safe message if persistence rejects an oversized value. */
+  @Test
+  @WithMockUser(username = "test@example.com", roles = {"USER"})
+  void create_databaseValueOverflowReturnsSafeFormError() throws Exception {
+    doThrow(new DataIntegrityViolationException("private database constraint details"))
+        .when(vendorPoService).createVendorPo(any(VendorPo.class));
+
+    mockMvc
+        .perform(post("/vendor/pos").with(csrf()).param("vendor.id", "1")
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED))
+        .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/vendor/pos/new"))
+        .andExpect(flash().attribute("poError",
+            "The PO could not be saved because one or more values are invalid or exceed supported limits. Review quantities, rates, taxes, and charges."));
+  }
+
   @Test
   @WithMockUser(username = "test@example.com", roles = {"USER"})
   void editForm_shouldReturnEditPageWithVendorsAndProducts() throws Exception {
@@ -288,6 +306,63 @@ class VendorPoControllerTest {
         .andExpect(model().attribute("vendorPo", testVendorPo));
 
     verify(vendorPoService).getVendorPoById(1L);
+  }
+
+  // Confirms successful DRAFT edits do not invoke a status reset.
+  @Test
+  @WithMockUser(username = "test@example.com", roles = {"USER"})
+  void update_draftPoUpdatesWithoutChangingStatus() throws Exception {
+    when(vendorPoService.getVendorPoById(1L)).thenReturn(testVendorPo);
+
+    mockMvc.perform(post("/vendor/pos/update/1").with(csrf())
+        .param("note", "Updated draft")
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED))
+        .andExpect(status().is3xxRedirection())
+        .andExpect(redirectedUrl("/vendors#vendor-po"))
+        .andExpect(flash().attributeExists("poMessage"));
+
+    verify(vendorPoService).updateVendorPo(eq(1L), any(VendorPo.class));
+    verify(vendorPoService, never()).changeStatus(anyLong(), any(VendorPoStatus.class));
+  }
+
+  // Confirms the MVC endpoint renders a controlled error for an issued PO edit.
+  @Test
+  @WithMockUser(username = "test@example.com", roles = {"USER"})
+  void update_rejectedSentPoReturnsFormError() throws Exception {
+    testVendorPo.setStatus(VendorPoStatus.SENT);
+    when(vendorPoService.getVendorPoById(1L)).thenReturn(testVendorPo);
+    when(vendorService.getVendorsByCompanyId(1L)).thenReturn(Arrays.asList(testVendor));
+    when(productService.getProductsByCompanyId(1L)).thenReturn(Arrays.asList(testProduct));
+    doThrow(new IllegalStateException("Only DRAFT Vendor POs can be updated")).when(vendorPoService)
+        .updateVendorPo(eq(1L), any(VendorPo.class));
+
+    mockMvc
+        .perform(post("/vendor/pos/update/1").with(csrf()).param("note", "Attempted edit")
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED))
+        .andExpect(status().isOk()).andExpect(view().name("vendor/pos-form-new"))
+        .andExpect(model().attribute("poError", "Only DRAFT Vendor POs can be updated"));
+
+    verify(vendorPoService).updateVendorPo(eq(1L), any(VendorPo.class));
+    verify(vendorPoService, never()).changeStatus(anyLong(), any(VendorPoStatus.class));
+  }
+
+  /** Renders a safe form message if a database constraint rejects a PO update. */
+  @Test
+  @WithMockUser(username = "test@example.com", roles = {"USER"})
+  void update_databaseValueOverflowReturnsFormError() throws Exception {
+    when(vendorPoService.getVendorPoById(1L)).thenReturn(testVendorPo);
+    when(vendorService.getVendorsByCompanyId(1L)).thenReturn(Arrays.asList(testVendor));
+    when(productService.getProductsByCompanyId(1L)).thenReturn(Arrays.asList(testProduct));
+    doThrow(new DataIntegrityViolationException("private database constraint details"))
+        .when(vendorPoService).updateVendorPo(eq(1L), any(VendorPo.class));
+
+    mockMvc.perform(post("/vendor/pos/update/1").with(csrf())
+        .param("note", "Updated draft")
+        .contentType(MediaType.APPLICATION_FORM_URLENCODED))
+        .andExpect(status().isOk())
+        .andExpect(view().name("vendor/pos-form-new"))
+        .andExpect(model().attribute("poError",
+            "The PO could not be saved because one or more values are invalid or exceed supported limits. Review quantities, rates, taxes, and charges."));
   }
 
   @Test

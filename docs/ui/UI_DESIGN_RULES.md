@@ -221,6 +221,8 @@ Example:
 ```
 
 ## 5.3 Dynamic Row Addition
+For repeated product entry rows with several related fields, use a semantic table with visible column headings and a horizontally scrollable wrapper on narrow viewports. Keep each row aligned with the same columns, including client-generated rows. Place secondary per-item fields such as delivery date beneath the product selector when that improves scanning; do not stack unrelated fields in an unlabeled narrow grid cell.
+
 For forms with dynamic rows (e.g., PO line items):
 - Use JavaScript to add/remove rows
 - Maintain proper Thymeleaf field naming for binding
@@ -376,7 +378,15 @@ Load scripts at the end of body or defer:
 - Handle intra-state (CGST+SGST) vs inter-state (IGST) display
 
 ## 9.3 Number Formatting
-Use `DecimalFormat("#,##0.00")` for all numeric values in PDFs.
+Use the shared `IndianMoneyFormatter` for Vendor PO monetary values; do not format amounts inside Thymeleaf expressions. Use explicit PDF table column widths and right-aligned numeric cells for financial tables. For Vendor PO item tables, calculate widths from the longest rendered value per column, preserve minimum widths for every field and the Product column, and let short financial values such as Rate give space to longer HSN or quantity values. Keep visible vertical separators between adjacent metadata and financial columns. Allow product descriptions to wrap within their own column.
+
+For Vendor PO PDF item tables, display quantities without insignificant trailing zeros while preserving any meaningful fractional digits from legacy data. Place the Unit column immediately after Qty so the quantity and its unit read together.
+
+Center-align every Vendor PO PDF item-table heading. Label the row-number column `Sr No.`; format Qty values with Indian digit grouping while retaining meaningful fractional digits, and include `%` in rendered GST percentage values.
+
+Show the `₹` symbol beside every Vendor PO PDF summary amount, including subtotal, freight, packing, each applicable GST row, and total.
+
+For Vendor PO product rows, preselect the Product Unit only when it matches an available Unit option. Keep the PO row's selected Unit when submitting and reopening a draft; it overrides Product metadata for that line.
 
 ---
 
@@ -403,3 +413,17 @@ This document is enforceable.
 
 If any guideline is violated:
 👉 REJECT PR
+
+## Vendor PO address, commercial, and revision forms
+- Tenant-owned choices such as Bill To and Ship To must be selected from server-provided Company-scoped lists; server services remain authoritative for submitted IDs. Company-wide default Vendor PO terms are managed from the list page, not selected or edited per PO. Delivery terms are entered or selected within the PO form.
+- Forms must require explicit Included/Excluded and Taxable/Non-taxable charge choices. Show a GST rate field only as required by the chosen treatment and return clear validation feedback when required data is missing.
+- Provide a Company ADMIN management control for default PO Terms & Conditions on the Vendor Purchase Orders list. Keep delivery terms in the PO form.
+- Show issued revisions as read-only, expose amendment creation as a separate action, and keep DRAFT editing actions limited to the current revision.
+
+## Vendor PO default terms management
+- Company-wide default Vendor PO Terms & Conditions are created and edited from the Terms & Conditions control on the Vendor Purchase Orders list. Do not expose duplicate default-term editors or per-PO template selection/editor controls on PO create/edit forms. Keep delivery-term selection separate because it describes delivery logistics rather than legal terms.
+
+## AJAX list pagination
+- When a server-rendered fragment is inserted with `innerHTML`, do not rely on scripts inside that fragment for pagination or other event handling; those scripts do not execute. Bind delegated handlers from the persistent parent page and fetch the next fragment into the existing styled container.
+- For paginated tables with a continuous serial-number column, calculate each number from the zero-based page offset, page size, and row index so numbering continues across pages.
+- Search on a server-paginated AJAX list must be handled by the persistent parent and sent to the server before pagination. Do not apply the generic table utility's current-page-only filter to that search input.

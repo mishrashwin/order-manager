@@ -143,7 +143,7 @@
             </thead>
             <tbody>
             <tr th:each="vendor, iterStat : ${vendors}">
-              <td th:text="${iterStat.index + 1}"></td>
+              <td th:text="${(currentPage - 1) * 10 + iterStat.index + 1}"></td>
               <td><strong th:text="${vendor.companyName}"></strong></td>
               <td th:text="${vendor.contactPerson}"></td>
               <td><i class="bi bi-envelope"></i> <span th:text="${vendor.email}"></span></td>
@@ -387,7 +387,7 @@
           }
       }
 
-      function loadVendorPoList(page = 0) {
+      function loadVendorPoList(page = 0, search = null) {
           const container = document.getElementById('vendor-po-list-container');
 
           container.innerHTML = `
@@ -397,13 +397,17 @@
               </div>
           `;
 
-          fetch(`/vendor/pos/list-ajax?page=${page}`)
+          const url = new URL('/vendor/pos/list-ajax', window.location.origin);
+          url.searchParams.set('page', page);
+          if (search) url.searchParams.set('search', search);
+
+          fetch(url.toString())
               .then(res => res.text())
               .then(html => {
                   container.innerHTML = html;
                   // Initialize table-utils for the dynamically loaded content
                   window.initTableUtils('#vendor-po-list-container', {
-                        searchInputId: 'searchInputPo',
+                        searchInputId: 'vendorPoServerSearchDisabled',
                          resetBtnId: 'resetSortBtnPo'
                   });
               })
@@ -415,6 +419,39 @@
                   `;
               });
       }
+
+      // Keep pagination inside the styled Vendor Management page after AJAX fragment loads.
+      document.addEventListener('click', function (event) {
+          const searchButton = event.target.closest('#vendor-po-list-container #searchBtnPo');
+          if (searchButton) {
+              const searchInput = document.getElementById('searchInputPo');
+              loadVendorPoList(0, searchInput.value.trim() || null);
+              return;
+          }
+
+          const clearSearchButton = event.target.closest('#vendor-po-list-container #clearSearchBtnPo');
+          if (clearSearchButton) {
+              const searchInput = document.getElementById('searchInputPo');
+              searchInput.value = '';
+              loadVendorPoList(0);
+              return;
+          }
+
+          const link = event.target.closest('#vendor-po-list-container nav[aria-label="Vendor PO pagination"] a.page-link');
+          if (!link) return;
+
+          event.preventDefault();
+          const url = new URL(link.href, window.location.origin);
+          const page = Number.parseInt(url.searchParams.get('page') || '0', 10);
+          const search = url.searchParams.get('search');
+          loadVendorPoList(Number.isNaN(page) ? 0 : page, search);
+      });
+
+      document.addEventListener('keydown', function (event) {
+          if (event.key !== 'Enter' || event.target.id !== 'searchInputPo') return;
+          event.preventDefault();
+          loadVendorPoList(0, event.target.value.trim() || null);
+      });
 
       // This page loads pos-list-ajax.html with innerHTML, so its inline scripts
       // are not executed. Delegate modal events here, where they remain active
@@ -512,7 +549,12 @@
               if (input.value.trim()) formData.append('termsConditions', input.value.trim());
           });
 
-          fetch(form.action, { method: 'POST', body: formData })
+          const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+          const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+          const headers = {'Accept': 'application/json'};
+          if (csrfToken && csrfHeader) headers[csrfHeader] = csrfToken;
+
+          fetch(form.action, { method: 'POST', headers: headers, body: formData })
               .then(response => {
                   if (!response.ok) throw new Error(`Request failed (${response.status})`);
                   return response.json();
