@@ -714,3 +714,15 @@ Notes
 # 2026-11-24 — Vendor PO list pagination presentation
 - Corrected parent-page delegated pagination handling for the AJAX PO list; documented regression coverage in `vendor-po-redesign-TESTING.md`.
 - Automated tests: Not run (template JavaScript-only change; user did not request test execution). Manual browser regression: Not run.
+
+# 2026-11-24 — Vendor PO serial-number continuation
+- PO row serials now use the Spring Data page offset, page size, and within-page row index; page 2 continues from page 1.
+- Automated tests and manual browser QA: Not run; implementation is a Thymeleaf expression-only change.
+
+# 2026-11-24 — Vendor, Order, and Client list serial-number continuation
+- Updated each list template to add its page offset to the row index, so serial numbers continue on pages after the first.
+- Automated tests and manual browser QA: Not run; implementation is template-only.
+
+# 2026-11-24 — Tenant-wide Vendor PO search
+- Search now runs server-side across all current POs in the authenticated Company before pagination and matches PO number, vendor, or product.
+- Added service tests for normalized search delegation and blank-search fallback. Automated tests and manual browser QA were not run.

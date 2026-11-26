@@ -266,7 +266,7 @@
     <tbody>
     <tr th:each="item, iter : ${vendorPo.items}">
       <td class="center" th:text="${iter.index + 1}"></td>
-      <td class="product-cell"><span th:text="${#strings.escapeXml(item.productName)}"></span>
+      <td class="product-cell"><span th:text="${item.productName}"></span>
         <br th:if="${item.deliveryDate != null}"/><small th:if="${item.deliveryDate != null}">Delivery: <span th:text="${#temporals.format(item.deliveryDate,'dd-MM-yyyy')}"></span></small></td>
       <td class="center" th:text="${item.hsnCode ?: '-'}"></td>
       <td class="right" th:text="${item.formattedQuantity}"></td>
@@ -341,7 +341,7 @@
   <!-- NOTES -->
   <div class="section">
     <strong>Notes</strong>
-    <p class="notes-section" th:text="${vendorPo.note != null and !vendorPo.note.isBlank() ? #strings.escapeXml(vendorPo.note) : '-'}"></p>
+    <p class="notes-section" th:text="${vendorPo.note != null and !vendorPo.note.isBlank() ? vendorPo.note : '-'}"></p>
   </div>
   <div class="section" th:if="${vendorPo.paymentTerms != null and !vendorPo.paymentTerms.isBlank()}"><strong>Payment Terms:</strong> <span th:text="${vendorPo.paymentTerms}"></span></div>
   <div class="section" th:if="${vendorPo.deliveryTerms != null and !vendorPo.deliveryTerms.isBlank()}"><strong>Delivery Terms:</strong> <span th:text="${vendorPo.deliveryTerms}"></span></div>

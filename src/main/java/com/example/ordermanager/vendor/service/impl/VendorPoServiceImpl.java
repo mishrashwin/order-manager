@@ -98,6 +98,11 @@ public class VendorPoServiceImpl implements VendorPoService {
     }
 
     po.setPoDate(po.getPoDate() == null ? LocalDate.now() : po.getPoDate());
+    // Validate text fields for XML-breaking characters
+    validateNoXmlBreakingCharacters(po.getNote(), "Note");
+    validateNoXmlBreakingCharacters(po.getPaymentTerms(), "Payment terms");
+    validateNoXmlBreakingCharacters(po.getDeliveryTerms(), "Delivery terms");
+    validateNoXmlBreakingCharacters(po.getPenaltyClause(), "Penalty clause");
     // Ensure freight and packing amounts are never null to prevent DB constraint violations
     if (po.getFreightAmount() == null) {
       po.setFreightAmount(java.math.BigDecimal.ZERO.setScale(2));
@@ -174,6 +179,11 @@ public class VendorPoServiceImpl implements VendorPoService {
       existing.setOrderOwner(orderOwner);
     }
 
+    // Validate text fields for XML-breaking characters before update
+    validateNoXmlBreakingCharacters(po.getNote(), "Note");
+    validateNoXmlBreakingCharacters(po.getPaymentTerms(), "Payment terms");
+    validateNoXmlBreakingCharacters(po.getDeliveryTerms(), "Delivery terms");
+    validateNoXmlBreakingCharacters(po.getPenaltyClause(), "Penalty clause");
     // Update remaining editable fields
     existing.setDeliveryDate(po.getDeliveryDate());
     existing.setNote(po.getNote());
@@ -245,8 +255,8 @@ public class VendorPoServiceImpl implements VendorPoService {
     if (search == null || search.trim().isEmpty()) {
       return vendorPoRepository.findByCompany_IdAndCurrentRevisionTrue(companyId, pageable);
     }
-    return vendorPoRepository.findByCompany_IdAndCurrentRevisionTrueAndPoNumberContainingIgnoreCase(
-        companyId, search, pageable);
+    return vendorPoRepository.searchCurrentRevisionsByCompanyAndText(companyId,
+        search.trim().toLowerCase(java.util.Locale.ROOT), pageable);
   }
 
   // ── Status ─────────────────────────────────────────────────────────────────
@@ -677,6 +687,14 @@ public class VendorPoServiceImpl implements VendorPoService {
       }
     } else {
       it.setProductName(it.getProductName() != null ? it.getProductName() : "Unknown Product");
+    }
+  }
+
+  /** Validates that text does not contain XML-breaking characters. */
+  private void validateNoXmlBreakingCharacters(String text, String fieldName) {
+    if (text != null && (text.contains("<") || text.contains(">") || text.contains("&"))) {
+      throw new IllegalArgumentException(
+          fieldName + " cannot contain XML-breaking characters (<, >, &). Please use HTML entities instead (e.g., &amp; for &).");
     }
   }
 }

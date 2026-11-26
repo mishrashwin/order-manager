@@ -108,7 +108,7 @@
                 </thead>
                 <tbody>
                 <tr th:each="order, iterStat : ${orders}">
-                    <td th:text="${iterStat.index + 1}"></td>
+                    <td th:text="${(currentPage - 1) * 10 + iterStat.index + 1}"></td>
                     <td><strong th:text="${order.customerName}"></strong></td>
                     <td th:text="${order.poOrderNo != null ? order.poOrderNo : '-'}"></td>
                     <td th:text="${#strings.abbreviate(order.displayProductSummary, 40)}"></td>

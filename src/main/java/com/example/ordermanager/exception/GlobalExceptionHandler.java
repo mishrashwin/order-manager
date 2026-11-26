@@ -65,13 +65,18 @@ public class GlobalExceptionHandler {
   public Object handleDataIntegrityViolation(DataIntegrityViolationException exception,
       HttpServletRequest request, RedirectAttributes redirectAttributes) {
     String path = request.getServletPath();
+    String constraintDetails = extractConstraintDetails(exception);
+    String errorMessage = SAFE_PO_SAVE_ERROR;
+    if (constraintDetails != null) {
+      errorMessage += " Issue: " + constraintDetails;
+    }
     if ("/vendor/pos".equals(path)) {
-      redirectAttributes.addFlashAttribute("poError", SAFE_PO_SAVE_ERROR);
+      redirectAttributes.addFlashAttribute("poError", errorMessage);
       return "redirect:/vendor/pos/new";
     }
     if (path.matches("/vendor/pos/update/\\d+")) {
       String id = path.substring(path.lastIndexOf('/') + 1);
-      redirectAttributes.addFlashAttribute("poError", SAFE_PO_SAVE_ERROR);
+      redirectAttributes.addFlashAttribute("poError", errorMessage);
       return "redirect:/vendor/pos/" + id + "/edit";
     }
     Map<String, Object> body = new LinkedHashMap<>();
@@ -80,6 +85,58 @@ public class GlobalExceptionHandler {
     body.put("message",
         "The request could not be completed. Please review your input and try again.");
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+  }
+
+  /** Extracts constraint violation details from DataIntegrityViolationException for logging. */
+  private String extractConstraintDetails(DataIntegrityViolationException exception) {
+    Throwable rootCause = exception.getRootCause();
+    if (rootCause != null) {
+      String message = rootCause.getMessage();
+      if (message != null) {
+        org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class)
+            .error("DataIntegrityViolationException: {}", message, exception);
+        if (message.contains("foreign key constraint")) {
+          if (message.contains("vendor")) return "Invalid vendor selected";
+          if (message.contains("product")) return "Invalid product selected";
+          if (message.contains("company")) return "Invalid company reference";
+          if (message.contains("address")) return "Invalid address selected";
+          if (message.contains("user")) return "Invalid user selected";
+        }
+        if (message.contains("unique constraint") || message.contains("duplicate key")) {
+          if (message.contains("po_number")) return "Duplicate PO number";
+          return "Duplicate entry detected";
+        }
+        if (message.contains("cannot be null")) {
+          int nullIndex = message.indexOf("cannot be null");
+          if (nullIndex > 0) {
+            String context = message.substring(Math.max(0, nullIndex - 50), nullIndex);
+            if (context.contains("'")) {
+              int start = context.lastIndexOf("'");
+              if (start >= 0) {
+                String column = context.substring(start + 1).trim();
+                return "Required field missing: " + column;
+              }
+            }
+          }
+          return "Required field is missing";
+        }
+        if (message.contains("value too long")) {
+          int longIndex = message.indexOf("value too long");
+          if (longIndex > 0) {
+            String context = message.substring(Math.max(0, longIndex - 100), longIndex);
+            if (context.contains("'")) {
+              int start = context.lastIndexOf("'");
+              if (start >= 0) {
+                String column = context.substring(start + 1).trim();
+                return "Field '" + column + "' exceeds maximum allowed length";
+              }
+            }
+          }
+          return "A field value exceeds the maximum allowed length";
+        }
+      }
+    }
+    return null;
   }
 
   @ExceptionHandler(Exception.class)

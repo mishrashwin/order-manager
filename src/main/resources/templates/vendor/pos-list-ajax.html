@@ -28,7 +28,7 @@
             <input type="text"
                    id="searchInputPo"
                    class="form-control-custom om-list-search-input"
-                   placeholder="🔍 Search by PO Number, Vendor Name, Product,  Delivery Date..."
+                   placeholder="🔍 Search all Vendor POs by PO Number, Vendor, or Product..."
                    th:value="${search}">
             <button id="searchBtnPo" class="btn btn-primary om-btn-icon" title="Search">
               <i class="bi bi-search"></i>
@@ -51,64 +51,6 @@
           </div>
         </div>
       </div>
-
-      <script>
-        // Vendor PO search functionality
-        document.addEventListener('DOMContentLoaded', function() {
-          const searchInputPo = document.getElementById('searchInputPo');
-          const searchBtnPo = document.getElementById('searchBtnPo');
-          const clearSearchBtnPo = document.getElementById('clearSearchBtnPo');
-
-          function loadVendorPoPage(page = 0, search = null) {
-            const url = new URL('/vendor/pos/list-ajax', window.location.origin);
-            if (page > 0) url.searchParams.set('page', page);
-            if (search) url.searchParams.set('search', search);
-
-            fetch(url.toString())
-              .then(response => response.text())
-              .then(html => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const newContent = doc.querySelector('th\\:block[th\\:fragment="pos-table"]');
-                const currentContent = document.querySelector('th\\:block[th\\:fragment="pos-table"]');
-                if (newContent && currentContent) {
-                  currentContent.innerHTML = newContent.innerHTML;
-                  // Re-initialize table utilities
-                  if (window.initTableUtils) {
-                    window.initTableUtils('.unified-card');
-                  }
-                }
-              });
-          }
-
-          searchBtnPo.addEventListener('click', function() {
-            loadVendorPoPage(0, searchInputPo.value);
-          });
-
-          searchInputPo.addEventListener('keyup', function(e) {
-            if (e.key === 'Enter') {
-              loadVendorPoPage(0, searchInputPo.value);
-            }
-          });
-
-          clearSearchBtnPo.addEventListener('click', function() {
-            searchInputPo.value = '';
-            loadVendorPoPage(0, null);
-          });
-
-          // Handle pagination clicks
-          document.addEventListener('click', function(e) {
-            const link = e.target.closest('a.page-link');
-            if (link && link.closest('nav[aria-label="Vendor PO pagination"]')) {
-              e.preventDefault();
-              const url = new URL(link.href);
-              const page = parseInt(url.searchParams.get('page') || '0');
-              const search = url.searchParams.get('search') || null;
-              loadVendorPoPage(page, search);
-            }
-          });
-        });
-      </script>
 
       <!-- EMPTY STATE -->
       <div th:if="${#lists.isEmpty(pos.content)}" class="text-center py-4">
@@ -143,7 +85,7 @@
             <tr th:each="po, iterStat : ${pos.content}">
 
               <!-- # -->
-              <td th:text="${iterStat.index + 1}"></td>
+              <td th:text="${pos.number * pos.size + iterStat.index + 1}"></td>
 
               <!-- PO Number -->
               <td><strong th:text="${po.poNumber}"></strong></td>

@@ -98,3 +98,9 @@
 # Vendor PO list pagination UI regression
 - Verify page 2/Next is handled by the persistent parent Vendor page after fragment replacement; the app shell and CSS remain intact and the next page's records render in the PO list container.
 - Verify previous/page-number navigation and pagination with a search query preserve the expected page and search state; a failed fragment request must not navigate to an unstyled raw fragment.
+- Verify serial numbers use the page offset: with a page size of 10, page 2 starts at 11 and the serial continues correctly on a partial last page.
+- Verify the Vendor, Order, and Client list row numbers continue across pages using their existing ten-row page size.
+
+# Vendor PO tenant-wide search
+- Verify search is sent to the server from the persistent Vendor page and returns matches across all current PO pages before paging, including matches by PO number, vendor name, or product name.
+- Verify the query is restricted to the authenticated Company, excludes superseded revisions, retains the term while paging, and blank/cleared search restores all current tenant POs.

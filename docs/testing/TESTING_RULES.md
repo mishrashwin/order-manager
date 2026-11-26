@@ -334,5 +334,8 @@ If any guideline is violated:
 ## Vendor PO financial and lifecycle coverage
 - Cover explicit Included/Excluded and Taxable/Non-taxable charge choices, taxable-rate validation, intra/inter-state split, decimal rounding, and amount-in-words cents.
 - Verify cross-tenant ID rejection, snapshot stability after source edits, immutable issued PDF/revision history, and DRAFT-only edits.
+
 # AJAX list pagination regression
 - For lists rendered as AJAX fragments inside a styled parent page, verify next/previous/page-number clicks are intercepted by the persistent parent and replace only the list container. Confirm the page shell and styles remain present and the requested records/search state is retained.
+- For tables with serial numbers, verify the first row on page two continues after all rows on page one (for example, 11 after a 10-row page), including when the final page is partial.
+- For server-paginated search, verify a matching record beyond page one is returned after submitting a term, results are filtered before pagination, and no other tenant's records can match or appear. Verify blank search restores the full tenant list.

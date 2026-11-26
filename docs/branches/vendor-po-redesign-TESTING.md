@@ -7,12 +7,23 @@
 2. Confirm page 1 displays the standard navbar, Vendor Management layout, styled PO table, and pagination controls.
 3. Click page 2 (or Next).
 
-**Expected result:** The page stays within Vendor Management with its CSS and navbar intact; the fragment updates in place and displays PO 11. Page navigation remains functional after each fragment replacement.
+**Expected result:** The page stays within Vendor Management with its CSS and navbar intact; the fragment updates in place and displays PO 11. Its serial number is 11 after the ten rows on page 1. Page navigation remains functional after each fragment replacement.
 
 ### Search and navigation regression
-1. Search for a PO number that has results across multiple pages, then navigate between available pages.
+1. Create or identify a matching current PO that appears on page 5 of the unfiltered tenant list.
+2. Search for its PO number and submit using Search or Enter.
+3. Search separately by a current PO's Vendor name and product name.
+4. Navigate through pages of matching results, then clear the search.
 
-**Expected result:** Pagination continues to update the PO fragment without a full-page fragment response, and the search term remains in the request and input.
+**Expected result:** Search returns matches from the full authenticated tenant PO set before pagination, including the page 5 PO. Vendor and product terms find matching POs. Pagination retains the term, and clearing returns the full current-revision list. The server handles search; results are not limited to rows currently rendered in the browser.
+
+### Tenant isolation and revisions
+1. Search for a term present only in another Company's PO.
+2. Search for a term that appears only in a superseded PO revision.
+
+**Expected result:** No cross-tenant row is returned; superseded revisions are not included in the current PO list search.
+
+**Execution status:** Not run; source and diff review only, 2026-11-24.
 
 ### Negative / error scenario
 1. With browser developer tools open, make the fragment request fail, then click a pagination control.
@@ -20,6 +31,22 @@
 **Expected result:** The surrounding Vendor Management page remains styled and usable; no raw unstyled fragment replaces the page.
 
 **Execution status:** Not run; documentation and source inspection only, 2026-11-24.
+
+### Serial-number continuation
+1. Open a PO list with at least 11 current POs and verify the row number column on page 1 and page 2.
+2. Navigate to the final page when it contains fewer than 10 rows.
+
+**Expected result:** The serial number increments continuously across pages (page 2 begins with 11 for a 10-row page), regardless of the final page size.
+
+**Execution status:** Not run; source and diff review only, 2026-11-24.
+
+### Vendor, Order, and Client list serial-number continuation
+1. Prepare at least 11 records for each list and open Vendor List, Orders, and Clients.
+2. On each list, navigate from page 1 to page 2.
+
+**Expected result:** The first row on page 2 is numbered 11 and subsequent rows continue sequentially. Page 1 remains numbered 1–10; a partial final page continues from the preceding page.
+
+**Execution status:** Not run; source and diff review only, 2026-11-24.
 
 ## Feature overview and testing objective
 Verify Phase 0.1 Vendor PO immutability and Phase 1 Company Address management, legacy backfill, role defaults, validation, authorization, and tenant isolation.

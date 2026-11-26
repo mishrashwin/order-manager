@@ -83,7 +83,7 @@
                 </thead>
                 <tbody>
                 <tr th:each="client, iterStat : ${clients}">
-                    <td th:text="${iterStat.index + 1}"></td>
+                    <td th:text="${(currentPage - 1) * 10 + iterStat.index + 1}"></td>
                     <td><strong th:text="${client.name}"></strong></td>
                     <td th:text="${client.contactPerson}"></td>
                     <td><i class="bi bi-envelope"></i> <span th:text="${client.email}"></span></td>
