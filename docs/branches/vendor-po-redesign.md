@@ -36,6 +36,28 @@ Vendor POs could be mutated after issuance and reset to DRAFT. Company profiles 
 - **Validation:** Source inspection and diff review only. Automated tests and manual browser QA were not run.
 - **Documentation:** Paired testing guide, UI and testing rules, controller/service case matrix, test progress, and branch index updated.
 
+## Vendor PO serial-number continuation (2026-11-24)
+- **Problem:** The row serial number restarted at 1 on every paginated PO page.
+- **Implementation:** `vendor/pos-list-ajax.html` now calculates the serial as the zero-based page number times page size, plus the row index and one. This keeps numbering continuous on full and partial pages.
+- **Impacts:** Template-only; no Java methods, database, API, authorization, tenant, or configuration changes. README setup/capability content remains unaffected.
+- **Validation:** Source and diff review only; automated tests and manual browser verification were not run.
+- **Documentation:** Updated the paired testing guide, UI/testing rules, test case matrix, and test progress.
+
+## Vendor, Order, and Client list serial-number continuation (2026-11-24)
+- **Scope:** Extend continuous row numbering across pages to the Vendor, Order, and Client lists after the same issue was observed there.
+- **Plan:** Apply the zero-based page offset using the lists' existing 10-row page size; no controller/service, database, README, tenant, or authorization change is expected. Update the branch testing guide, UI/testing rules, case matrix, and progress log.
+- **Implementation:** The Vendor, Order, and Client list templates now add the ten-row page offset to each row's within-page index.
+- **Impact:** Template-only, using the existing page number/default page size. No Java/controller, database, tenant, security, or configuration changes. README capability/setup content is unaffected.
+- **Validation:** Source/diff review only; automated tests and browser QA were not run.
+- **Documentation:** Updated the paired testing guide, UI/testing rules, controller/service test case matrix, and test progress.
+
+## Tenant-wide Vendor PO search (2026-11-24)
+- **Problem:** Search was handled as a browser-side filter over the currently rendered page, so matching POs on later pages were not discoverable.
+- **Implementation:** The persistent Vendor page now handles search, Enter, clear, and pagination events and reloads the PO fragment with the search term. Generic table search is disabled for this server-side search field. A Company-scoped repository query filters current PO revisions by PO number, vendor snapshot/current name, or product name before applying pagination. Blank search restores all current POs.
+- **Database/API/security:** No schema or external API changes. Service derives Company ID from `SecurityContextHelper`; repository query requires that Company ID and filters current revisions.
+- **Validation:** Added service tests for normalized global-search delegation and blank-search fallback. Tests and browser QA were not run.
+- **Documentation:** README setup/capability content is unaffected. Updated paired testing guide, UI and multi-tenant rules, test case matrix, and test progress.
+
 ## Phase 0 audit reconciliation
 - The supplied audit ZIP lacked build files, while the current checkout contains `pom.xml`; Maven confirms Java 17 and Spring Boot 3.3.0.
 - Audit migration baseline V29 differs from the checkout’s V31.

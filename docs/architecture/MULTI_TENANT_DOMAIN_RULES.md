@@ -123,6 +123,7 @@ Implemented via: `CompanyService.canUsersLogin`
 - `findByCompanyId(Long companyId)`
 - `findByIdAndCompanyId(Long id, Long companyId)`
 - `findByCompanyIdAndDateRange(...)`
+- Apply tenant-scoped search predicates in the database query before pagination, so matches later in a tenant's result set remain discoverable without exposing other tenants' rows.
 
 ## 5.2 Forbidden Patterns
 **NEVER** use unfiltered methods in tenant-facing paths:

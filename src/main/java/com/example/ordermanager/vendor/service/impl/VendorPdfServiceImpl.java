@@ -36,6 +36,7 @@ public class VendorPdfServiceImpl implements VendorPdfService {
     try {
       if (po.getItems() != null) {
         for (VendorPoItem item : po.getItems()) {
+          item.setProductName(unescapeHtmlEntities(item.getProductName()));
           item.setFormattedQuantity(IndianQuantityFormatter.format(item.getQuantity()));
           BigDecimal rate =
               item.getTaxableRate() == null ? item.getUnitPrice() : item.getTaxableRate();
@@ -44,8 +45,17 @@ public class VendorPdfServiceImpl implements VendorPdfService {
           item.setFormattedLineTotal(IndianMoneyFormatter.format(item.getLineTotal()));
         }
       }
+      po.setNote(unescapeHtmlEntities(po.getNote()));
+      po.setPaymentTerms(unescapeHtmlEntities(po.getPaymentTerms()));
+      po.setDeliveryTerms(unescapeHtmlEntities(po.getDeliveryTerms()));
+      po.setPenaltyClause(unescapeHtmlEntities(po.getPenaltyClause()));
+      po.setBuyerCompanyName(unescapeHtmlEntities(po.getBuyerCompanyName()));
+      po.setBuyerGstin(unescapeHtmlEntities(po.getBuyerGstin()));
+      po.setVendorAddress(unescapeHtmlEntities(po.getVendorAddress()));
+      po.setVendorGstn(unescapeHtmlEntities(po.getVendorGstn()));
       List<String> terms = po.getTermsConditionsSnapshot() == null ? List.of()
           : objectMapper.readValue(po.getTermsConditionsSnapshot(), new TypeReference<>() {});
+      terms = terms.stream().map(this::unescapeHtmlEntities).toList();
       Context context = new Context();
       HashMap<String, Object> variables = new HashMap<>();
       variables.put("vendorPo", po);
@@ -108,5 +118,15 @@ public class VendorPdfServiceImpl implements VendorPdfService {
   private String base64(byte[] bytes, String contentType) {
     return bytes == null ? null
         : "data:" + contentType + ";base64," + Base64.getEncoder().encodeToString(bytes);
+  }
+
+  /** Unescapes HTML entities to their character equivalents for PDF rendering. */
+  private String unescapeHtmlEntities(String text) {
+    if (text == null) return null;
+    return text.replace("&quot;", "\"")
+        .replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&apos;", "'");
   }
 }

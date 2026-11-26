@@ -7,6 +7,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import jakarta.persistence.LockModeType;
 
@@ -46,9 +48,17 @@ public interface VendorPoRepository extends JpaRepository<VendorPo, Long> {
   Page<VendorPo> findByCompany_IdAndCurrentRevisionTrue(Long companyId, Pageable pageable);
 
   /** Searches only current revisions in the authenticated Company. */
+  /** Searches current tenant-owned POs by PO number, vendor snapshot, or item product name. */
   @EntityGraph(attributePaths = {"company", "vendor", "items", "orderOwner"})
-  Page<VendorPo> findByCompany_IdAndCurrentRevisionTrueAndPoNumberContainingIgnoreCase(
-      Long companyId, String search, Pageable pageable);
+  @Query("select po from VendorPo po left join po.vendor vendor "
+      + "where po.company.id = :companyId and po.currentRevision = true and ("
+      + "lower(coalesce(po.poNumber, '')) like concat('%', :search, '%') or "
+      + "lower(coalesce(po.vendorName, '')) like concat('%', :search, '%') or "
+      + "lower(coalesce(vendor.companyName, '')) like concat('%', :search, '%') or "
+      + "exists (select item.id from VendorPoItem item where item.vendorPo = po "
+      + "and lower(coalesce(item.productName, '')) like concat('%', :search, '%')))")
+  Page<VendorPo> searchCurrentRevisionsByCompanyAndText(@Param("companyId") Long companyId,
+      @Param("search") String search, Pageable pageable);
 
   long countByCompany_Id(Long companyId);
 

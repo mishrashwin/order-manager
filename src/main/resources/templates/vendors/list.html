@@ -143,7 +143,7 @@
             </thead>
             <tbody>
             <tr th:each="vendor, iterStat : ${vendors}">
-              <td th:text="${iterStat.index + 1}"></td>
+              <td th:text="${(currentPage - 1) * 10 + iterStat.index + 1}"></td>
               <td><strong th:text="${vendor.companyName}"></strong></td>
               <td th:text="${vendor.contactPerson}"></td>
               <td><i class="bi bi-envelope"></i> <span th:text="${vendor.email}"></span></td>
@@ -407,7 +407,7 @@
                   container.innerHTML = html;
                   // Initialize table-utils for the dynamically loaded content
                   window.initTableUtils('#vendor-po-list-container', {
-                        searchInputId: 'searchInputPo',
+                        searchInputId: 'vendorPoServerSearchDisabled',
                          resetBtnId: 'resetSortBtnPo'
                   });
               })
@@ -422,6 +422,21 @@
 
       // Keep pagination inside the styled Vendor Management page after AJAX fragment loads.
       document.addEventListener('click', function (event) {
+          const searchButton = event.target.closest('#vendor-po-list-container #searchBtnPo');
+          if (searchButton) {
+              const searchInput = document.getElementById('searchInputPo');
+              loadVendorPoList(0, searchInput.value.trim() || null);
+              return;
+          }
+
+          const clearSearchButton = event.target.closest('#vendor-po-list-container #clearSearchBtnPo');
+          if (clearSearchButton) {
+              const searchInput = document.getElementById('searchInputPo');
+              searchInput.value = '';
+              loadVendorPoList(0);
+              return;
+          }
+
           const link = event.target.closest('#vendor-po-list-container nav[aria-label="Vendor PO pagination"] a.page-link');
           if (!link) return;
 
@@ -430,6 +445,12 @@
           const page = Number.parseInt(url.searchParams.get('page') || '0', 10);
           const search = url.searchParams.get('search');
           loadVendorPoList(Number.isNaN(page) ? 0 : page, search);
+      });
+
+      document.addEventListener('keydown', function (event) {
+          if (event.key !== 'Enter' || event.target.id !== 'searchInputPo') return;
+          event.preventDefault();
+          loadVendorPoList(0, event.target.value.trim() || null);
       });
 
       // This page loads pos-list-ajax.html with innerHTML, so its inline scripts

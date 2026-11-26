@@ -56,12 +56,15 @@ public class ProductService {
     product.setCompany(company);
 
     if (product.getName() != null) {
+      validateNoXmlBreakingCharacters(product.getName(), "Product name");
       product.setName(helper.toTitleCase(product.getName()));
     }
     if (product.getBrand() != null) {
+      validateNoXmlBreakingCharacters(product.getBrand(), "Brand");
       product.setBrand(helper.toTitleCase(product.getBrand()));
     }
     if (product.getCategory() != null) {
+      validateNoXmlBreakingCharacters(product.getCategory(), "Category");
       product.setCategory(helper.toTitleCase(product.getCategory()));
     }
 
@@ -83,6 +86,14 @@ public class ProductService {
     }
 
     return productRepository.save(product);
+  }
+
+  /** Validates that text does not contain XML-breaking characters. */
+  private void validateNoXmlBreakingCharacters(String text, String fieldName) {
+    if (text.contains("<") || text.contains(">") || text.contains("&")) {
+      throw new IllegalArgumentException(
+          fieldName + " cannot contain XML-breaking characters (<, >, &). Please use HTML entities instead (e.g., &amp; for &).");
+    }
   }
 
   public void deleteProduct(Long id) {

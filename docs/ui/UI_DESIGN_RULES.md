@@ -425,3 +425,5 @@ If any guideline is violated:
 
 ## AJAX list pagination
 - When a server-rendered fragment is inserted with `innerHTML`, do not rely on scripts inside that fragment for pagination or other event handling; those scripts do not execute. Bind delegated handlers from the persistent parent page and fetch the next fragment into the existing styled container.
+- For paginated tables with a continuous serial-number column, calculate each number from the zero-based page offset, page size, and row index so numbering continues across pages.
+- Search on a server-paginated AJAX list must be handled by the persistent parent and sent to the server before pagination. Do not apply the generic table utility's current-page-only filter to that search input.

@@ -200,6 +200,39 @@ class VendorPoServiceTest {
     verify(vendorPoRepository).findByCompany_IdAndCurrentRevisionTrue(eq(1L), any(PageRequest.class));
   }
 
+  /** Verifies nonblank search is normalized and delegated tenant-wide before paging. */
+  @Test
+  void searchVendorPos_searchesAllCurrentCompanyPosFieldsBeforePaging() {
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
+    Page<VendorPo> expectedPage = new PageImpl<>(Arrays.asList(testVendorPo));
+    when(vendorPoRepository.searchCurrentRevisionsByCompanyAndText(1L, "table",
+        PageRequest.of(1, 10))).thenReturn(expectedPage);
+
+    Page<VendorPo> result = service.searchVendorPos(null, null, " Table ", PageRequest.of(1, 10));
+
+    assertEquals(expectedPage, result);
+    verify(vendorPoRepository).searchCurrentRevisionsByCompanyAndText(1L, "table",
+        PageRequest.of(1, 10));
+    verify(vendorPoRepository, never()).findByCompany_IdAndCurrentRevisionTrue(1L,
+        PageRequest.of(1, 10));
+  }
+
+  /** Verifies blank search returns the complete current-revision page for the tenant. */
+  @Test
+  void searchVendorPos_withBlankTermReturnsAllCurrentCompanyPos() {
+    when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
+    Page<VendorPo> expectedPage = new PageImpl<>(Arrays.asList(testVendorPo));
+    when(vendorPoRepository.findByCompany_IdAndCurrentRevisionTrue(1L, PageRequest.of(0, 10)))
+        .thenReturn(expectedPage);
+
+    Page<VendorPo> result = service.searchVendorPos(null, null, "  ", PageRequest.of(0, 10));
+
+    assertEquals(expectedPage, result);
+    verify(vendorPoRepository).findByCompany_IdAndCurrentRevisionTrue(1L, PageRequest.of(0, 10));
+    verify(vendorPoRepository, never()).searchCurrentRevisionsByCompanyAndText(anyLong(),
+        anyString(), any());
+  }
+
   @Test
   void updateVendorPo_updatesExistingPo() {
     when(securityContextHelper.getCompanyIdFromContext()).thenReturn(1L);
