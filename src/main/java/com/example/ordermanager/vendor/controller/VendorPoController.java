@@ -71,8 +71,10 @@ public class VendorPoController {
   public String listAjax(@RequestParam(required = false) String search,
       @RequestParam(required = false, defaultValue = "0") int page,
       @RequestParam(required = false, defaultValue = "10") int size, Model model) {
+    org.springframework.data.domain.Sort sort = org.springframework.data.domain.Sort
+        .by(org.springframework.data.domain.Sort.Order.desc("poNumber"));
     Page<VendorPo> posPage =
-        vendorPoService.searchVendorPos(null, null, search, PageRequest.of(page, size));
+        vendorPoService.searchVendorPos(null, null, search, PageRequest.of(page, size, sort));
     model.addAttribute("pos", posPage);
     model.addAttribute("currentPage", page + 1);
     model.addAttribute("totalPages", posPage.getTotalPages());

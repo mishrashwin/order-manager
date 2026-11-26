@@ -96,14 +96,20 @@ public class GlobalExceptionHandler {
         org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class)
             .error("DataIntegrityViolationException: {}", message, exception);
         if (message.contains("foreign key constraint")) {
-          if (message.contains("vendor")) return "Invalid vendor selected";
-          if (message.contains("product")) return "Invalid product selected";
-          if (message.contains("company")) return "Invalid company reference";
-          if (message.contains("address")) return "Invalid address selected";
-          if (message.contains("user")) return "Invalid user selected";
+          if (message.contains("vendor"))
+            return "Invalid vendor selected";
+          if (message.contains("product"))
+            return "Invalid product selected";
+          if (message.contains("company"))
+            return "Invalid company reference";
+          if (message.contains("address"))
+            return "Invalid address selected";
+          if (message.contains("user"))
+            return "Invalid user selected";
         }
         if (message.contains("unique constraint") || message.contains("duplicate key")) {
-          if (message.contains("po_number")) return "Duplicate PO number";
+          if (message.contains("po_number"))
+            return "Duplicate PO number";
           return "Duplicate entry detected";
         }
         if (message.contains("cannot be null")) {

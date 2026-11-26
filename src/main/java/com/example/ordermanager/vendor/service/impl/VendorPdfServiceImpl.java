@@ -122,11 +122,9 @@ public class VendorPdfServiceImpl implements VendorPdfService {
 
   /** Unescapes HTML entities to their character equivalents for PDF rendering. */
   private String unescapeHtmlEntities(String text) {
-    if (text == null) return null;
-    return text.replace("&quot;", "\"")
-        .replace("&amp;", "&")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&apos;", "'");
+    if (text == null)
+      return null;
+    return text.replace("&quot;", "\"").replace("&amp;", "&").replace("&lt;", "<")
+        .replace("&gt;", ">").replace("&apos;", "'");
   }
 }
